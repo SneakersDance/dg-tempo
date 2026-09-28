@@ -106,6 +106,8 @@ public final class BeatService extends Service implements BleDevice.Listener {
     private Thread audioThread;
     private MediaProjection projection;
     private MediaProjection.Callback projectionCb;
+    /** Set when the system ended the phone-audio capture; the activity re-asks for the share on its next resume. */
+    public volatile boolean phoneAudioLost = false;
     private android.hardware.display.VirtualDisplay vDisplay;
     private android.media.ImageReader imageReader;
     private android.os.HandlerThread motionThread;
@@ -450,11 +452,16 @@ public final class BeatService extends Service implements BleDevice.Listener {
                 projection = null;
                 projectionCb = null;
                 stopAudio();
+                // Android 15 QPR1+ ends every screen projection (and with it this audio capture) when the phone
+                // locks. The activity keeps the screen awake while phone audio runs and re-asks for the share
+                // the next time it is opened; this flag drives that.
+                phoneAudioLost = true;
+                String why = Build.VERSION.SDK_INT >= 35 ? " (Android 15 ends capture when the phone locks or the status-bar chip is tapped)" : "";
                 if (settings.micFallback) {
-                    log("phone audio capture stopped by system/user - switching to microphone (fallback is ON)");
+                    log("phone audio capture stopped" + why + " - switching to microphone (fallback is ON)");
                     startMic();
                 } else {
-                    log("phone audio capture stopped by system/user - NOT listening now (mic fallback is OFF); tap PHONE AUDIO again");
+                    log("phone audio capture stopped" + why + " - NOT listening now; open the app to share again");
                     stopOutput("phone audio stopped");
                 }
                 postDevices();

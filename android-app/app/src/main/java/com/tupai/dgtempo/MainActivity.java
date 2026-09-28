@@ -65,6 +65,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             reportSelfWindow();
             onDevices();
             onState();
+            reofferPhoneAudio();
             StringBuilder sb = new StringBuilder();
             synchronized (svc.logLines) { for (String l : svc.logLines) sb.append(l).append('\n'); }
             tvLog.setText(sb.toString());
@@ -216,6 +217,23 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         super.onResume();
         refreshPipParams();
         reportSelfWindow();
+        reofferPhoneAudio();
+    }
+
+    /** The system ended the phone-audio share (Android 15: every screen lock): ask for it again right away. */
+    private void reofferPhoneAudio() {
+        if (svc == null || !svc.phoneAudioLost) return;
+        svc.phoneAudioLost = false;
+        if (svc.audioRunning) return;                 // user already switched to the microphone
+        onLog(getString(R.string.phone_audio_reoffer));
+        requestPhoneAudio();
+    }
+
+    /** Android 15 stops the phone-audio capture on every screen lock, so keep the screen awake while it runs. */
+    private void keepScreenOnWhilePhoneAudio() {
+        boolean on = svc != null && "phone".equals(svc.audioSource);
+        if (on) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        else getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     @Override
@@ -754,6 +772,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         if (svc == null) return;
         tvSource.setText("phone".equals(svc.audioSource) ? R.string.src_now_phone
                 : "mic".equals(svc.audioSource) ? R.string.src_now_mic : R.string.src_now_none);
+        keepScreenOnWhilePhoneAudio();
         llDevices.removeAllViews();
         // connected / connecting devices first (they stop advertising, so a new scan would drop them), then scan results
         java.util.List<BeatService.Found> rows = new ArrayList<>();

@@ -152,4 +152,5 @@
     <string name="x_vib_follow">开：震动强度随节奏在最小与最大之间变化。关：固定强度。</string>
     <string name="x_pip">离开 App 时显示一个小窗：BPM、声音、下一次强度，以及逐渐填满、预示下一次脉冲的进度条。</string>
     <string name="src_share_note">系统询问共享内容时请选择"整个屏幕"，只共享单个应用往往不起作用。屏幕内容不会离开手机：画面只在内存中逐帧比较，从不保存或上传。源代码公开，你可以自己编译。</string>
+    <string name="phone_audio_reoffer">安卓已停止手机内部音频（锁屏时会中断）。正在重新请求共享屏幕…</string>
 </resources>
