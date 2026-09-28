@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.DGTempo" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">#FF7A00</item>
+        <item name="colorPrimaryDark">#C25E00</item>
+        <item name="colorAccent">#4FC3F7</item>
+        <item name="android:windowBackground">#101014</item>
+        <item name="android:statusBarColor">#101014</item>
+    </style>
+</resources>

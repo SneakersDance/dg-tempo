@@ -1,0 +1,113 @@
+<resources>
+    <string name="app_name">DG Tempo</string>
+    <string name="btn_language">EN / 中文 / 日本語</string>
+
+    <string name="state_no_device">デバイス未接続</string>
+    <string name="state_armed">動作中</string>
+    <string name="state_stopped">停止中</string>
+    <string name="state_mic_off">音声なし</string>
+    <string name="bar_unknown">小節 ?</string>
+    <string name="bar_n">小節 %d</string>
+    <string name="bpm_none">— BPM</string>
+    <string name="status_fmt">%1$s  %2$s  %3$s  パルス %4$d</string>
+    <string name="btn_arm">開始\nパルス出力</string>
+    <string name="btn_stop">停止</string>
+    <string name="btn_test">テスト\nパルス</string>
+
+    <string name="step1">ステップ 1 · 音楽はどこから？</string>
+    <string name="src_phone_btn">スマホ内部音声\nこの端末で再生中の動画・音楽</string>
+    <string name="src_mic_btn">マイク\n部屋・スピーカー・ダンスフロア</string>
+    <string name="src_now_mic">入力：マイク</string>
+    <string name="src_now_phone">入力：スマホ内部音声（端末が再生している音）</string>
+    <string name="src_now_none">入力なし</string>
+    <string name="src_hint">「スマホ内部音声」は動画アプリに切り替えても動き続けます。画面／音声キャプチャの許可を求められます。マイクではスマホ内蔵スピーカーの低音は拾えません。</string>
+
+    <string name="step2">ステップ 2 · デバイスを接続</string>
+    <string name="btn_scan">Coyote / Opossum を検索</string>
+    <string name="no_devices">デバイスがありません — 「検索」をタップ</string>
+    <string name="scanning">検索中…</string>
+    <string name="dev_coyote">Coyote（電気刺激）</string>
+    <string name="dev_opossum">Opossum（振動）</string>
+    <string name="connected">接続済み</string>
+    <string name="connecting">接続中…</string>
+    <string name="btn_connect">接続</string>
+    <string name="btn_disconnect">切断</string>
+    <string name="help_coyote">Coyote が見つからない／接続できない場合：まず DG-Lab 公式アプリを終了し、本体を再起動します。電源を切り、入れ直し、A と B のダイヤルを逆方向に回して、オオカミの目が 5 回点滅したらペアリングモードです。その後「検索」をタップ。</string>
+    <string name="help_opossum">Opossum が見つからない場合：電源ボタンを 5 回押して Bluetooth アイコンが黄色になったら「検索」をタップ。</string>
+
+    <string name="step3">ステップ 3 · 強さ</string>
+    <string name="sec_estim">Coyote 電気刺激</string>
+    <string name="coy_max">電気刺激の最大強度（上限、本体にも保存）</string>
+    <string name="coy_base">遅いテンポでの強度</string>
+    <string name="coy_auto">速い曲ほど強く（遅いテンポの値から最大まで）</string>
+    <string name="coy_intensity">パルスの強さ</string>
+    <string name="coy_freq">パルスの周波数</string>
+    <string name="coy_channel_b">B チャンネルも出力</string>
+    <string name="sec_vib">Opossum 振動</string>
+    <string name="vib_follow">速い曲ほど強く振動</string>
+    <string name="vib_manual">振動の強さ（固定）</string>
+    <string name="vib_min">遅いテンポでの振動</string>
+    <string name="vib_max">速いテンポでの振動（上限）</string>
+
+    <string name="step4">ステップ 4 · ビートに合わせる（詳細）</string>
+    <string name="btn_advanced_show">タイミング設定を表示</string>
+    <string name="btn_advanced_hide">タイミング設定を隠す</string>
+    <string name="timing_latency">パルスを早く／遅く（遅延補正）</string>
+    <string name="timing_burst">パルスの長さ</string>
+    <string name="timing_every">毎拍で出力（オフ = 各小節の 1 拍目のみ）</string>
+    <string name="btn_rotate">拍がずれている？ 強拍を 1 拍ずらす</string>
+    <string name="timing_sens">キック検出の感度（低いほど敏感）</string>
+    <string name="timing_bpm_lo">遅いテンポ = この BPM</string>
+    <string name="timing_bpm_hi">速いテンポ = この BPM</string>
+
+    <string name="sec_background">バックグラウンドで動かし続ける</string>
+    <string name="btn_battery">バックグラウンドを許可（電池設定）</string>
+    <string name="battery_ok">すでに許可されています</string>
+    <string name="btn_quit">終了 — 切断して停止</string>
+    <string name="sec_log">ログ</string>
+    <string name="perm_mic_needed">マイクの権限が必要です。設定で許可してから開き直してください。</string>
+
+    <string name="notif_title">DG Tempo は聴いています</string>
+    <string name="notif_stop">パルス停止</string>
+    <string name="notif_stopped">停止中 — 出力なし</string>
+    <string name="dev_pulse_on">パルス ON</string>
+    <string name="dev_pulse_off">パルス OFF（接続は維持）</string>
+    <string name="phone_audio_denied">スマホ内部音声のキャプチャが許可されませんでした — マイクを使用します。</string>
+    <string name="wave_pick">波形</string>
+    <string name="wave_mode_beat">拍ごとに波形を再生（毎拍リスタート、長さ＝「パルスの長さ」）</string>
+    <string name="wave_mode_cont">公式アプリのように連続再生（強さはテンポに追従）</string>
+    <string name="sens_level">ビート感度</string>
+    <string name="sens_hint">デバイスごとに感度を設定できます。左 = 厳格：確実にロックした安定ビートでのみ出力（Coyote 向け）。右 = 敏感：早めに、緩いビートでも出力（Opossum 向け）。ヘッダーの ♪ は検出キック数、ロック %% は周期性、C: / O: の行は各デバイスの出力テンポ範囲と現在の状態（▶ 出力中、✗bpm 範囲外、✗lock ビートが不安定、· ビートなし）。</string>
+    <string name="pulse_rate">パルスの頻度</string>
+    <string name="pulse_rate_downbeat">小節ごと（1 拍目のみ）</string>
+    <string name="pulse_rate_beat">毎拍</string>
+    <string name="pulse_rate_2">1 拍に 2 回</string>
+    <string name="pulse_rate_4">1 拍に 4 回</string>
+    <string name="vib_burst">振動パルスの長さ（モーターは 150 ms 以上で体感）</string>
+    <string name="vib_intensity">振動の強さ（波形）</string>
+    <string name="bpm_min">このテンポ以上でのみ出力</string>
+    <string name="bpm_max">…このテンポまで</string>
+    <string name="bpm_any">制限なし</string>
+    <string name="vib_any_music">音楽が鳴れば振動（キックごと、ビートロック不要）。オフ = 下のテンポ範囲でのみ</string>
+    <string name="any_sound">音があれば</string>
+    <string name="vib_both_motors">両方のバイブ（A と B）を駆動</string>
+    <string name="pip_switch">アプリを離れたら他のアプリの上に小窓（ピクチャ・イン・ピクチャ）で BPM と発火状況を表示</string>
+    <string name="lang_en">English</string>
+    <string name="lang_zh">中文</string>
+    <string name="lang_ja">日本語</string>
+    <string name="btn_pip_now">小窓\n表示</string>
+    <string name="mic_fallback">スマホ内部音声が止まった／拒否されたら自動でマイクに切替（オフ = 入力停止。「マイク」を押さない限り周囲の音では動作しない）</string>
+    <string name="coy_max_wait">時間窓 X（X 秒ごとに 1 回分を積算）</string>
+    <string name="off">オフ</string>
+    <string name="coy_timer">Coyote タイマー</string>
+    <string name="timer_off">タイマーなし</string>
+    <string name="timer_peak">X 秒ごと、窓内の BPM 最高点で出力（最大 3 回まで積算。3 回なら最大強度）</string>
+    <string name="timer_random">ランダム間隔で出力</string>
+    <string name="timer_rand_min">ランダム間隔：最短</string>
+    <string name="timer_rand_max">ランダム間隔：最長</string>
+    <string name="motion_switch">画面の動きも検出（スマホ内部音声モード。共有画面を 80×80 で読み、フレーム差分＝動き）</string>
+    <string name="motion_sens">動き検出の感度</string>
+    <string name="motion_coyote">Coyote は画面の動きで出力</string>
+    <string name="motion_opossum">Opossum は画面の動きで出力</string>
+    <string name="coy_random_level">パルスごとにランダムな強さ：基本〜最大の間、ほぼ低め、約 4 回に 1 回は最大付近（テンポ連動より優先）</string>
+</resources>

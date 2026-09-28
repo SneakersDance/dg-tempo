@@ -12,6 +12,45 @@ tempo + downbeat tracking):
 - **`beatsync_socket.py` — SOCKET v2 via the official app.** Kept for reference; the app relay
   adds too much jitter for tight beat sync, and it cannot drive the Opossum.
 
+## Android app (native Java) — `android-app/`
+
+The phone version of the direct-BLE controller. No web layer: a foreground service owns the audio
+thread, the tempo tracker and the 100 ms BLE frame loop, so it keeps pulsing while you watch
+videos in other apps or the screen is off. UI in English, 中文 and 日本語 (button top-right).
+
+```bash
+cd android-app
+JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" ./gradlew testDebugUnitTest assembleDebug
+# APK: app/build/outputs/apk/debug/app-debug.apk  (copy also kept at ../dg-tempo-debug.apk)
+# wireless install: python3 -m http.server 3001 in a folder with the APK, open http://<laptop-ip>:3001 on the phone
+```
+
+**Step 1 — audio source.** *Phone audio* captures what the phone itself plays (videos, music apps)
+via Android playback capture: full bass, no room noise, keeps working when you switch apps.
+Android asks for screen/audio capture consent. DRM apps (Netflix etc.) deliver silence; YouTube,
+browsers and local players work. *Microphone* is for a real speaker system or the dance floor.
+The mic cannot hear the bass of the phone's own speaker, which is why pulses stopped when
+switching to a video before this option existed.
+
+**Step 2 — devices.** Close the DG-Lab app, SCAN, CONNECT each device. Each connected device
+has a *Pulses ON/OFF* switch so you can mute one while keeping it connected. The app shows the
+pairing recipes: Coyote → power off, on, turn wheels A and B in opposite directions until the
+wolf eye blinks 5×; Opossum → press power 5× until the Bluetooth icon is yellow. Connects retry
+3× automatically and the log decodes GATT status codes (133 = scan running / held elsewhere).
+
+**Step 3 — strength and waveform.** Per device: a waveform picker with the **official DG-Lab
+library** (24 Coyote waveforms, 20 Opossum waveforms, from `dungeonlab-open/dglab-kit`, GPL-3.0)
+plus the simple flat pulse. Two play modes: *on each beat* (the waveform restarts at every beat /
+downbeat and runs for "Pulse length", up to 3 s) or *continuous* (loops like the official app
+while strength still follows tempo). Coyote max strength is a hard limit written into the box as
+its BF soft cap. Opossum strength is fixed or tempo-mapped.
+
+**Step 4 — timing (advanced).** Latency compensation, pulse length, every-beat vs downbeat,
+shift downbeat, kick sensitivity, BPM range for the strength map. Settings persist.
+
+The notification shows live BPM, lock, per-device strength and audio level, and has a STOP
+action. Tap *Allow background* once so the phone does not kill the service off-screen.
+
 ## Direct BLE quick start
 
 ```bash

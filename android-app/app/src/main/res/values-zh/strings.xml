@@ -1,0 +1,113 @@
+<resources>
+    <string name="app_name">DG Tempo</string>
+    <string name="btn_language">EN / 中文 / 日本語</string>
+
+    <string name="state_no_device">未连接设备</string>
+    <string name="state_armed">运行中</string>
+    <string name="state_stopped">已停止</string>
+    <string name="state_mic_off">无音频</string>
+    <string name="bar_unknown">小节 ?</string>
+    <string name="bar_n">小节 %d</string>
+    <string name="bpm_none">— BPM</string>
+    <string name="status_fmt">%1$s  %2$s  %3$s  脉冲 %4$d</string>
+    <string name="btn_arm">开始\n输出脉冲</string>
+    <string name="btn_stop">停止</string>
+    <string name="btn_test">测试\n脉冲</string>
+
+    <string name="step1">第 1 步 · 音乐从哪里来？</string>
+    <string name="src_phone_btn">手机内部音频\n本机播放的视频和音乐</string>
+    <string name="src_mic_btn">麦克风\n房间、音箱、舞池</string>
+    <string name="src_now_mic">正在监听：麦克风</string>
+    <string name="src_now_phone">正在监听：手机内部音频（本机播放的声音）</string>
+    <string name="src_now_none">未监听</string>
+    <string name="src_hint">切换到视频 App 后，"手机内部音频"仍会持续工作；系统会请求允许录屏/录音。麦克风听不到手机自带扬声器的低音。</string>
+
+    <string name="step2">第 2 步 · 连接设备</string>
+    <string name="btn_scan">搜索 郊狼 / 负鼠</string>
+    <string name="no_devices">还没有设备 — 点击"搜索"</string>
+    <string name="scanning">搜索中…</string>
+    <string name="dev_coyote">郊狼（电击）</string>
+    <string name="dev_opossum">负鼠（震动）</string>
+    <string name="connected">已连接</string>
+    <string name="connecting">连接中…</string>
+    <string name="btn_connect">连接</string>
+    <string name="btn_disconnect">断开</string>
+    <string name="help_coyote">找不到郊狼或无法连接？先关闭 DG-Lab 官方 App，然后重启主机：关机，再开机，把 A、B 两个旋钮向相反方向转动，直到狼眼闪烁 5 次 — 即进入配对模式。然后点击"搜索"。</string>
+    <string name="help_opossum">找不到负鼠？连按 5 次电源键，直到蓝牙图标变为黄色，然后点击"搜索"。</string>
+
+    <string name="step3">第 3 步 · 强度</string>
+    <string name="sec_estim">郊狼 电击</string>
+    <string name="coy_max">电击最大强度（硬上限，同时写入主机）</string>
+    <string name="coy_base">慢节奏时的强度</string>
+    <string name="coy_auto">音乐越快越强（从慢节奏强度到最大强度）</string>
+    <string name="coy_intensity">脉冲强度</string>
+    <string name="coy_freq">脉冲频率</string>
+    <string name="coy_channel_b">同时输出 B 通道</string>
+    <string name="sec_vib">负鼠 震动</string>
+    <string name="vib_follow">音乐越快震动越强</string>
+    <string name="vib_manual">震动强度（固定）</string>
+    <string name="vib_min">慢节奏时的震动</string>
+    <string name="vib_max">快节奏时的震动（上限）</string>
+
+    <string name="step4">第 4 步 · 踩准节拍（高级）</string>
+    <string name="btn_advanced_show">显示节拍设置</string>
+    <string name="btn_advanced_hide">隐藏节拍设置</string>
+    <string name="timing_latency">脉冲提前 / 延后（延迟补偿）</string>
+    <string name="timing_burst">脉冲长度</string>
+    <string name="timing_every">每一拍都输出（关闭 = 只在每小节第一拍）</string>
+    <string name="btn_rotate">拍子不对？把强拍往后移一拍</string>
+    <string name="timing_sens">鼓点灵敏度（越低越灵敏）</string>
+    <string name="timing_bpm_lo">慢节奏 = 此 BPM</string>
+    <string name="timing_bpm_hi">快节奏 = 此 BPM</string>
+
+    <string name="sec_background">后台持续运行</string>
+    <string name="btn_battery">允许后台运行（电池设置）</string>
+    <string name="battery_ok">已允许后台运行</string>
+    <string name="btn_quit">退出 — 断开并停止</string>
+    <string name="sec_log">日志</string>
+    <string name="perm_mic_needed">需要麦克风权限。请在系统设置中授权后重新打开。</string>
+
+    <string name="notif_title">DG Tempo 正在监听</string>
+    <string name="notif_stop">停止脉冲</string>
+    <string name="notif_stopped">已停止 — 无输出</string>
+    <string name="dev_pulse_on">脉冲 开</string>
+    <string name="dev_pulse_off">脉冲 关（保持连接）</string>
+    <string name="phone_audio_denied">未允许捕获手机内部音频 — 继续使用麦克风。</string>
+    <string name="wave_pick">波形</string>
+    <string name="wave_mode_beat">每一拍播放波形（每拍重新开始，时长 = "脉冲长度"）</string>
+    <string name="wave_mode_cont">连续播放波形，与官方 App 相同（强度仍随节奏变化）</string>
+    <string name="sens_level">节拍灵敏度</string>
+    <string name="sens_hint">每个设备有各自的灵敏度。左 = 严格：只在节拍稳定、可靠锁定时才输出（建议郊狼用）。右 = 灵敏：更早、在较松散的节拍上也输出（负鼠可用）。标题栏中 ♪ 为检测到的鼓点数，锁定 %% 为周期性，C: / O: 一行显示各设备的触发 BPM 范围及当前状态（▶ 正在输出，✗bpm 节奏超出范围，✗lock 节拍不够稳定，· 无节拍）。</string>
+    <string name="pulse_rate">脉冲频率</string>
+    <string name="pulse_rate_downbeat">每小节一次（仅第一拍）</string>
+    <string name="pulse_rate_beat">每一拍</string>
+    <string name="pulse_rate_2">每拍两次</string>
+    <string name="pulse_rate_4">每拍四次</string>
+    <string name="vib_burst">震动脉冲长度（马达至少需要 150 ms 才有感觉）</string>
+    <string name="vib_intensity">震动强度（波形）</string>
+    <string name="bpm_min">仅在节奏不低于此 BPM 时输出</string>
+    <string name="bpm_max">…且不高于此 BPM</string>
+    <string name="bpm_any">不限</string>
+    <string name="vib_any_music">任何音乐声都震动（每个鼓点，无需锁定节拍）。关闭 = 仅在下方节奏范围内触发</string>
+    <string name="any_sound">任何声音</string>
+    <string name="vib_both_motors">同时驱动两个震动器（A 和 B）</string>
+    <string name="pip_switch">离开应用时在其他应用上方显示小窗（画中画）：BPM 与触发进度</string>
+    <string name="lang_en">English</string>
+    <string name="lang_zh">中文</string>
+    <string name="lang_ja">日本語</string>
+    <string name="btn_pip_now">小窗\n模式</string>
+    <string name="mic_fallback">手机内部音频停止或被拒绝时，自动切换到麦克风（关闭 = 停止监听；除非你点击"麦克风"，否则环境声音不会触发设备）</string>
+    <string name="coy_max_wait">时间窗 X（每 X 秒累计一次输出）</string>
+    <string name="off">关</string>
+    <string name="coy_timer">郊狼定时输出</string>
+    <string name="timer_off">定时关闭</string>
+    <string name="timer_peak">每隔 X 秒，在窗口内 BPM 最高点输出（最多累计 3 次；3 次时以最大强度输出）</string>
+    <string name="timer_random">随机间隔输出</string>
+    <string name="timer_rand_min">随机间隔：最短</string>
+    <string name="timer_rand_max">随机间隔：最长</string>
+    <string name="motion_switch">同时检测屏幕画面运动（手机内部音频模式；以 80×80 读取共享画面，帧间变化 = 运动）</string>
+    <string name="motion_sens">画面运动灵敏度</string>
+    <string name="motion_coyote">郊狼随画面运动输出</string>
+    <string name="motion_opossum">负鼠随画面运动输出</string>
+    <string name="coy_random_level">每次脉冲随机强度：在基础与最大之间，大多偏低，约四分之一接近最大（覆盖节奏映射）</string>
+</resources>

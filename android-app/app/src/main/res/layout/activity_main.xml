@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+<com.tupai.dgtempo.PipView android:id="@+id/pipView"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:visibility="gone"/>
+
+<LinearLayout android:id="@+id/mainRoot"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:fitsSystemWindows="true">
+
+    <!-- sticky header: status + big ARM/STOP -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="12dp" android:background="#18181E">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+            <TextView android:id="@+id/tvStatus" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:textSize="14sp" android:textColor="#EEEEEE" android:fontFamily="monospace" android:text="…"/>
+            <Spinner android:id="@+id/spLanguage" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+        </LinearLayout>
+        <TextView android:id="@+id/tvBpm" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="34sp" android:textStyle="bold" android:textColor="#FF7A00" android:text="@string/bpm_none"/>
+        <ProgressBar android:id="@+id/meter" style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent" android:layout_height="8dp" android:max="100" android:progress="0"/>
+        <com.tupai.dgtempo.OutputView android:id="@+id/outCoyote"
+            android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="6dp"/>
+        <com.tupai.dgtempo.OutputView android:id="@+id/outOpossum"
+            android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="4dp"/>
+        <com.tupai.dgtempo.MotionView android:id="@+id/motionView" android:visibility="gone"
+            android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="4dp"/>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:layout_marginTop="8dp">
+            <Button android:id="@+id/btnArm" android:layout_width="0dp" android:layout_height="68dp"
+                android:layout_weight="2" android:textSize="18sp" android:text="@string/btn_arm"/>
+            <Button android:id="@+id/btnTest" android:layout_width="0dp" android:layout_height="68dp"
+                android:layout_weight="1" android:layout_marginStart="8dp" android:text="@string/btn_test"/>
+            <Button android:id="@+id/btnPip" android:layout_width="0dp" android:layout_height="68dp"
+                android:layout_weight="1" android:layout_marginStart="8dp" android:text="@string/btn_pip_now"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="12dp">
+
+            <TextView style="@style/SectionTitle" android:text="@string/step1"/>
+            <TextView android:id="@+id/tvSource" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#8BC34A" android:text="@string/src_now_mic"/>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <Button android:id="@+id/btnPhoneAudio" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/src_phone_btn"/>
+                <Button android:id="@+id/btnMic" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/src_mic_btn"/>
+            </LinearLayout>
+            <TextView style="@style/Hint" android:text="@string/src_hint"/>
+            <LinearLayout android:id="@+id/llAudio" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+
+            <TextView style="@style/SectionTitle" android:text="@string/step2"/>
+            <Button android:id="@+id/btnScan" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_scan"/>
+            <LinearLayout android:id="@+id/llDevices" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+            <TextView style="@style/Hint" android:text="@string/help_coyote"/>
+            <TextView style="@style/Hint" android:text="@string/help_opossum"/>
+
+            <TextView style="@style/SectionTitle" android:text="@string/step3"/>
+            <LinearLayout android:id="@+id/llRate" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+            <TextView style="@style/Hint" android:text="@string/sens_hint"/>
+            <TextView style="@style/SubTitle" android:text="@string/sec_estim"/>
+            <LinearLayout android:id="@+id/llCoyote" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+            <TextView style="@style/SubTitle" android:text="@string/sec_vib"/>
+            <LinearLayout android:id="@+id/llOpossum" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+
+            <TextView style="@style/SectionTitle" android:text="@string/step4"/>
+            <Button android:id="@+id/btnAdvanced" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_advanced_show"/>
+            <LinearLayout android:id="@+id/llTiming" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone"/>
+
+            <TextView style="@style/SectionTitle" android:text="@string/sec_background"/>
+            <Button android:id="@+id/btnBattery" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_battery"/>
+            <Button android:id="@+id/btnQuit" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_quit"/>
+
+            <TextView style="@style/SectionTitle" android:text="@string/sec_log"/>
+            <TextView android:id="@+id/tvLog" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:fontFamily="monospace" android:textSize="11sp" android:textColor="#BBBBBB" android:layout_marginBottom="24dp"/>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
+</FrameLayout>

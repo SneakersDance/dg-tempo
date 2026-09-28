@@ -1,0 +1,113 @@
+<resources>
+    <string name="app_name">DG Tempo</string>
+    <string name="btn_language">EN / 中文 / 日本語</string>
+
+    <string name="state_no_device">NO DEVICE</string>
+    <string name="state_armed">ARMED</string>
+    <string name="state_stopped">STOPPED</string>
+    <string name="state_mic_off">AUDIO OFF</string>
+    <string name="bar_unknown">bar ?</string>
+    <string name="bar_n">bar %d</string>
+    <string name="bpm_none">— BPM</string>
+    <string name="status_fmt">%1$s  %2$s  %3$s  pulses %4$d</string>
+    <string name="btn_arm">ARM\nstart pulses</string>
+    <string name="btn_stop">STOP</string>
+    <string name="btn_test">TEST\nPULSE</string>
+
+    <string name="step1">Step 1 · Where is the music?</string>
+    <string name="src_phone_btn">PHONE AUDIO\nvideos &amp; music playing on this phone</string>
+    <string name="src_mic_btn">MICROPHONE\nroom, speakers, dance floor</string>
+    <string name="src_now_mic">Listening with: microphone</string>
+    <string name="src_now_phone">Listening with: phone audio (what the phone plays)</string>
+    <string name="src_now_none">Not listening</string>
+    <string name="src_hint">Phone audio keeps working when you switch to a video app; Android will ask to allow screen/audio capture. The microphone cannot hear the bass of the phone\'s own speaker.</string>
+
+    <string name="step2">Step 2 · Connect your devices</string>
+    <string name="btn_scan">SCAN FOR COYOTE / OPOSSUM</string>
+    <string name="no_devices">No devices yet — tap SCAN</string>
+    <string name="scanning">Scanning…</string>
+    <string name="dev_coyote">Coyote (e-stim)</string>
+    <string name="dev_opossum">Opossum (vibration)</string>
+    <string name="connected">connected</string>
+    <string name="connecting">connecting…</string>
+    <string name="btn_connect">CONNECT</string>
+    <string name="btn_disconnect">DISCONNECT</string>
+    <string name="help_coyote">Coyote not found or won\'t connect? Close the DG-Lab app, then power-cycle the box: turn it OFF, turn it ON, and turn the A and B wheels in opposite directions until the wolf eye blinks 5 times — that is pairing mode. Then SCAN.</string>
+    <string name="help_opossum">Opossum not found? Press its power button 5 times until the Bluetooth icon turns yellow, then SCAN.</string>
+
+    <string name="step3">Step 3 · How strong?</string>
+    <string name="sec_estim">Coyote e-stim</string>
+    <string name="coy_max">MAX e-stim strength (hard limit, also stored in the box)</string>
+    <string name="coy_base">Strength at slow tempo</string>
+    <string name="coy_auto">Faster music = stronger (from slow-tempo value up to MAX)</string>
+    <string name="coy_intensity">Pulse intensity</string>
+    <string name="coy_freq">Pulse frequency</string>
+    <string name="coy_channel_b">Also drive channel B</string>
+    <string name="sec_vib">Opossum vibration</string>
+    <string name="vib_follow">Faster music = stronger vibration</string>
+    <string name="vib_manual">Vibration strength (fixed)</string>
+    <string name="vib_min">Vibration at slow tempo</string>
+    <string name="vib_max">Vibration at fast tempo (limit)</string>
+
+    <string name="step4">Step 4 · Feel it on the beat (advanced)</string>
+    <string name="btn_advanced_show">SHOW TIMING SETTINGS</string>
+    <string name="btn_advanced_hide">HIDE TIMING SETTINGS</string>
+    <string name="timing_latency">Pulse earlier / later (latency compensation)</string>
+    <string name="timing_burst">Pulse length</string>
+    <string name="timing_every">Pulse on every beat (off = only the first beat of each bar)</string>
+    <string name="btn_rotate">WRONG BEAT? SHIFT DOWNBEAT BY ONE</string>
+    <string name="timing_sens">Kick sensitivity (lower = detects more)</string>
+    <string name="timing_bpm_lo">Slow tempo = this BPM</string>
+    <string name="timing_bpm_hi">Fast tempo = this BPM</string>
+
+    <string name="sec_background">Keep running in background</string>
+    <string name="btn_battery">ALLOW BACKGROUND (BATTERY SETTING)</string>
+    <string name="battery_ok">Background already allowed</string>
+    <string name="btn_quit">QUIT — disconnect and stop</string>
+    <string name="sec_log">Log</string>
+    <string name="perm_mic_needed">Microphone permission is required. Grant it in Settings and reopen.</string>
+
+    <string name="notif_title">DG Tempo is listening</string>
+    <string name="notif_stop">STOP PULSES</string>
+    <string name="notif_stopped">Stopped — no output</string>
+    <string name="dev_pulse_on">Pulses ON</string>
+    <string name="dev_pulse_off">Pulses OFF (stays connected)</string>
+    <string name="phone_audio_denied">Phone audio capture was not allowed — still using the microphone.</string>
+    <string name="wave_pick">Waveform</string>
+    <string name="wave_mode_beat">Play waveform on each beat (restarts every beat, length = "Pulse length")</string>
+    <string name="wave_mode_cont">Play waveform continuously, like the official app (strength still follows tempo)</string>
+    <string name="sens_level">Beat sensitivity</string>
+    <string name="sens_hint">Each device has its own sensitivity. Left = strict: fires only on a confidently locked, steady beat (use for the Coyote). Right = eager: fires sooner and on looser beats (fine for the Opossum). In the header, ♪ counts detected kicks, lock %% is how periodic they are, and the C: / O: line shows each device\'s trigger tempo range and whether it fires now (▶ firing, ✗bpm outside its range, ✗lock beat not solid enough for it, · no beat).</string>
+    <string name="pulse_rate">How often to pulse</string>
+    <string name="pulse_rate_downbeat">Once per bar (first beat only)</string>
+    <string name="pulse_rate_beat">Every beat</string>
+    <string name="pulse_rate_2">Twice per beat</string>
+    <string name="pulse_rate_4">Four times per beat</string>
+    <string name="vib_burst">Vibration pulse length (motor needs ≥ 150 ms to be felt)</string>
+    <string name="vib_intensity">Vibration intensity</string>
+    <string name="bpm_min">Fire only from this tempo</string>
+    <string name="bpm_max">…up to this tempo</string>
+    <string name="bpm_any">any</string>
+    <string name="vib_any_music">Vibrate on any music sound (every kick, no beat lock needed). Off = only at the tempo range below</string>
+    <string name="any_sound">any sound</string>
+    <string name="vib_both_motors">Drive both vibrators (A and B)</string>
+    <string name="pip_switch">Show a small BPM / readiness window over other apps (picture-in-picture) when you leave the app</string>
+    <string name="lang_en">English</string>
+    <string name="lang_zh">中文</string>
+    <string name="lang_ja">日本語</string>
+    <string name="btn_pip_now">MINI\nWINDOW</string>
+    <string name="mic_fallback">If phone audio stops or is refused, switch to the microphone automatically (off = stop listening; room sound never fires the devices unless you tap MICROPHONE)</string>
+    <string name="coy_max_wait">Window X (one pulse owed per X seconds)</string>
+    <string name="off">off</string>
+    <string name="coy_timer">Coyote timer</string>
+    <string name="timer_off">Timer off</string>
+    <string name="timer_peak">Every X s, fired at the highest BPM in the window (accumulates up to 3; 3 = at MAX)</string>
+    <string name="timer_random">Fire at random intervals</string>
+    <string name="timer_rand_min">Random interval: at least</string>
+    <string name="timer_rand_max">Random interval: at most</string>
+    <string name="motion_switch">Also detect screen movement (phone audio mode; the shared screen is read at 80×80, frame-to-frame change = motion)</string>
+    <string name="motion_sens">Movement sensitivity</string>
+    <string name="motion_coyote">Coyote fires on screen movement</string>
+    <string name="motion_opossum">Opossum fires on screen movement</string>
+    <string name="coy_random_level">Random level per pulse: between base and MAX, mostly low, about 1 in 4 near MAX (overrides tempo mapping)</string>
+</resources>

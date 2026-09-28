@@ -1,0 +1,41 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.tupai.dgtempo'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.tupai.dgtempo'
+        minSdk 26
+        targetSdk 35
+        versionCode 32
+        versionName '0.32'
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    testOptions { unitTests.returnDefaultValues = true }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    testImplementation 'junit:junit:4.13.2'
+}
+
+// AndroidX pulls kotlin-stdlib-jdk7/jdk8 1.6 next to kotlin-stdlib 1.8 (duplicate classes). Align them.
+configurations.configureEach {
+    resolutionStrategy {
+        force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22',
+              'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22',
+              'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
+    }
+}
