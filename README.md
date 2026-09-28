@@ -1,5 +1,9 @@
 # dg-tempo — Coyote 3.0 beat-sync
 
+☕ Like the app? It's free — but a lot of tokens were burned testing it. Consider a crypto donation:
+
+[![Cryptocurrency & Bitcoin donation button by NOWPayments](https://nowpayments.io/images/embeds/donation-button-white.svg)](https://nowpayments.io/donation?api_key=ca26d24c-1521-4563-9cea-a3a9d9098647)
+
 ## Android app (native Java) — `android-app/`
 
 **DG Tempo** turns whatever you are watching or listening to into pulses on your DG-Lab gear. Pair
@@ -34,23 +38,23 @@ JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" ./gradle
 # wireless install: python3 -m http.server 3001 in a folder with the APK, open http://<laptop-ip>:3001 on the phone
 ```
 
-**Step 1 — audio source.** *Phone audio* captures what the phone itself plays (videos, music apps)
+**Step 1 — audio source.** _Phone audio_ captures what the phone itself plays (videos, music apps)
 via Android playback capture: full bass, no room noise, keeps working when you switch apps.
 Android asks for screen/audio capture consent. DRM apps (Netflix etc.) deliver silence; YouTube,
-browsers and local players work. *Microphone* is for a real speaker system or the dance floor.
+browsers and local players work. _Microphone_ is for a real speaker system or the dance floor.
 The mic cannot hear the bass of the phone's own speaker, which is why pulses stopped when
 switching to a video before this option existed.
 
 **Step 2 — devices.** Close the DG-Lab app, SCAN, CONNECT each device. Each connected device
-has a *Pulses ON/OFF* switch so you can mute one while keeping it connected. The app shows the
+has a _Pulses ON/OFF_ switch so you can mute one while keeping it connected. The app shows the
 pairing recipes: Coyote → power off, on, turn wheels A and B in opposite directions until the
 wolf eye blinks 5×; Opossum → press power 5× until the Bluetooth icon is yellow. Connects retry
 3× automatically and the log decodes GATT status codes (133 = scan running / held elsewhere).
 
 **Step 3 — strength and waveform.** Per device: a waveform picker with the **official DG-Lab
 library** (24 Coyote waveforms, 20 Opossum waveforms, from `dungeonlab-open/dglab-kit`, GPL-3.0)
-plus the simple flat pulse. Two play modes: *on each beat* (the waveform restarts at every beat /
-downbeat and runs for "Pulse length", up to 3 s) or *continuous* (loops like the official app
+plus the simple flat pulse. Two play modes: _on each beat_ (the waveform restarts at every beat /
+downbeat and runs for "Pulse length", up to 3 s) or _continuous_ (loops like the official app
 while strength still follows tempo). Coyote max strength is a hard limit written into the box as
 its BF soft cap. Opossum strength is fixed or tempo-mapped.
 
@@ -58,4 +62,38 @@ its BF soft cap. Opossum strength is fixed or tempo-mapped.
 shift downbeat, kick sensitivity, BPM range for the strength map. Settings persist.
 
 The notification shows live BPM, lock, per-device strength and audio level, and has a STOP
-action. Tap *Allow background* once so the phone does not kill the service off-screen.
+action. Tap _Allow background_ once so the phone does not kill the service off-screen.
+
+## Release pipeline (GitHub Actions → Vercel Blob → sneakersdance.com)
+
+`.github/workflows/android-release.yml` runs on every push to `main` that touches `android-app/`
+(or manually via *Run workflow*). It:
+
+1. reads `versionName` / `versionCode` from `android-app/app/build.gradle`;
+2. runs the unit tests and builds a **release** APK, signed with the keystore from the GitHub
+   environment (falls back to the runner's throwaway debug key with a warning);
+3. uploads it to Vercel Blob as `dg-tempo/dg-tempo-v<version>.apk` (fixed name, overwrite allowed);
+4. calls `POST https://sneakersdance.com/api/apk/ci` with a shared secret so the site swaps its
+   homepage download link and deletes the previous blob (only one APK is ever stored);
+5. publishes a GitHub release `v<version>` with the APK attached (that is the version history).
+
+**To ship a build:** bump `versionCode` and `versionName` in `android-app/app/build.gradle`,
+commit, push to `main`. The same version pushed twice overwrites the blob and updates the release.
+
+**GitHub environment `prod`** (Settings → Environments → prod):
+
+| kind   | name                        | value |
+|--------|-----------------------------|-------|
+| secret | `BLOB_READ_WRITE_TOKEN`     | Vercel Blob read-write token |
+| secret | `APK_PUBLISH_SECRET`        | long random string; the same value goes into the Vercel project env as `APK_PUBLISH_SECRET` |
+| secret | `ANDROID_KEYSTORE_B64`      | `base64 -i <keystore> \| tr -d '\n'` |
+| secret | `ANDROID_KEYSTORE_PASSWORD` | keystore password |
+| secret | `ANDROID_KEY_ALIAS`         | key alias |
+| secret | `ANDROID_KEY_PASSWORD`      | key password |
+| var    | `SITE_URL`                  | optional, default `https://sneakersdance.com` |
+
+Android only installs an update over an existing app if both are signed with the **same key**.
+Phones that already have a build from this laptop were signed with `~/.android/debug.keystore`
+(password `android`, alias `androiddebugkey`). To keep those installs updatable, use that file as
+the CI keystore: `base64 -i ~/.android/debug.keystore | tr -d '\n'`. Switching to a proper
+release key later means one uninstall/reinstall on each phone.
