@@ -3,3 +3,6 @@ android-app/.gradle/
 android-app/build/
 android-app/app/build/
 android-app/local.properties
+.github/scripts/node_modules/
+.github/scripts/package-lock.json
+keys/

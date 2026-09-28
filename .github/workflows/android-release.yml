@@ -1,0 +1,133 @@
+name: Android release
+
+# Builds the DG Tempo APK, uploads it to Vercel Blob as dg-tempo/dg-tempo-v<version>.apk,
+# tells sneakersdance.com to point its download link at it, and attaches the APK to a
+# GitHub release tagged v<version>. The version is versionName in android-app/app/build.gradle.
+#
+# GitHub environment "prod" must provide:
+#   secrets: BLOB_READ_WRITE_TOKEN, APK_PUBLISH_SECRET,
+#            ANDROID_KEYSTORE_B64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+#   vars:    SITE_URL (e.g. https://sneakersdance.com)   [optional; defaults below]
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android-app/**"
+      - ".github/workflows/android-release.yml"
+      - ".github/scripts/**"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Also upload to Blob and update the website"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version from build.gradle
+        id: ver
+        run: |
+          NAME=$(grep -oP "versionName '\K[^']+" android-app/app/build.gradle)
+          CODE=$(grep -oP "versionCode \K[0-9]+" android-app/app/build.gradle)
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "Building DG Tempo v$NAME (code $CODE)"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-35 build-tools;35.0.0 platform-tools"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore signing keystore
+        id: ks
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+            echo "signed=keystore secret" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::ANDROID_KEYSTORE_B64 not set - signing with the runner's throwaway debug key; phones will refuse to update over a build signed differently"
+            echo "signed=runner debug key" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Unit tests + build release APK
+        working-directory: android-app
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon testDebugUnitTest assembleRelease
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          OUT="$RUNNER_TEMP/dg-tempo-v${{ steps.ver.outputs.name }}.apk"
+          cp "$APK" "$OUT"
+          echo "APK_PATH=$OUT" >> "$GITHUB_ENV"
+          ls -la "$OUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dg-tempo-v${{ steps.ver.outputs.name }}
+          path: ${{ env.APK_PATH }}
+          retention-days: 30
+
+      - uses: actions/setup-node@v4
+        if: ${{ github.event_name == 'push' || inputs.publish }}
+        with:
+          node-version: "20"
+
+      - name: Upload to Vercel Blob
+        if: ${{ github.event_name == 'push' || inputs.publish }}
+        id: blob
+        working-directory: .github/scripts
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+        run: |
+          npm install --no-audit --no-fund --silent
+          node upload-apk.mjs "$APK_PATH" "dg-tempo/dg-tempo-v${{ steps.ver.outputs.name }}.apk"
+
+      - name: Point sneakersdance.com at the new build
+        if: ${{ github.event_name == 'push' || inputs.publish }}
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://sneakersdance.com' }}
+          APK_PUBLISH_SECRET: ${{ secrets.APK_PUBLISH_SECRET }}
+        run: |
+          if [ -z "$APK_PUBLISH_SECRET" ]; then echo "::error::APK_PUBLISH_SECRET not set"; exit 1; fi
+          BODY=$(jq -n --arg url "${{ steps.blob.outputs.url }}" --argjson size "${{ steps.blob.outputs.size }}" \
+                 --arg version "${{ steps.ver.outputs.name }}" '{url:$url,sizeBytes:$size,version:$version}')
+          HTTP=$(curl -sS -o /tmp/resp.json -w "%{http_code}" -X POST "$SITE_URL/api/apk/ci" \
+                 -H "Authorization: Bearer $APK_PUBLISH_SECRET" -H "Content-Type: application/json" -d "$BODY")
+          cat /tmp/resp.json; echo
+          [ "$HTTP" = "200" ] || { echo "::error::site returned HTTP $HTTP"; exit 1; }
+
+      - name: GitHub release v${{ steps.ver.outputs.name }}
+        if: ${{ github.event_name == 'push' || inputs.publish }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.name }}
+          name: DG Tempo v${{ steps.ver.outputs.name }}
+          body: |
+            versionCode ${{ steps.ver.outputs.code }} · signed with ${{ steps.ks.outputs.signed }}
+            Download: ${{ steps.blob.outputs.url }}
+          files: ${{ env.APK_PATH }}

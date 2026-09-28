@@ -13,10 +13,24 @@ android {
         versionCode 32
         versionName '0.32'
     }
+    // CI signing: the workflow decodes a keystore and sets these env vars. Locally (no env) the
+    // debug keystore is used, so both builds install over each other only if the SAME keystore is
+    // used in both places (see README "Release pipeline").
+    signingConfigs {
+        ci {
+            def ksPath = System.getenv('ANDROID_KEYSTORE_FILE')
+            if (ksPath) {
+                storeFile file(ksPath)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD') ?: 'android'
+                keyAlias System.getenv('ANDROID_KEY_ALIAS') ?: 'androiddebugkey'
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD') ?: 'android'
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
-            signingConfig signingConfigs.debug
+            signingConfig System.getenv('ANDROID_KEYSTORE_FILE') ? signingConfigs.ci : signingConfigs.debug
         }
     }
     compileOptions {

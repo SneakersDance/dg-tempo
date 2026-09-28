@@ -92,8 +92,10 @@ commit, push to `main`. The same version pushed twice overwrites the blob and up
 | secret | `ANDROID_KEY_PASSWORD`      | key password |
 | var    | `SITE_URL`                  | optional, default `https://sneakersdance.com` |
 
-Android only installs an update over an existing app if both are signed with the **same key**.
-Phones that already have a build from this laptop were signed with `~/.android/debug.keystore`
-(password `android`, alias `androiddebugkey`). To keep those installs updatable, use that file as
-the CI keystore: `base64 -i ~/.android/debug.keystore | tr -d '\n'`. Switching to a proper
-release key later means one uninstall/reinstall on each phone.
+**Generate the release key and secrets once** with `scripts/make-release-keys.sh`. It creates a
+fresh 4096-bit RSA keystore (nothing shared with any other project or identity) under `keys/`
+(gitignored, mode 700) and writes all five values ready to paste into `keys/github-secrets.txt`.
+Back that folder up somewhere private: Android only installs an update over an existing app if
+both are signed with the same key, so losing the keystore means every phone must uninstall and
+reinstall once. The same applies to the first CI build: phones that still have a laptop-built
+debug APK must uninstall it once before installing the CI-signed one.
