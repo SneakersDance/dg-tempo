@@ -189,12 +189,26 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             }
             return;
         }
+        if (!getPackageManager().hasSystemFeature(android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+            if (manual) onLog("PiP: this device reports no picture-in-picture support");
+            return;
+        }
         try {
             boolean ok = enterPictureInPictureMode(pipParams(svc != null && svc.settings.pip));
-            if (!ok) onLog("PiP refused by the system (check Settings > Apps > DG Tempo > Picture-in-picture)");
+            if (!ok && manual) onLog("PiP refused by the system: " + pipRefusalHint());
         } catch (Exception e) {
-            onLog("PiP: " + e.getMessage());
+            if (manual) onLog("PiP: " + e.getMessage());
         }
+    }
+
+    /** Best guess at why enterPictureInPictureMode() returned false, for the log line. */
+    private String pipRefusalHint() {
+        android.app.KeyguardManager km = getSystemService(android.app.KeyguardManager.class);
+        if (km != null && km.isKeyguardLocked()) return "screen is locked";
+        if (Build.VERSION.SDK_INT >= 24 && isInMultiWindowMode()) return "app is in split screen - leave split screen first";
+        if (!hasWindowFocus()) return "app is not in the foreground";
+        return "Android " + Build.VERSION.RELEASE + " on " + Build.MANUFACTURER + " " + Build.MODEL
+                + " - check Settings > Apps > DG Tempo > Picture-in-picture, and any OEM 'floating window' / background limits";
     }
 
     @Override
@@ -232,6 +246,10 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     @Override
     protected void onUserLeaveHint() {
         super.onUserLeaveHint();
+        // Android 12+: the auto-enter params registered in refreshPipParams() make the system enter PiP
+        // itself. Calling enterPictureInPictureMode() here as well runs mid-transition and returns false,
+        // which used to log a spurious "PiP refused" even though the window appeared.
+        if (Build.VERSION.SDK_INT >= 31) return;
         if (svc != null && svc.settings.pip) enterPip(false);
     }
 
