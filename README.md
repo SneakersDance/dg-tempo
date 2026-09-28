@@ -1,8 +1,49 @@
-# dg-tempo — Coyote 3.0 beat-sync prototype (SOCKET route)
+# dg-tempo — Coyote 3.0 beat-sync prototype
 
-v1 uses DG-Lab's **SOCKET v2** control: the official app stays connected to the Coyote over
-BLE, this script runs a WebSocket server on your laptop, and the app relays our commands.
-No BLE binding questions, no licensing surprises from talking to the device directly.
+Two controllers share one audio engine ([beatcore.py](beatcore.py): kick onset detection,
+tempo + downbeat tracking):
+
+- **`beatsync_ble.py` — direct BLE (recommended).** The laptop is the BLE central and drives up
+  to two DG-Lab devices from one beat clock:
+  - **Coyote 3.0** e-stim box (`47L121000`): B0 waveform frames every 100 ms, BF soft cap.
+  - **Opossum 负鼠** vibration controller (`47L127000`): same frame shape, intensity via B3.
+    Each downbeat burst is placed into exact 25 ms slots ahead of time, so the only latency left
+    is BLE + device, cancelled by a single `--latency` knob.
+- **`beatsync_socket.py` — SOCKET v2 via the official app.** Kept for reference; the app relay
+  adds too much jitter for tight beat sync, and it cannot drive the Opossum.
+
+## Direct BLE quick start
+
+```bash
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python beatsync_ble.py --list-devices              # microphone index -> --mic
+.venv/bin/python beatsync_ble.py --scan                      # look for '<-- Coyote' / '<-- Opossum'
+.venv/bin/python beatsync_ble.py --mic 1 --strength 5 --max 50 --vib-min 40 --vib-max 120 --every-beat
+```
+
+- By default it connects to **both** devices, each independently: a missing one is retried in
+  the background and never blocks the other. `--targets coyote` or `--targets opossum` limits it.
+- Close the official DG-Lab app first: a device stops advertising while the app holds it.
+  Opossum not listed? Press its power button 5x until the Bluetooth icon turns yellow.
+- `--mic N` is the microphone index from `--list-devices`. Bluetooth devices are picked by
+  name automatically; force one with `--coyote-address` / `--opossum-address <UUID>`.
+- Strength follows tempo on both devices from the same 0..1 tempo position: Coyote
+  `--strength`→`--max` (also written as its BF soft cap), Opossum `--vib-min`→`--vib-max`
+  (0–200). `+`/`-` offsets the Coyote only.
+- After connect the app is disarmed. Press `t` for a test pulse on every connected device,
+  then `SPACE` to arm.
+- Status line: `bpm=128.0*` = locked, `bar:N` = downbeat found, `C: 21( 21)/ 24` = Coyote
+  commanded (device-reported)/cap, `O: 91( 91)/120` same for the Opossum, `lat=` latency knob,
+  `late=` frames the 100 ms loop sent late (should stay near 0).
+- Tune `[` `]` (latency, 10 ms steps) until pulses land on the beat. Start with `--every-beat`,
+  then press `e` to switch to downbeats only once the bar is found.
+- Keys are the same as the socket version, plus `e` (every-beat toggle) and `v` (verbose).
+
+Direct BLE notes: the protocol repo forbids commercial use without DG-Lab authorization, and
+the devices' behaviour when B0 frames stop is undocumented, so this script never stops sending
+frames while connected and writes a strength-0 silent frame before disconnecting.
+
+## SOCKET route (via the app)
 
 ## Setup (macOS)
 
@@ -17,7 +58,7 @@ Laptop and phone must be on the same Wi-Fi/LAN.
 
 ```bash
 .venv/bin/python beatsync_socket.py --list-devices          # find your mic index
-.venv/bin/python beatsync_socket.py --device 5 --strength 5 --max 30
+.venv/bin/python beatsync_socket.py --mic 5 --strength 5 --max 30
 .venv/bin/python beatsync_socket.py --device 1 --strength 10 --max 50
 .venv/bin/python beatsync_socket.py --device 1 --strength 5 --max 50 --every-beat
 ```
