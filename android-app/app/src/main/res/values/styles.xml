@@ -51,6 +51,13 @@
         <item name="android:textSize">13sp</item>
         <item name="android:letterSpacing">0.06</item>
         <item name="android:stateListAnimator">@null</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingTop">6dp</item>
+        <item name="android:paddingBottom">6dp</item>
+        <item name="android:paddingStart">4dp</item>
+        <item name="android:paddingEnd">4dp</item>
+        <item name="android:lineSpacingExtra">0dp</item>
     </style>
     <style name="BtnAccent" parent="BtnGhost">
         <item name="android:background">@drawable/bg_btn_accent</item>

@@ -47,7 +47,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     private MotionView motionView;
     private View mainRoot;
     private boolean inPip = false;
-    private Button btnArm, btnAdvanced, btnMute;
+    private Button btnArm, btnAdvanced, btnMute, btnPhoneAudio, btnMic;
     private static final int C_TEXT = 0xFFE8EEF8, C_MUTED = 0xFF8B97AB, C_DIM = 0xFF5A6577, C_ACCENT = 0xFF00E5FF,
             C_COYOTE = 0xFFFF3D7F, C_OPOSSUM = 0xFF00E5FF, C_GO = 0xFF4DFF88, C_DANGER = 0xFFFF3B5C, C_BG = 0xFF0A0C12;
     private LinearLayout llDevices, llCoyote, llOpossum, llTiming, llAudio, llRate;
@@ -101,8 +101,10 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         findViewById(R.id.btnTest).setOnClickListener(v -> { if (svc != null) svc.testPulse(); });
         findViewById(R.id.btnPip).setOnClickListener(v -> enterPip(true));
         findViewById(R.id.btnScan).setOnClickListener(v -> { if (svc != null) svc.startScan(); });
-        findViewById(R.id.btnPhoneAudio).setOnClickListener(v -> requestPhoneAudio());
-        findViewById(R.id.btnMic).setOnClickListener(v ->
+        btnPhoneAudio = findViewById(R.id.btnPhoneAudio);
+        btnMic = findViewById(R.id.btnMic);
+        btnPhoneAudio.setOnClickListener(v -> requestPhoneAudio());
+        btnMic.setOnClickListener(v ->
                 ContextCompat.startForegroundService(this, new Intent(this, BeatService.class).setAction(BeatService.ACTION_MIC)));
         btnAdvanced.setOnClickListener(v -> {
             boolean show = llTiming.getVisibility() != View.VISIBLE;
@@ -843,5 +845,14 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         btnArm.setTextColor(C_BG);
         btnMute.setText(svc.muted ? R.string.btn_unmute : R.string.btn_mute);
         btnMute.setTextColor(svc.muted ? C_DANGER : C_TEXT);
+        highlightSource(btnPhoneAudio, "phone".equals(svc.audioSource));
+        highlightSource(btnMic, "mic".equals(svc.audioSource));
+    }
+
+    /** Green outline + tint on the audio-source button that is currently feeding the detector. */
+    private void highlightSource(Button b, boolean active) {
+        if (b == null) return;
+        b.setBackgroundResource(active ? R.drawable.bg_btn_ghost_on : R.drawable.bg_btn_ghost);
+        b.setTextColor(active ? C_GO : C_TEXT);
     }
 }
