@@ -61,15 +61,27 @@ jobs:
         id: ks
         env:
           KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
-          if [ -n "$KS_B64" ]; then
-            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
-            echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
-            echo "signed=keystore secret" >> "$GITHUB_OUTPUT"
-          else
+          if [ -z "$KS_B64" ]; then
             echo "::warning::ANDROID_KEYSTORE_B64 not set - signing with the runner's throwaway debug key; phones will refuse to update over a build signed differently"
             echo "signed=runner debug key" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          # tolerate a pasted "NAME=" prefix, line wraps and stray whitespace
+          CLEAN=$(printf '%s' "$KS_B64" | sed 's/^ANDROID_KEYSTORE_B64=//' | tr -d '[:space:]')
+          if ! printf '%s' "$CLEAN" | base64 -d > "$RUNNER_TEMP/release.keystore" 2>/dev/null; then
+            echo "::error::ANDROID_KEYSTORE_B64 is not valid base64 (cleaned length ${#CLEAN}). Paste ONLY the value (keys/ANDROID_KEYSTORE_B64.txt), no name, no line breaks."
+            exit 1
+          fi
+          if ! keytool -list -keystore "$RUNNER_TEMP/release.keystore" -storepass "$KS_PASS" -alias "$KS_ALIAS" >/dev/null 2>&1; then
+            echo "::error::keystore decoded but ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS do not open it (alias '$KS_ALIAS')"
+            exit 1
+          fi
+          echo "keystore ok: alias $KS_ALIAS"
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          echo "signed=keystore secret" >> "$GITHUB_OUTPUT"
 
       - name: Unit tests + build release APK
         working-directory: android-app

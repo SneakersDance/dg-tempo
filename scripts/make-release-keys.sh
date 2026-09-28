@@ -57,6 +57,12 @@ ANDROID_KEY_PASSWORD=$KEY_PASS
 ANDROID_KEYSTORE_B64=$KS_B64
 TXT
 
+# one file per secret: select-all + copy, nothing else to trim
+for NAME in APK_PUBLISH_SECRET ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD ANDROID_KEYSTORE_B64; do
+  VAL="$(grep "^$NAME=" "$OUT" | cut -d= -f2-)"
+  printf '%s' "$VAL" > "$KEYS/$NAME.txt"
+done
+
 echo "keystore : $KS"
 echo "secrets  : $OUT"
 echo "cert     : $FINGERPRINT"
