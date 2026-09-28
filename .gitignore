@@ -1,6 +1,3 @@
-.venv/
-qr.png
-__pycache__/
 *.apk
 android-app/.gradle/
 android-app/build/
