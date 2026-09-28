@@ -105,6 +105,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
     private AudioRecord record;
     private Thread audioThread;
     private MediaProjection projection;
+    private MediaProjection.Callback projectionCb;
     private android.hardware.display.VirtualDisplay vDisplay;
     private android.media.ImageReader imageReader;
     private android.os.HandlerThread motionThread;
@@ -440,9 +441,14 @@ public final class BeatService extends Service implements BleDevice.Listener {
             return;
         }
         if (projection == null) { log("phone audio: projection denied"); fallback(); return; }
-        projection.registerCallback(new MediaProjection.Callback() {
+        final MediaProjection mine = projection;
+        projectionCb = new MediaProjection.Callback() {
             @Override public void onStop() {
+                // stop() on a previous projection delivers its callback asynchronously, after a new capture
+                // may already be running: only react if this is still the live projection.
+                if (projection != mine) return;
                 projection = null;
+                projectionCb = null;
                 stopAudio();
                 if (settings.micFallback) {
                     log("phone audio capture stopped by system/user - switching to microphone (fallback is ON)");
@@ -453,7 +459,8 @@ public final class BeatService extends Service implements BleDevice.Listener {
                 }
                 postDevices();
             }
-        }, main);
+        };
+        projection.registerCallback(projectionCb, main);
         AudioPlaybackCaptureConfiguration cfg = new AudioPlaybackCaptureConfiguration.Builder(projection)
                 .addMatchingUsage(AudioAttributes.USAGE_MEDIA)
                 .addMatchingUsage(AudioAttributes.USAGE_GAME)
@@ -657,8 +664,11 @@ public final class BeatService extends Service implements BleDevice.Listener {
     private void stopProjection() {
         stopMotion();
         MediaProjection p = projection;
+        MediaProjection.Callback cb = projectionCb;
         projection = null;
+        projectionCb = null;
         if (p != null) {
+            if (cb != null) try { p.unregisterCallback(cb); } catch (Exception ignored) {}
             try { p.stop(); } catch (Exception ignored) {}
             log("phone audio capture stopped");
         }
