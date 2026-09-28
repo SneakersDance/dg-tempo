@@ -14,6 +14,29 @@ tempo + downbeat tracking):
 
 ## Android app (native Java) — `android-app/`
 
+**DG Tempo** turns whatever you are watching or listening to into pulses on your DG-Lab gear. Pair
+it with a Coyote 3.0 e-stim box, an Opossum vibrator, or both, then pick where the music comes from:
+share the phone's own audio and scroll through dance videos on TikTok, RedNote or your local
+library, or switch to the microphone and let the room, a speaker system or a dance floor drive it.
+The app listens for the kick, locks onto the tempo, works out which beat is the downbeat, and
+fires on the beat with the official DG-Lab waveform library, at a strength that rises with the
+BPM. The Opossum can simply buzz on every kick, while the Coyote can be held back until the beat
+is solid, limited to a tempo range, fired only once per bar, put on a timer that lands on the
+tempo's high point, or given a random level between your base and max so no two shocks feel the
+same. With phone audio on, it can also watch the video itself and fire on the dancers' moves. A
+hard cap is written into the Coyote, every device has its own on/off switch, output stops the
+moment the music stops, and a small picture-in-picture window keeps the BPM, the next level and a
+"shock incoming" bar in view while you keep scrolling.
+
+**DG Tempo** 把你正在看、正在听的一切变成 DG-Lab 设备上的脉冲。连接郊狼 3.0 电击主机、负鼠震动器，或两者一起，
+然后选择音乐来源：共享手机自身的声音，一边刷抖音、小红书或本地视频里的舞蹈，一边跟着节奏走；或者切换到麦克风，
+让房间里的音乐、音箱或舞池来驱动。App 会捕捉鼓点、锁定节奏、判断哪一拍是强拍，并用 DG-Lab 官方波形库在节拍上输出，
+强度随 BPM 升高而增强。负鼠可以简单地在每个鼓点上震动；郊狼则可以等到节拍足够稳定才输出、限定在某个 BPM 区间、
+每小节只输出一次、按定时器在节奏最高点触发，或者在你设定的基础与最大强度之间随机取值，让每一次电击都不一样。
+开启手机内部音频后，它还能"看"视频画面，随舞者的动作触发。硬上限会直接写入郊狼主机，每个设备都有独立的开关，
+音乐一停输出立刻停止，小窗（画中画）则会在你继续刷视频时一直显示 BPM、下一次的强度和"即将电击"的进度条。
+
+
 The phone version of the direct-BLE controller. No web layer: a foreground service owns the audio
 thread, the tempo tracker and the 100 ms BLE frame loop, so it keeps pulsing while you watch
 videos in other apps or the screen is off. UI in English, 中文 and 日本語 (button top-right).
@@ -177,3 +200,4 @@ Read the status line left to right:
 .venv/bin/python tests/test_detect.py   # synthetic 128 BPM 4/4 -> tempo, downbeat, strength map
 .venv/bin/python tests/test_socket.py   # fake DG-Lab app over WebSocket -> bind, strength, pulse, clear
 ```
+# dg-tempo
