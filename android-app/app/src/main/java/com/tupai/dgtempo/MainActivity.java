@@ -47,7 +47,9 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     private MotionView motionView;
     private View mainRoot;
     private boolean inPip = false;
-    private Button btnArm, btnAdvanced;
+    private Button btnArm, btnAdvanced, btnMute;
+    private static final int C_TEXT = 0xFFE8EEF8, C_MUTED = 0xFF8B97AB, C_DIM = 0xFF5A6577, C_ACCENT = 0xFF00E5FF,
+            C_COYOTE = 0xFFFF3D7F, C_OPOSSUM = 0xFF00E5FF, C_GO = 0xFF4DFF88, C_DANGER = 0xFFFF3B5C, C_BG = 0xFF0A0C12;
     private LinearLayout llDevices, llCoyote, llOpossum, llTiming, llAudio, llRate;
 
     private final ServiceConnection conn = new ServiceConnection() {
@@ -56,7 +58,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             svc.setUi(MainActivity.this);
             try {
                 String ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-                svc.log("DG Tempo v" + ver + " (wide-band detection, sound gate, PiP with levels)");
+                svc.log("DG Tempo v" + ver);
             } catch (Exception ignored) {}
             buildControls();
             refreshPipParams();
@@ -86,6 +88,8 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         mainRoot = findViewById(R.id.mainRoot);
         btnArm = findViewById(R.id.btnArm);
         btnAdvanced = findViewById(R.id.btnAdvanced);
+        btnMute = findViewById(R.id.btnMute);
+        btnMute.setOnClickListener(v -> { if (svc != null) { svc.setMuted(!svc.muted); onState(); } });
         llDevices = findViewById(R.id.llDevices);
         llCoyote = findViewById(R.id.llCoyote);
         llOpossum = findViewById(R.id.llOpossum);
@@ -340,23 +344,29 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         Settings s = svc.settings;
         llCoyote.removeAllViews(); llOpossum.removeAllViews(); llTiming.removeAllViews();
         llAudio.removeAllViews(); llRate.removeAllViews();
-        addSwitch(llAudio, R.string.mic_fallback, s.micFallback, v -> { s.micFallback = v; changed(); });
-        addSwitch(llAudio, R.string.motion_switch, s.screenMotion, v -> { svc.setScreenMotion(v); buildControls(); });
+        addSwitch(llAudio, R.string.mic_fallback, R.string.x_mic_fallback, s.micFallback, v -> { s.micFallback = v; changed(); });
+        addSwitch(llAudio, R.string.motion_switch, R.string.x_motion, s.screenMotion, v -> { svc.setScreenMotion(v); buildControls(); });
         if (s.screenMotion) {
-            addSeek(llAudio, R.string.motion_sens, 1, 10, s.motionSens, v -> v + " / 10", v -> { s.motionSens = v; changed(); });
-            addSwitch(llAudio, R.string.motion_coyote, s.motionCoyote, v -> { s.motionCoyote = v; changed(); });
-            addSwitch(llAudio, R.string.motion_opossum, s.motionOpossum, v -> { s.motionOpossum = v; changed(); });
+            addSeek(llAudio, R.string.motion_sens, 0, R.string.end_strict, R.string.end_eager, 1, 10, s.motionSens, v -> v + " / 10", v -> { s.motionSens = v; changed(); });
+            addSwitch(llAudio, R.string.motion_coyote, 0, s.motionCoyote, v -> { s.motionCoyote = v; changed(); });
+            addSwitch(llAudio, R.string.motion_opossum, 0, s.motionOpossum, v -> { s.motionOpossum = v; changed(); });
         }
 
         // Coyote: strict by default; Opossum: eager by default. Each device decides on its own when the beat is solid enough.
-        addSeek(llCoyote, R.string.sens_level, 1, 10, s.coyoteSens, v -> v + " / 10", v -> { s.coyoteSens = v; changed(); });
+        addSeek(llCoyote, R.string.coy_max, R.string.x_max, R.string.end_gentle, R.string.end_hard, 0, 200, s.coyoteMax, v -> v + " / 200",
+                v -> { s.coyoteMax = v; if (s.coyoteMin > v) s.coyoteMin = v; changed(); });
+        addSeek(llCoyote, R.string.coy_base, R.string.x_base, R.string.end_gentle, R.string.end_hard, 0, 200, s.coyoteMin, String::valueOf,
+                v -> { s.coyoteMin = Math.min(v, s.coyoteMax); changed(); });
+        addSwitch(llCoyote, R.string.coy_auto, R.string.x_auto, s.autoStrength, v -> { s.autoStrength = v; changed(); });
+        addSwitch(llCoyote, R.string.coy_random_level, R.string.x_random, s.coyoteRandomLevel, v -> { s.coyoteRandomLevel = v; changed(); });
+        subTitle(llCoyote, R.string.step4);
+        addSeek(llCoyote, R.string.sens_level, R.string.x_sens, R.string.end_strict, R.string.end_eager, 1, 10, s.coyoteSens, v -> v + " / 10", v -> { s.coyoteSens = v; changed(); });
         addRate(llCoyote, s.coyotePulseRate, v -> { s.coyotePulseRate = v; changed(); });
-        addSeek(llCoyote, R.string.bpm_min, 60, 220, s.coyoteBpmMin, v -> v <= 60 ? getString(R.string.bpm_any) : v + " BPM",
+        addSeek(llCoyote, R.string.bpm_min, R.string.x_bpm_range, R.string.end_slow, R.string.end_fast, 60, 220, s.coyoteBpmMin, v -> v <= 60 ? getString(R.string.bpm_any) : v + " BPM",
                 v -> { s.coyoteBpmMin = v; if (s.coyoteBpmMax < v) s.coyoteBpmMax = v; changed(); });
-        TextView tvTimer = new TextView(this);
-        tvTimer.setTextColor(0xFFDDDDDD);
-        tvTimer.setPadding(0, 16, 0, 0);
-        tvTimer.setText(R.string.coy_timer);
+        addSeek(llCoyote, R.string.bpm_max, 0, R.string.end_slow, R.string.end_fast, 60, 220, s.coyoteBpmMax, v -> v >= 220 ? getString(R.string.bpm_any) : v + " BPM",
+                v -> { s.coyoteBpmMax = v; if (s.coyoteBpmMin > v) s.coyoteBpmMin = v; changed(); });
+        TextView tvTimer = label(R.string.coy_timer, R.string.x_timer);
         Spinner spTimer = new Spinner(this);
         ArrayAdapter<String> adTimer = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{
                 getString(R.string.timer_off), getString(R.string.timer_peak), getString(R.string.timer_random)});
@@ -371,67 +381,110 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             @Override public void onNothingSelected(AdapterView<?> p) {}
         });
         llCoyote.addView(tvTimer);
+        hint(llCoyote, R.string.x_timer);
         llCoyote.addView(spTimer);
         if (s.coyoteTimerMode == 1)
-            addSeek(llCoyote, R.string.coy_max_wait, 5, 300, s.coyoteMaxWaitS, v -> v + " s", v -> { s.coyoteMaxWaitS = v; changed(); });
+            addSeek(llCoyote, R.string.coy_max_wait, 0, R.string.end_sooner, R.string.end_rarer, 5, 300, s.coyoteMaxWaitS, v -> v + " s", v -> { s.coyoteMaxWaitS = v; changed(); });
         if (s.coyoteTimerMode == 2) {
-            addSeek(llCoyote, R.string.timer_rand_min, 1, 600, s.coyoteRandMinS, v -> v + " s",
+            addSeek(llCoyote, R.string.timer_rand_min, 0, R.string.end_sooner, R.string.end_rarer, 1, 600, s.coyoteRandMinS, v -> v + " s",
                     v -> { s.coyoteRandMinS = v; if (s.coyoteRandMaxS < v) s.coyoteRandMaxS = v; changed(); });
-            addSeek(llCoyote, R.string.timer_rand_max, 1, 600, s.coyoteRandMaxS, v -> v + " s",
+            addSeek(llCoyote, R.string.timer_rand_max, 0, R.string.end_sooner, R.string.end_rarer, 1, 600, s.coyoteRandMaxS, v -> v + " s",
                     v -> { s.coyoteRandMaxS = v; if (s.coyoteRandMinS > v) s.coyoteRandMinS = v; changed(); });
         }
-        addSeek(llCoyote, R.string.bpm_max, 60, 220, s.coyoteBpmMax, v -> v >= 220 ? getString(R.string.bpm_any) : v + " BPM",
-                v -> { s.coyoteBpmMax = v; if (s.coyoteBpmMin > v) s.coyoteBpmMin = v; changed(); });
-
+        subTitle(llCoyote, R.string.wave_pick);
         addWave(llCoyote, Waveforms.COYOTE, s.coyoteWave, id -> { s.coyoteWave = id; changed(); });
-        addSwitch(llCoyote, s.coyoteContinuous ? R.string.wave_mode_cont : R.string.wave_mode_beat, s.coyoteContinuous,
+        hint(llCoyote, R.string.x_wave);
+        addSwitch(llCoyote, s.coyoteContinuous ? R.string.wave_mode_cont : R.string.wave_mode_beat, R.string.x_wave_mode, s.coyoteContinuous,
                 v -> { s.coyoteContinuous = v; changed(); buildControls(); });
-        addSeek(llCoyote, R.string.coy_max, 0, 200, s.coyoteMax, v -> v + " / 200",
-                v -> { s.coyoteMax = v; if (s.coyoteMin > v) s.coyoteMin = v; changed(); });
-        addSeek(llCoyote, R.string.coy_base, 0, 200, s.coyoteMin, String::valueOf,
-                v -> { s.coyoteMin = Math.min(v, s.coyoteMax); changed(); });
-        addSwitch(llCoyote, R.string.coy_auto, s.autoStrength, v -> { s.autoStrength = v; changed(); });
-        addSwitch(llCoyote, R.string.coy_random_level, s.coyoteRandomLevel, v -> { s.coyoteRandomLevel = v; changed(); });
-        addSeek(llCoyote, R.string.coy_intensity, 0, 100, s.intensity, v -> v + " %", v -> { s.intensity = v; changed(); });
-        addSeek(llCoyote, R.string.coy_freq, 10, 240, s.freq, String::valueOf, v -> { s.freq = v; changed(); });
-        addSwitch(llCoyote, R.string.coy_channel_b, s.channelB, v -> { s.channelB = v; changed(); });
-        addSwitch(llTiming, R.string.pip_switch, s.pip, v -> { s.pip = v; changed(); refreshPipParams(); });
-        Button pipBtn = new Button(this);
-        pipBtn.setText(R.string.btn_pip_now);
-        pipBtn.setOnClickListener(v -> enterPip(true));
-        llTiming.addView(pipBtn);
+        addSeek(llCoyote, R.string.coy_intensity, R.string.x_intensity, R.string.end_soft, R.string.end_strong, 0, 100, s.intensity, v -> v + " %", v -> { s.intensity = v; changed(); });
+        addSeek(llCoyote, R.string.coy_freq, R.string.x_freq, R.string.end_throb, R.string.end_buzz, 10, 240, s.freq, String::valueOf, v -> { s.freq = v; changed(); });
+        addSeek(llCoyote, R.string.timing_burst, R.string.x_burst, R.string.end_short, R.string.end_long, 25, 3000, s.burstMs, v -> v + " ms", v -> { s.burstMs = v; changed(); });
+        addSwitch(llCoyote, R.string.coy_channel_b, R.string.x_both, s.channelB, v -> { s.channelB = v; changed(); });
 
-        addSwitch(llOpossum, R.string.vib_both_motors, s.vibBothMotors, v -> { s.vibBothMotors = v; changed(); });
-        addSwitch(llOpossum, R.string.vib_any_music, s.vibAnyMusic, v -> { s.vibAnyMusic = v; changed(); buildControls(); });
+        addSwitch(llOpossum, R.string.vib_any_music, R.string.x_vib_any, s.vibAnyMusic, v -> { s.vibAnyMusic = v; changed(); buildControls(); });
+        addSwitch(llOpossum, R.string.vib_follow, R.string.x_vib_follow, s.vibFollowTempo, v -> { s.vibFollowTempo = v; changed(); buildControls(); });
+        if (s.vibFollowTempo) {
+            addSeek(llOpossum, R.string.vib_min, 0, R.string.end_gentle, R.string.end_hard, 0, 200, s.vibMin, String::valueOf, v -> { s.vibMin = Math.min(v, s.vibMax); changed(); });
+            addSeek(llOpossum, R.string.vib_max, 0, R.string.end_gentle, R.string.end_hard, 0, 200, s.vibMax, String::valueOf,
+                    v -> { s.vibMax = v; if (s.vibMin > v) s.vibMin = v; changed(); });
+        } else {
+            addSeek(llOpossum, R.string.vib_manual, 0, R.string.end_gentle, R.string.end_hard, 0, 200, s.vibManual, v -> v + " / 200", v -> { s.vibManual = v; changed(); });
+        }
         if (!s.vibAnyMusic) {
-            addSeek(llOpossum, R.string.sens_level, 1, 10, s.vibSens, v -> v + " / 10", v -> { s.vibSens = v; changed(); });
+            subTitle(llOpossum, R.string.step4);
+            addSeek(llOpossum, R.string.sens_level, R.string.x_sens, R.string.end_strict, R.string.end_eager, 1, 10, s.vibSens, v -> v + " / 10", v -> { s.vibSens = v; changed(); });
             addRate(llOpossum, s.vibPulseRate, v -> { s.vibPulseRate = v; changed(); });
-            addSeek(llOpossum, R.string.bpm_min, 60, 220, s.vibBpmMin, v -> v <= 60 ? getString(R.string.bpm_any) : v + " BPM",
+            addSeek(llOpossum, R.string.bpm_min, R.string.x_bpm_range, R.string.end_slow, R.string.end_fast, 60, 220, s.vibBpmMin, v -> v <= 60 ? getString(R.string.bpm_any) : v + " BPM",
                     v -> { s.vibBpmMin = v; if (s.vibBpmMax < v) s.vibBpmMax = v; changed(); });
-            addSeek(llOpossum, R.string.bpm_max, 60, 220, s.vibBpmMax, v -> v >= 220 ? getString(R.string.bpm_any) : v + " BPM",
+            addSeek(llOpossum, R.string.bpm_max, 0, R.string.end_slow, R.string.end_fast, 60, 220, s.vibBpmMax, v -> v >= 220 ? getString(R.string.bpm_any) : v + " BPM",
                     v -> { s.vibBpmMax = v; if (s.vibBpmMin > v) s.vibBpmMin = v; changed(); });
         }
-        addSeek(llOpossum, R.string.vib_intensity, 0, 100, s.vibIntensity, v -> v + " %", v -> { s.vibIntensity = v; changed(); });
+        subTitle(llOpossum, R.string.wave_pick);
         addWave(llOpossum, Waveforms.OPOSSUM, s.opossumWave, id -> { s.opossumWave = id; changed(); });
-        addSwitch(llOpossum, s.opossumContinuous ? R.string.wave_mode_cont : R.string.wave_mode_beat, s.opossumContinuous,
+        addSwitch(llOpossum, s.opossumContinuous ? R.string.wave_mode_cont : R.string.wave_mode_beat, R.string.x_wave_mode, s.opossumContinuous,
                 v -> { s.opossumContinuous = v; changed(); buildControls(); });
-        addSeek(llOpossum, R.string.vib_burst, 100, 3000, s.vibBurstMs, v -> v + " ms", v -> { s.vibBurstMs = v; changed(); });
-        addSwitch(llOpossum, R.string.vib_follow, s.vibFollowTempo, v -> { s.vibFollowTempo = v; changed(); });
-        addSeek(llOpossum, R.string.vib_manual, 0, 200, s.vibManual, v -> v + " / 200", v -> { s.vibManual = v; changed(); });
-        addSeek(llOpossum, R.string.vib_min, 0, 200, s.vibMin, String::valueOf, v -> { s.vibMin = Math.min(v, s.vibMax); changed(); });
-        addSeek(llOpossum, R.string.vib_max, 0, 200, s.vibMax, String::valueOf,
-                v -> { s.vibMax = v; if (s.vibMin > v) s.vibMin = v; changed(); });
+        addSeek(llOpossum, R.string.vib_intensity, R.string.x_intensity, R.string.end_soft, R.string.end_strong, 0, 100, s.vibIntensity, v -> v + " %", v -> { s.vibIntensity = v; changed(); });
+        addSeek(llOpossum, R.string.vib_burst, R.string.x_vib_burst, R.string.end_short, R.string.end_long, 100, 3000, s.vibBurstMs, v -> v + " ms", v -> { s.vibBurstMs = v; changed(); });
+        addSwitch(llOpossum, R.string.vib_both_motors, R.string.x_both, s.vibBothMotors, v -> { s.vibBothMotors = v; changed(); });
 
-        addSeek(llTiming, R.string.timing_latency, 0, 400, s.latencyMs, v -> v + " ms", v -> { s.latencyMs = v; changed(); });
-        addSeek(llTiming, R.string.timing_burst, 25, 3000, s.burstMs, v -> v + " ms", v -> { s.burstMs = v; changed(); });
-        Button rot = new Button(this);
-        rot.setText(R.string.btn_rotate);
+        addSeek(llTiming, R.string.timing_latency, R.string.x_latency, R.string.end_earlier, R.string.end_later, 0, 400, s.latencyMs, v -> v + " ms", v -> { s.latencyMs = v; changed(); });
+        Button rot = ghostButton(R.string.btn_rotate);
         rot.setOnClickListener(v -> { svc.tracker.rotateDownbeat(); svc.log("downbeat -> beat " + (svc.tracker.downbeatPhase() + 1)); });
         llTiming.addView(rot);
-        addSeek(llTiming, R.string.timing_bpm_lo, 60, 200, (int) s.bpmLo, v -> v + " BPM",
+        addSeek(llTiming, R.string.timing_bpm_lo, R.string.x_tempo_points, R.string.end_slow, R.string.end_fast, 60, 200, (int) s.bpmLo, v -> v + " BPM",
                 v -> { s.bpmLo = Math.min(v, s.bpmHi - 1); changed(); });
-        addSeek(llTiming, R.string.timing_bpm_hi, 61, 220, (int) s.bpmHi, v -> v + " BPM",
+        addSeek(llTiming, R.string.timing_bpm_hi, 0, R.string.end_slow, R.string.end_fast, 61, 220, (int) s.bpmHi, v -> v + " BPM",
                 v -> { s.bpmHi = Math.max(v, s.bpmLo + 1); changed(); });
+        addSwitch(llTiming, R.string.pip_switch, R.string.x_pip, s.pip, v -> { s.pip = v; changed(); refreshPipParams(); });
+    }
+
+    // ---- small view factories (design system) -------------------------------------------------------
+
+    private Button ghostButton(int textRes) {
+        Button b = new Button(new android.view.ContextThemeWrapper(this, R.style.BtnGhost), null, 0);
+        b.setBackgroundResource(R.drawable.bg_btn_ghost);
+        b.setTextColor(C_TEXT);
+        b.setText(textRes);
+        b.setAllCaps(true);
+        b.setTextSize(13);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = dp(8);
+        b.setLayoutParams(lp);
+        return b;
+    }
+
+    private void subTitle(LinearLayout parent, int textRes) {
+        TextView t = new TextView(this);
+        t.setText(textRes);
+        t.setTextColor(C_MUTED);
+        t.setTextSize(11);
+        t.setAllCaps(true);
+        t.setLetterSpacing(0.12f);
+        t.setPadding(0, dp(14), 0, dp(2));
+        parent.addView(t);
+    }
+
+    private void hint(LinearLayout parent, int textRes) {
+        TextView t = new TextView(this);
+        t.setText(textRes);
+        t.setTextColor(C_MUTED);
+        t.setTextSize(12);
+        t.setLineSpacing(dp(2), 1f);
+        t.setPadding(0, dp(4), 0, dp(4));
+        parent.addView(t);
+    }
+
+    /** Label row: text + a tappable ⓘ that expands the explainer under it (returns the label view). */
+    private TextView label(int labelRes, int hintRes) {
+        TextView tv = new TextView(this);
+        tv.setTextColor(C_TEXT);
+        tv.setTextSize(14);
+        tv.setPadding(0, dp(12), 0, 0);
+        tv.setText(getString(labelRes) + (hintRes != 0 ? "  ⓘ" : ""));
+        if (hintRes != 0) {
+            tv.setTag(R.id.tvLog, hintRes);
+        }
+        return tv;
     }
 
     private void changed() { if (svc != null) svc.settingsChanged(); }
@@ -450,9 +503,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     }
 
     private void addRate(LinearLayout parent, int current, IntConsumer onPick) {
-        TextView tv = new TextView(this);
-        tv.setTextColor(0xFFDDDDDD);
-        tv.setText(R.string.pulse_rate);
+        TextView tv = label(R.string.pulse_rate, R.string.x_rate);
         Spinner sp = new Spinner(this);
         ArrayAdapter<String> ad = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{
                 getString(R.string.pulse_rate_downbeat), getString(R.string.pulse_rate_beat),
@@ -465,13 +516,11 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             @Override public void onNothingSelected(AdapterView<?> p) {}
         });
         parent.addView(tv);
+        hint(parent, R.string.x_rate);
         parent.addView(sp);
     }
 
     private void addWave(LinearLayout parent, Waveforms.Waveform[] table, String current, java.util.function.Consumer<String> onPick) {
-        TextView tv = new TextView(this);
-        tv.setTextColor(0xFFDDDDDD);
-        tv.setText(R.string.wave_pick);
         java.util.Locale loc = getResources().getConfiguration().getLocales().get(0);
         List<String> names = new ArrayList<>();
         names.add(Waveforms.Waveform.simple(30).label(loc));
@@ -487,19 +536,60 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             }
             @Override public void onNothingSelected(AdapterView<?> p) {}
         });
-        parent.addView(tv);
         parent.addView(sp);
     }
 
     private void addSeek(LinearLayout parent, int labelRes, int min, int max, int value, IntFunction<String> fmt, IntConsumer onChange) {
+        addSeek(parent, labelRes, 0, 0, 0, min, max, value, fmt, onChange);
+    }
+
+    /**
+     * Slider row: label + value (tap the value to type), an optional ⓘ explainer, −/+ steppers, and small
+     * end labels under the track saying what each direction means (so nobody has to remember a sentence).
+     */
+    private void addSeek(LinearLayout parent, int labelRes, int hintRes, int endLeftRes, int endRightRes,
+                         int min, int max, int value, IntFunction<String> fmt, IntConsumer onChange) {
         String label = getString(labelRes);
-        TextView tv = new TextView(this);
-        tv.setTextColor(0xFFDDDDDD);
-        tv.setPadding(0, 16, 0, 0);
+        LinearLayout head = new LinearLayout(this);
+        head.setOrientation(LinearLayout.HORIZONTAL);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        head.setPadding(0, dp(12), 0, 0);
+        TextView tvName = new TextView(this);
+        tvName.setTextColor(C_TEXT);
+        tvName.setTextSize(14);
+        tvName.setText(label);
+        tvName.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        TextView tv = new TextView(this);            // the value, tappable
+        tv.setTextColor(C_ACCENT);
+        tv.setTextSize(15);
+        tv.setTypeface(android.graphics.Typeface.MONOSPACE, android.graphics.Typeface.BOLD);
+        tv.setPadding(dp(8), 0, dp(4), 0);
+        head.addView(tvName);
+        head.addView(tv);
+        TextView tvHint = null;
+        if (hintRes != 0) {
+            TextView info = new TextView(this);
+            info.setText("ⓘ");
+            info.setTextColor(C_ACCENT);
+            info.setTextSize(18);
+            info.setPadding(dp(10), 0, dp(4), 0);
+            head.addView(info);
+            tvHint = new TextView(this);
+            tvHint.setText(hintRes);
+            tvHint.setTextColor(C_MUTED);
+            tvHint.setTextSize(12);
+            tvHint.setLineSpacing(dp(2), 1f);
+            tvHint.setPadding(dp(10), dp(4), 0, dp(4));
+            tvHint.setVisibility(View.GONE);
+            final TextView h = tvHint;
+            View.OnClickListener toggle = v -> h.setVisibility(h.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+            info.setOnClickListener(toggle);
+            tvName.setOnClickListener(toggle);
+        }
         SeekBar sb = new SeekBar(this);
         sb.setMin(min); sb.setMax(max); sb.setProgress(value);
-        sb.setPadding(24, 20, 24, 20);
-        Runnable refresh = () -> tv.setText(label + ":  " + fmt.apply(sb.getProgress()));
+        sb.setPadding(dp(14), dp(14), dp(14), dp(14));
+        Runnable refresh = () -> tv.setText(fmt.apply(sb.getProgress()));
         refresh.run();
         IntConsumer setValue = v -> {
             int nv = Math.max(min, Math.min(max, v));
@@ -538,8 +628,23 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         sb.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         row.addView(sb);
         row.addView(stepButton("+", +1, sb, setValue));
-        parent.addView(tv);
+        parent.addView(head);
+        if (tvHint != null) parent.addView(tvHint);
         parent.addView(row);
+        if (endLeftRes != 0 || endRightRes != 0) {
+            LinearLayout ends = new LinearLayout(this);
+            ends.setOrientation(LinearLayout.HORIZONTAL);
+            ends.setPadding(dp(52), 0, dp(52), 0);
+            TextView l = new TextView(this), r = new TextView(this);
+            l.setText(endLeftRes != 0 ? getString(endLeftRes) : "");
+            r.setText(endRightRes != 0 ? getString(endRightRes) : "");
+            for (TextView e : new TextView[]{l, r}) { e.setTextColor(C_DIM); e.setTextSize(11); }
+            l.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+            r.setGravity(Gravity.END);
+            ends.addView(l);
+            ends.addView(r);
+            parent.addView(ends);
+        }
     }
 
     /** −/+ button: tap = one step, press and hold = repeat (faster after a moment). */
@@ -547,8 +652,12 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         Button b = new Button(this);
         b.setText(text);
         b.setTextSize(20);
+        b.setTextColor(C_ACCENT);
+        b.setBackgroundResource(R.drawable.bg_btn_ghost);
         b.setMinWidth(0); b.setMinimumWidth(0);
-        b.setLayoutParams(new LinearLayout.LayoutParams(dp(52), dp(48)));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(46), dp(42));
+        lp.leftMargin = dp(2); lp.rightMargin = dp(2);
+        b.setLayoutParams(lp);
         android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
         final int[] ticks = {0};
         Runnable[] rep = new Runnable[1];
@@ -579,13 +688,43 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     private int dp(int v) { return Math.round(v * getResources().getDisplayMetrics().density); }
 
     private void addSwitch(LinearLayout parent, int labelRes, boolean value, java.util.function.Consumer<Boolean> onChange) {
+        addSwitch(parent, labelRes, 0, value, onChange);
+    }
+
+    /** Switch row with an optional ⓘ explainer that expands under it. */
+    private void addSwitch(LinearLayout parent, int labelRes, int hintRes, boolean value, java.util.function.Consumer<Boolean> onChange) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, dp(10), 0, dp(6));
         Switch sw = new Switch(this);
         sw.setText(labelRes);
-        sw.setTextColor(0xFFDDDDDD);
+        sw.setTextColor(C_TEXT);
+        sw.setTextSize(14);
         sw.setChecked(value);
-        sw.setPadding(0, 14, 0, 14);
+        sw.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         sw.setOnCheckedChangeListener((CompoundButton b, boolean c) -> onChange.accept(c));
-        parent.addView(sw);
+        row.addView(sw);
+        TextView tvHint = null;
+        if (hintRes != 0) {
+            TextView info = new TextView(this);
+            info.setText("ⓘ");
+            info.setTextColor(C_ACCENT);
+            info.setTextSize(18);
+            info.setPadding(dp(10), 0, dp(4), 0);
+            row.addView(info);
+            tvHint = new TextView(this);
+            tvHint.setText(hintRes);
+            tvHint.setTextColor(C_MUTED);
+            tvHint.setTextSize(12);
+            tvHint.setLineSpacing(dp(2), 1f);
+            tvHint.setPadding(dp(10), 0, 0, dp(6));
+            tvHint.setVisibility(View.GONE);
+            final TextView h = tvHint;
+            info.setOnClickListener(v -> h.setVisibility(h.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
+        }
+        parent.addView(row);
+        if (tvHint != null) parent.addView(tvHint);
     }
 
     // ---- service callbacks ----------------------------------------------------------------------------
@@ -608,6 +747,8 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         if (rows.isEmpty()) {
             TextView tv = new TextView(this);
             tv.setText(svc.scanning ? R.string.scanning : R.string.no_devices);
+            tv.setTextColor(C_MUTED);
+            tv.setPadding(0, dp(8), 0, dp(4));
             llDevices.addView(tv);
         }
         for (BeatService.Found f : rows) {
@@ -624,9 +765,9 @@ public final class MainActivity extends AppCompatActivity implements BeatService
                     : "  " + getString(R.string.connecting);
             tv.setText(getString("coyote".equals(f.kind) ? R.string.dev_coyote : R.string.dev_opossum)
                     + "\n" + f.name + (f.rssi != 0 ? "  " + f.rssi + " dBm" : "") + state);
-            tv.setTextColor(isThis && d.connected ? 0xFF8BC34A : 0xFFDDDDDD);
-            Button b = new Button(this);
-            b.setText(isThis ? R.string.btn_disconnect : R.string.btn_connect);
+            tv.setTextColor(isThis && d.connected ? C_GO : C_TEXT);
+            Button b = ghostButton(isThis ? R.string.btn_disconnect : R.string.btn_connect);
+            b.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
             b.setOnClickListener(v -> { if (isThis) svc.disconnect(f.kind); else svc.connect(f.device.getAddress()); });
             row.addView(tv);
             row.addView(b);
@@ -636,8 +777,8 @@ public final class MainActivity extends AppCompatActivity implements BeatService
                 boolean en = svc.settings.enabled(f.kind);
                 sw.setText(en ? R.string.dev_pulse_on : R.string.dev_pulse_off);
                 sw.setChecked(en);
-                sw.setTextColor(0xFFDDDDDD);
-                sw.setPadding(24, 0, 0, 12);
+                sw.setTextColor(C_TEXT);
+                sw.setPadding(dp(8), 0, 0, dp(8));
                 sw.setOnCheckedChangeListener((CompoundButton cb, boolean c) -> svc.setDeviceEnabled(f.kind, c));
                 llDevices.addView(sw);
             }
@@ -658,7 +799,8 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         if (inPip) { updatePip(); return; }
         TempoTracker tr = svc.tracker;
         boolean anyConn = svc.devices.values().stream().anyMatch(d -> d.connected);
-        String state = getString(!anyConn ? R.string.state_no_device : svc.armed ? R.string.state_armed : R.string.state_stopped);
+        String state = getString(!anyConn ? R.string.state_no_device : svc.armed ? R.string.state_armed : R.string.state_stopped)
+                + (svc.muted ? " · " + getString(R.string.state_muted) : "");
         StringBuilder devs = new StringBuilder();
         for (BleDevice d : svc.devices.values()) if (d.connected)
             devs.append(d.label.charAt(0)).append(':').append(Math.max(0, d.strength)).append('(').append(d.actualA).append(") ");
@@ -675,13 +817,13 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         double now = java.lang.System.nanoTime() / 1e9;
         if (tr.locked()) {
             tvBpm.setText(String.format("%.1f BPM ●", tr.bpm()));
-            tvBpm.setTextColor(now - svc.lastFlash < 0.12 ? 0xFFFFFFFF : 0xFFFF7A00);
+            tvBpm.setTextColor(now - svc.lastFlash < 0.12 ? 0xFFFFFFFF : C_ACCENT);
         } else if (tr.bpm() > 0) {
-            tvBpm.setText(String.format("~%.0f BPM ○  %.0f%%", tr.bpm(), tr.confidence * 100));
-            tvBpm.setTextColor(0xFF9E9E9E);
+            tvBpm.setText(String.format("~%.0f BPM ○ %.0f%%", tr.bpm(), tr.confidence * 100));
+            tvBpm.setTextColor(C_DIM);
         } else {
             tvBpm.setText(getString(R.string.bpm_none));
-            tvBpm.setTextColor(0xFF9E9E9E);
+            tvBpm.setTextColor(C_DIM);
         }
         meter.setProgress((int) Math.max(0, Math.min(100, (svc.detector.levelDb + 60) * 100 / 60)));
         double nowS = java.lang.System.nanoTime() / 1e9;
@@ -692,11 +834,14 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         boolean cOn = dc != null && dc.connected, oOn = dop != null && dop.connected;
         outCoyote.setData(svc.histCoyote, svc.histPos, svc.strengthNormCoyote, "Coyote",
                 cOn ? String.format("%d/%d  %3d%%", Math.max(0, dc.strength), svc.settings.coyoteMax, svc.slotNowCoyote) : "--",
-                0xFFFF7A00, cOn && svc.settings.coyoteEnabled);
+                C_COYOTE, cOn && svc.settings.coyoteEnabled);
         outOpossum.setData(svc.histOpossum, svc.histPos, svc.strengthNormOpossum, "Opossum",
                 oOn ? String.format("%d/200  %3d%%", Math.max(0, dop.strength), svc.slotNowOpossum) : "--",
-                0xFF4FC3F7, oOn && svc.settings.opossumEnabled);
+                C_OPOSSUM, oOn && svc.settings.opossumEnabled);
         btnArm.setText(svc.armed ? R.string.btn_stop : R.string.btn_arm);
-        btnArm.setBackgroundColor(svc.armed ? 0xFFD32F2F : 0xFF2E7D32);
+        btnArm.setBackgroundResource(svc.armed ? R.drawable.bg_btn_danger : R.drawable.bg_btn_go);
+        btnArm.setTextColor(C_BG);
+        btnMute.setText(svc.muted ? R.string.btn_unmute : R.string.btn_mute);
+        btnMute.setTextColor(svc.muted ? C_DANGER : C_TEXT);
     }
 }

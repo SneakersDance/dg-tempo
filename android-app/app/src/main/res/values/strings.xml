@@ -37,9 +37,9 @@
 
     <string name="step3">Step 3 · How strong?</string>
     <string name="sec_estim">Coyote e-stim</string>
-    <string name="coy_max">MAX e-stim strength (hard limit, also stored in the box)</string>
-    <string name="coy_base">Strength at slow tempo</string>
-    <string name="coy_auto">Faster music = stronger (from slow-tempo value up to MAX)</string>
+    <string name="coy_max">MAX strength (hard limit)</string>
+    <string name="coy_base">Base strength (slow tempo)</string>
+    <string name="coy_auto">Faster music = stronger</string>
     <string name="coy_intensity">Pulse intensity</string>
     <string name="coy_freq">Pulse frequency</string>
     <string name="coy_channel_b">Also drive channel B</string>
@@ -52,7 +52,7 @@
     <string name="step4">Step 4 · Feel it on the beat (advanced)</string>
     <string name="btn_advanced_show">SHOW TIMING SETTINGS</string>
     <string name="btn_advanced_hide">HIDE TIMING SETTINGS</string>
-    <string name="timing_latency">Pulse earlier / later (latency compensation)</string>
+    <string name="timing_latency">Pulse timing</string>
     <string name="timing_burst">Pulse length</string>
     <string name="timing_every">Pulse on every beat (off = only the first beat of each bar)</string>
     <string name="btn_rotate">WRONG BEAT? SHIFT DOWNBEAT BY ONE</string>
@@ -74,8 +74,8 @@
     <string name="dev_pulse_off">Pulses OFF (stays connected)</string>
     <string name="phone_audio_denied">Phone audio capture was not allowed — still using the microphone.</string>
     <string name="wave_pick">Waveform</string>
-    <string name="wave_mode_beat">Play waveform on each beat (restarts every beat, length = "Pulse length")</string>
-    <string name="wave_mode_cont">Play waveform continuously, like the official app (strength still follows tempo)</string>
+    <string name="wave_mode_beat">Waveform on each beat (off = continuous loop)</string>
+    <string name="wave_mode_cont">Waveform continuous loop (off = on each beat)</string>
     <string name="sens_level">Beat sensitivity</string>
     <string name="sens_hint">Each device has its own sensitivity. Left = strict: fires only on a confidently locked, steady beat (use for the Coyote). Right = eager: fires sooner and on looser beats (fine for the Opossum). In the header, ♪ counts detected kicks, lock %% is how periodic they are, and the C: / O: line shows each device\'s trigger tempo range and whether it fires now (▶ firing, ✗bpm outside its range, ✗lock beat not solid enough for it, · no beat).</string>
     <string name="pulse_rate">How often to pulse</string>
@@ -83,31 +83,73 @@
     <string name="pulse_rate_beat">Every beat</string>
     <string name="pulse_rate_2">Twice per beat</string>
     <string name="pulse_rate_4">Four times per beat</string>
-    <string name="vib_burst">Vibration pulse length (motor needs ≥ 150 ms to be felt)</string>
+    <string name="vib_burst">Vibration length</string>
     <string name="vib_intensity">Vibration intensity</string>
     <string name="bpm_min">Fire only from this tempo</string>
     <string name="bpm_max">…up to this tempo</string>
     <string name="bpm_any">any</string>
-    <string name="vib_any_music">Vibrate on any music sound (every kick, no beat lock needed). Off = only at the tempo range below</string>
+    <string name="vib_any_music">Vibrate on any music sound</string>
     <string name="any_sound">any sound</string>
     <string name="vib_both_motors">Drive both vibrators (A and B)</string>
-    <string name="pip_switch">Show a small BPM / readiness window over other apps (picture-in-picture) when you leave the app</string>
+    <string name="pip_switch">Mini window when leaving the app</string>
     <string name="lang_en">English</string>
     <string name="lang_zh">中文</string>
     <string name="lang_ja">日本語</string>
     <string name="btn_pip_now">MINI\nWINDOW</string>
-    <string name="mic_fallback">If phone audio stops or is refused, switch to the microphone automatically (off = stop listening; room sound never fires the devices unless you tap MICROPHONE)</string>
-    <string name="coy_max_wait">Window X (one pulse owed per X seconds)</string>
+    <string name="mic_fallback">Fall back to microphone if phone audio stops</string>
+    <string name="coy_max_wait">Window length</string>
     <string name="off">off</string>
     <string name="coy_timer">Coyote timer</string>
     <string name="timer_off">Timer off</string>
-    <string name="timer_peak">Every X s, fired at the highest BPM in the window (accumulates up to 3; 3 = at MAX)</string>
-    <string name="timer_random">Fire at random intervals</string>
+    <string name="timer_peak">Every window, at the tempo peak</string>
+    <string name="timer_random">Random intervals</string>
     <string name="timer_rand_min">Random interval: at least</string>
     <string name="timer_rand_max">Random interval: at most</string>
-    <string name="motion_switch">Also detect screen movement (phone audio mode; the shared screen is read at 80×80, frame-to-frame change = motion)</string>
+    <string name="motion_switch">Also detect screen movement (only while the mini window is showing)</string>
     <string name="motion_sens">Movement sensitivity</string>
     <string name="motion_coyote">Coyote fires on screen movement</string>
     <string name="motion_opossum">Opossum fires on screen movement</string>
-    <string name="coy_random_level">Random level per pulse: between base and MAX, mostly low, about 1 in 4 near MAX (overrides tempo mapping)</string>
+    <string name="coy_random_level">Random level per pulse</string>
+    <string name="btn_mute">MUTE\nMIC</string>
+    <string name="btn_unmute">UNMUTE</string>
+    <string name="state_muted">MUTED</string>
+    <string name="end_strict">◀ strict · fewer</string>
+    <string name="end_eager">more · eager ▶</string>
+    <string name="end_soft">◀ softer</string>
+    <string name="end_strong">stronger ▶</string>
+    <string name="end_throb">◀ slow throb</string>
+    <string name="end_buzz">fast buzz ▶</string>
+    <string name="end_earlier">◀ earlier</string>
+    <string name="end_later">later ▶</string>
+    <string name="end_short">◀ short tap</string>
+    <string name="end_long">long hold ▶</string>
+    <string name="end_slow">◀ slow music</string>
+    <string name="end_fast">fast music ▶</string>
+    <string name="end_gentle">◀ gentle</string>
+    <string name="end_hard">hard ▶</string>
+    <string name="end_sooner">◀ sooner</string>
+    <string name="end_rarer">rarer ▶</string>
+    <string name="x_sens">How solid the beat must be before this device fires. Strict: only a clearly locked, steady beat (safer for e-stim, may miss loose tracks). Eager: fires on looser or softer beats (fine for vibration, more false triggers in noisy rooms).</string>
+    <string name="x_intensity">How much of each pulse\'s waveform is delivered. 100 %% is the waveform as designed; lower it to soften every pulse without touching the strength limits. Use when the max feels right but each hit is too sharp.</string>
+    <string name="x_freq">Pulse frequency for the simple pulse (ignored when a library waveform is selected). Low values feel like a slow throb or thump, high values like a fast buzz or tingle. Try 20–40 for a drum-like hit, 100+ for a buzz.</string>
+    <string name="x_max">Hard ceiling. Written into the Coyote itself, so nothing in this app can exceed it. Set it while stationary at a level you can definitely take, then leave it.</string>
+    <string name="x_base">Base strength (slow tempo) and the floor of the random level. Raise it if quiet or slow songs feel like nothing.</string>
+    <string name="x_auto">On: faster music = stronger, from the slow-tempo value up to MAX between the two BPM points in Timing. Off: always the slow-tempo value.</string>
+    <string name="x_random">Every 0.5–3 s a new level is drawn between base and MAX, mostly low, sometimes near MAX. Overrides tempo mapping. Good when the tempo never changes and you want surprise.</string>
+    <string name="x_latency">Bluetooth and the box add delay, so pulses are sent early. If pulses feel late, move left (earlier); if they land before the beat, move right. Tune once with a steady track.</string>
+    <string name="x_burst">How long one pulse lasts. Short = a tap on the beat; long = a hold that can run into the next beat. Library waveforms restart from their beginning on each pulse and play for this long.</string>
+    <string name="x_wave">Pattern of each pulse, from the official DG-Lab library. The simple pulse is one flat tone; library patterns have their own rhythm and texture.</string>
+    <string name="x_wave_mode">On the beat: the pattern restarts on every beat and lasts the pulse length. Continuous: the pattern loops like in the official app; only the strength follows the music.</string>
+    <string name="x_rate">Once per bar = only the first beat of every 4 (needs the bar to be found). Every beat, or 2× / 4× per beat for double- and quadruple-time.</string>
+    <string name="x_bpm_range">This device only fires when the locked tempo is inside the range. Use it to keep the Coyote quiet on slow songs, or the Opossum only on fast ones. Both ends at the extremes = any tempo.</string>
+    <string name="x_timer">Instead of every beat: Peak mode owes one pulse per window and releases it at the tempo\'s high point (up to 3 owed; 3 = fired at MAX). Random mode fires at unpredictable intervals within your range. Timer modes are the only trigger while on.</string>
+    <string name="x_vib_burst">How long each vibration lasts. Motors need ~150 ms to spin up, so very short values are barely felt; 250–400 ms is a clear buzz per beat.</string>
+    <string name="x_vib_any">On: every detected kick vibrates immediately, no beat lock needed, so it reacts within a moment of music starting. Off: waits for a locked tempo and uses the sensitivity / rate / range below.</string>
+    <string name="x_motion">Reads the shared screen at 80×80 and treats frame-to-frame change as movement. Dance hits and cuts fire the chosen devices even when the BPM reading lags a fast dance. This app\'s own window is ignored.</string>
+    <string name="x_mic_fallback">If the screen capture is stopped by the system, switch to the microphone. Off = stop listening instead, so room noise never fires the devices unless you tap MICROPHONE yourself.</string>
+    <string name="x_tempo_points">The two tempos between which strength scales: at the slow BPM you get the base / min value, at the fast BPM the max. Set them to the tempo range of the music you play.</string>
+    <string name="x_both">Also drive the second output (Coyote: channel B electrodes; Opossum: motor B) with the same pattern and level.</string>
+    <string name="x_vib_follow">On: vibration strength scales between min and max with tempo. Off: a fixed strength.</string>
+    <string name="x_pip">When you leave the app, a small window shows BPM, sound, the next level and a bar filling toward the next pulse.</string>
+    <string name="src_share_note">When Android asks what to share, choose "Entire screen" — sharing a single app often does not work. Nothing from your screen leaves the phone: the picture is only compared frame to frame in memory, never stored or sent. The source code is open; you can build the app yourself.</string>
 </resources>

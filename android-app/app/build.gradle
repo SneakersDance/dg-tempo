@@ -10,8 +10,8 @@ android {
         applicationId 'com.tupai.dgtempo'
         minSdk 26
         targetSdk 35
-        versionCode 32
-        versionName '0.32'
+        versionCode 33
+        versionName '0.33'
     }
     // CI signing: the workflow decodes a keystore and sets these env vars. Locally (no env) the
     // debug keystore is used, so both builds install over each other only if the SAME keystore is

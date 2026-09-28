@@ -38,6 +38,12 @@ JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" ./gradle
 # wireless install: python3 -m http.server 3001 in a folder with the APK, open http://<laptop-ip>:3001 on the phone
 ```
 
+**Sharing the screen.** When Android asks what to share, choose **Entire screen**; sharing a
+single app often does not work. Nothing from the screen leaves the phone: audio is analysed for
+beats and, if screen movement is on, frames are compared to each other in memory at 80×80 while
+the mini window is showing. Nothing is stored or sent anywhere. The source is here; build it
+yourself if you want to be sure.
+
 **Step 1 — audio source.** _Phone audio_ captures what the phone itself plays (videos, music apps)
 via Android playback capture: full bass, no room noise, keeps working when you switch apps.
 Android asks for screen/audio capture consent. DRM apps (Netflix etc.) deliver silence; YouTube,

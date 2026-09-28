@@ -1,0 +1,16 @@
+<resources>
+    <color name="bg">#0A0C12</color>
+    <color name="card">#12151E</color>
+    <color name="card_border">#1F2637</color>
+    <color name="panel">#0E1118</color>
+    <color name="text">#E8EEF8</color>
+    <color name="muted">#8B97AB</color>
+    <color name="dim">#5A6577</color>
+    <color name="accent">#00E5FF</color>
+    <color name="accent_dim">#0891A6</color>
+    <color name="coyote">#FF3D7F</color>
+    <color name="opossum">#00E5FF</color>
+    <color name="go">#4DFF88</color>
+    <color name="danger">#FF3B5C</color>
+    <color name="track">#1C2231</color>
+</resources>

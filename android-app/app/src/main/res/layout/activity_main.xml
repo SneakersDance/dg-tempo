@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent">
+    android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/bg">
 
 <com.tupai.dgtempo.PipView android:id="@+id/pipView"
     android:layout_width="match_parent" android:layout_height="match_parent" android:visibility="gone"/>
@@ -9,32 +9,38 @@
     android:layout_width="match_parent" android:layout_height="match_parent"
     android:orientation="vertical" android:fitsSystemWindows="true">
 
-    <!-- sticky header: status + big ARM/STOP -->
+    <!-- sticky header -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:padding="12dp" android:background="#18181E">
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-            <TextView android:id="@+id/tvStatus" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-                android:textSize="14sp" android:textColor="#EEEEEE" android:fontFamily="monospace" android:text="…"/>
+        android:orientation="vertical" android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:paddingTop="10dp" android:paddingBottom="10dp" android:background="@color/panel">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:id="@+id/tvBpm" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:textSize="38sp" android:textStyle="bold" android:fontFamily="monospace"
+                android:textColor="@color/dim" android:text="@string/bpm_none"/>
             <Spinner android:id="@+id/spLanguage" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
         </LinearLayout>
-        <TextView android:id="@+id/tvBpm" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:textSize="34sp" android:textStyle="bold" android:textColor="#FF7A00" android:text="@string/bpm_none"/>
+        <TextView android:id="@+id/tvStatus" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="12sp" android:textColor="@color/muted" android:fontFamily="monospace" android:text="…"/>
         <ProgressBar android:id="@+id/meter" style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent" android:layout_height="8dp" android:max="100" android:progress="0"/>
+            android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="6dp"
+            android:max="100" android:progress="0" android:progressTint="@color/accent" android:progressBackgroundTint="@color/track"/>
         <com.tupai.dgtempo.OutputView android:id="@+id/outCoyote"
-            android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="6dp"/>
+            android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="8dp"/>
         <com.tupai.dgtempo.OutputView android:id="@+id/outOpossum"
-            android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="4dp"/>
+            android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="4dp"/>
         <com.tupai.dgtempo.MotionView android:id="@+id/motionView" android:visibility="gone"
-            android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="4dp"/>
+            android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="4dp"/>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:layout_marginTop="8dp">
-            <Button android:id="@+id/btnArm" android:layout_width="0dp" android:layout_height="68dp"
-                android:layout_weight="2" android:textSize="18sp" android:text="@string/btn_arm"/>
-            <Button android:id="@+id/btnTest" android:layout_width="0dp" android:layout_height="68dp"
-                android:layout_weight="1" android:layout_marginStart="8dp" android:text="@string/btn_test"/>
-            <Button android:id="@+id/btnPip" android:layout_width="0dp" android:layout_height="68dp"
-                android:layout_weight="1" android:layout_marginStart="8dp" android:text="@string/btn_pip_now"/>
+            android:orientation="horizontal" android:layout_marginTop="10dp">
+            <Button android:id="@+id/btnArm" style="@style/BtnAccent" android:layout_width="0dp" android:layout_height="60dp"
+                android:layout_weight="2" android:textSize="16sp" android:text="@string/btn_arm"/>
+            <Button android:id="@+id/btnTest" style="@style/BtnGhost" android:layout_width="0dp" android:layout_height="60dp"
+                android:layout_weight="1" android:layout_marginStart="6dp" android:text="@string/btn_test"/>
+            <Button android:id="@+id/btnMute" style="@style/BtnGhost" android:layout_width="0dp" android:layout_height="60dp"
+                android:layout_weight="1" android:layout_marginStart="6dp" android:text="@string/btn_mute"/>
+            <Button android:id="@+id/btnPip" style="@style/BtnGhost" android:layout_width="0dp" android:layout_height="60dp"
+                android:layout_weight="1" android:layout_marginStart="6dp" android:text="@string/btn_pip_now"/>
         </LinearLayout>
     </LinearLayout>
 
@@ -42,40 +48,55 @@
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical" android:padding="12dp">
 
-            <TextView style="@style/SectionTitle" android:text="@string/step1"/>
-            <TextView android:id="@+id/tvSource" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#8BC34A" android:text="@string/src_now_mic"/>
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-                <Button android:id="@+id/btnPhoneAudio" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/src_phone_btn"/>
-                <Button android:id="@+id/btnMic" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/src_mic_btn"/>
+            <LinearLayout style="@style/Card">
+                <TextView style="@style/SectionTitle" android:text="@string/step1"/>
+                <TextView android:id="@+id/tvSource" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textColor="@color/go" android:textSize="13sp" android:text="@string/src_now_mic"/>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="8dp">
+                    <Button android:id="@+id/btnPhoneAudio" style="@style/BtnGhost" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/src_phone_btn"/>
+                    <Button android:id="@+id/btnMic" style="@style/BtnGhost" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/src_mic_btn"/>
+                </LinearLayout>
+                <TextView style="@style/Hint" android:text="@string/src_hint"/>
+                <TextView style="@style/Hint" android:textColor="@color/text" android:text="@string/src_share_note"/>
+                <LinearLayout android:id="@+id/llAudio" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
             </LinearLayout>
-            <TextView style="@style/Hint" android:text="@string/src_hint"/>
-            <LinearLayout android:id="@+id/llAudio" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
 
-            <TextView style="@style/SectionTitle" android:text="@string/step2"/>
-            <Button android:id="@+id/btnScan" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_scan"/>
-            <LinearLayout android:id="@+id/llDevices" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
-            <TextView style="@style/Hint" android:text="@string/help_coyote"/>
-            <TextView style="@style/Hint" android:text="@string/help_opossum"/>
+            <LinearLayout style="@style/Card">
+                <TextView style="@style/SectionTitle" android:text="@string/step2"/>
+                <Button android:id="@+id/btnScan" style="@style/BtnGhost" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_scan"/>
+                <LinearLayout android:id="@+id/llDevices" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+                <TextView style="@style/Hint" android:text="@string/help_coyote"/>
+                <TextView style="@style/Hint" android:text="@string/help_opossum"/>
+            </LinearLayout>
 
-            <TextView style="@style/SectionTitle" android:text="@string/step3"/>
-            <LinearLayout android:id="@+id/llRate" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
-            <TextView style="@style/Hint" android:text="@string/sens_hint"/>
-            <TextView style="@style/SubTitle" android:text="@string/sec_estim"/>
-            <LinearLayout android:id="@+id/llCoyote" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
-            <TextView style="@style/SubTitle" android:text="@string/sec_vib"/>
-            <LinearLayout android:id="@+id/llOpossum" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+            <LinearLayout style="@style/Card">
+                <TextView style="@style/SectionTitle" android:textColor="@color/coyote" android:text="@string/sec_estim"/>
+                <LinearLayout android:id="@+id/llCoyote" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+            </LinearLayout>
 
-            <TextView style="@style/SectionTitle" android:text="@string/step4"/>
-            <Button android:id="@+id/btnAdvanced" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_advanced_show"/>
-            <LinearLayout android:id="@+id/llTiming" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone"/>
+            <LinearLayout style="@style/Card">
+                <TextView style="@style/SectionTitle" android:textColor="@color/opossum" android:text="@string/sec_vib"/>
+                <LinearLayout android:id="@+id/llOpossum" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+            </LinearLayout>
 
-            <TextView style="@style/SectionTitle" android:text="@string/sec_background"/>
-            <Button android:id="@+id/btnBattery" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_battery"/>
-            <Button android:id="@+id/btnQuit" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_quit"/>
+            <LinearLayout style="@style/Card">
+                <TextView style="@style/SectionTitle" android:text="@string/step4"/>
+                <Button android:id="@+id/btnAdvanced" style="@style/BtnGhost" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_advanced_show"/>
+                <LinearLayout android:id="@+id/llTiming" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone"/>
+                <LinearLayout android:id="@+id/llRate" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+            </LinearLayout>
 
-            <TextView style="@style/SectionTitle" android:text="@string/sec_log"/>
-            <TextView android:id="@+id/tvLog" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:fontFamily="monospace" android:textSize="11sp" android:textColor="#BBBBBB" android:layout_marginBottom="24dp"/>
+            <LinearLayout style="@style/Card">
+                <TextView style="@style/SectionTitle" android:text="@string/sec_background"/>
+                <Button android:id="@+id/btnBattery" style="@style/BtnGhost" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_battery"/>
+                <Button android:id="@+id/btnQuit" style="@style/BtnGhost" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@string/btn_quit"/>
+            </LinearLayout>
+
+            <LinearLayout style="@style/Card">
+                <TextView style="@style/SectionTitle" android:text="@string/sec_log"/>
+                <TextView android:id="@+id/tvLog" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:fontFamily="monospace" android:textSize="11sp" android:textColor="@color/muted"/>
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

@@ -37,9 +37,9 @@
 
     <string name="step3">第 3 步 · 强度</string>
     <string name="sec_estim">郊狼 电击</string>
-    <string name="coy_max">电击最大强度（硬上限，同时写入主机）</string>
-    <string name="coy_base">慢节奏时的强度</string>
-    <string name="coy_auto">音乐越快越强（从慢节奏强度到最大强度）</string>
+    <string name="coy_max">最大强度（硬上限）</string>
+    <string name="coy_base">基础强度（慢节奏）</string>
+    <string name="coy_auto">音乐越快越强</string>
     <string name="coy_intensity">脉冲强度</string>
     <string name="coy_freq">脉冲频率</string>
     <string name="coy_channel_b">同时输出 B 通道</string>
@@ -52,7 +52,7 @@
     <string name="step4">第 4 步 · 踩准节拍（高级）</string>
     <string name="btn_advanced_show">显示节拍设置</string>
     <string name="btn_advanced_hide">隐藏节拍设置</string>
-    <string name="timing_latency">脉冲提前 / 延后（延迟补偿）</string>
+    <string name="timing_latency">脉冲时机</string>
     <string name="timing_burst">脉冲长度</string>
     <string name="timing_every">每一拍都输出（关闭 = 只在每小节第一拍）</string>
     <string name="btn_rotate">拍子不对？把强拍往后移一拍</string>
@@ -74,8 +74,8 @@
     <string name="dev_pulse_off">脉冲 关（保持连接）</string>
     <string name="phone_audio_denied">未允许捕获手机内部音频 — 继续使用麦克风。</string>
     <string name="wave_pick">波形</string>
-    <string name="wave_mode_beat">每一拍播放波形（每拍重新开始，时长 = "脉冲长度"）</string>
-    <string name="wave_mode_cont">连续播放波形，与官方 App 相同（强度仍随节奏变化）</string>
+    <string name="wave_mode_beat">波形随拍播放（关 = 连续循环）</string>
+    <string name="wave_mode_cont">波形连续循环（关 = 随拍）</string>
     <string name="sens_level">节拍灵敏度</string>
     <string name="sens_hint">每个设备有各自的灵敏度。左 = 严格：只在节拍稳定、可靠锁定时才输出（建议郊狼用）。右 = 灵敏：更早、在较松散的节拍上也输出（负鼠可用）。标题栏中 ♪ 为检测到的鼓点数，锁定 %% 为周期性，C: / O: 一行显示各设备的触发 BPM 范围及当前状态（▶ 正在输出，✗bpm 节奏超出范围，✗lock 节拍不够稳定，· 无节拍）。</string>
     <string name="pulse_rate">脉冲频率</string>
@@ -83,31 +83,73 @@
     <string name="pulse_rate_beat">每一拍</string>
     <string name="pulse_rate_2">每拍两次</string>
     <string name="pulse_rate_4">每拍四次</string>
-    <string name="vib_burst">震动脉冲长度（马达至少需要 150 ms 才有感觉）</string>
+    <string name="vib_burst">震动长度</string>
     <string name="vib_intensity">震动强度（波形）</string>
     <string name="bpm_min">仅在节奏不低于此 BPM 时输出</string>
     <string name="bpm_max">…且不高于此 BPM</string>
     <string name="bpm_any">不限</string>
-    <string name="vib_any_music">任何音乐声都震动（每个鼓点，无需锁定节拍）。关闭 = 仅在下方节奏范围内触发</string>
+    <string name="vib_any_music">任何音乐声都震动</string>
     <string name="any_sound">任何声音</string>
     <string name="vib_both_motors">同时驱动两个震动器（A 和 B）</string>
-    <string name="pip_switch">离开应用时在其他应用上方显示小窗（画中画）：BPM 与触发进度</string>
+    <string name="pip_switch">离开 App 时显示小窗</string>
     <string name="lang_en">English</string>
     <string name="lang_zh">中文</string>
     <string name="lang_ja">日本語</string>
     <string name="btn_pip_now">小窗\n模式</string>
-    <string name="mic_fallback">手机内部音频停止或被拒绝时，自动切换到麦克风（关闭 = 停止监听；除非你点击"麦克风"，否则环境声音不会触发设备）</string>
-    <string name="coy_max_wait">时间窗 X（每 X 秒累计一次输出）</string>
+    <string name="mic_fallback">内部音频停止时改用麦克风</string>
+    <string name="coy_max_wait">时间窗长度</string>
     <string name="off">关</string>
     <string name="coy_timer">郊狼定时输出</string>
     <string name="timer_off">定时关闭</string>
-    <string name="timer_peak">每隔 X 秒，在窗口内 BPM 最高点输出（最多累计 3 次；3 次时以最大强度输出）</string>
-    <string name="timer_random">随机间隔输出</string>
+    <string name="timer_peak">每个时间窗，在节奏峰值输出</string>
+    <string name="timer_random">随机间隔</string>
     <string name="timer_rand_min">随机间隔：最短</string>
     <string name="timer_rand_max">随机间隔：最长</string>
-    <string name="motion_switch">同时检测屏幕画面运动（手机内部音频模式；以 80×80 读取共享画面，帧间变化 = 运动）</string>
+    <string name="motion_switch">同时检测画面运动（仅在小窗显示时运行）</string>
     <string name="motion_sens">画面运动灵敏度</string>
     <string name="motion_coyote">郊狼随画面运动输出</string>
     <string name="motion_opossum">负鼠随画面运动输出</string>
-    <string name="coy_random_level">每次脉冲随机强度：在基础与最大之间，大多偏低，约四分之一接近最大（覆盖节奏映射）</string>
+    <string name="coy_random_level">每次脉冲随机强度</string>
+    <string name="btn_mute">静音\n麦克风</string>
+    <string name="btn_unmute">取消静音</string>
+    <string name="state_muted">已静音</string>
+    <string name="end_strict">◀ 严格 · 更少</string>
+    <string name="end_eager">更多 · 灵敏 ▶</string>
+    <string name="end_soft">◀ 更柔</string>
+    <string name="end_strong">更强 ▶</string>
+    <string name="end_throb">◀ 慢速搏动</string>
+    <string name="end_buzz">快速震颤 ▶</string>
+    <string name="end_earlier">◀ 提前</string>
+    <string name="end_later">延后 ▶</string>
+    <string name="end_short">◀ 短促一击</string>
+    <string name="end_long">长时间保持 ▶</string>
+    <string name="end_slow">◀ 慢歌</string>
+    <string name="end_fast">快歌 ▶</string>
+    <string name="end_gentle">◀ 温和</string>
+    <string name="end_hard">强烈 ▶</string>
+    <string name="end_sooner">◀ 更快</string>
+    <string name="end_rarer">更稀 ▶</string>
+    <string name="x_sens">节拍要多稳定才让该设备输出。严格：只在清晰、稳定、已锁定的节拍上输出（电击更安全，松散的曲子可能漏拍）。灵敏：较松或较弱的节拍也输出（震动适用，嘈杂环境更容易误触发）。</string>
+    <string name="x_intensity">每次脉冲波形被送出的比例。100%% 为原始波形；调低可让每一下更柔和，而不改变强度上限。适合"上限合适但每一下太尖"的情况。</string>
+    <string name="x_freq">简单脉冲的频率（选用波形库时忽略）。低值像缓慢的搏动/敲击，高值像快速的震颤/酥麻。鼓点感试 20–40，酥麻感试 100 以上。</string>
+    <string name="x_max">硬上限，会直接写入郊狼主机，本 App 无法超过。请静止时设为你确定能承受的水平，然后不要再动。</string>
+    <string name="x_base">基础强度（慢节奏），也是随机强度的下限。慢歌或安静的歌没感觉时调高。</string>
+    <string name="x_auto">开：音乐越快越强，在"节拍设置"里两个 BPM 点之间，从慢节奏值上升到最大值。关：始终使用慢节奏值。</string>
+    <string name="x_random">每 0.5–3 秒在基础与最大之间随机取一个新强度，大多偏低，偶尔接近最大。覆盖节奏映射。适合节奏不变但想要惊喜的情况。</string>
+    <string name="x_latency">蓝牙和主机会带来延迟，所以脉冲会提前发送。感觉脉冲晚了就向左（提前）；早于节拍就向右。用一首节奏稳定的歌调一次即可。</string>
+    <string name="x_burst">一次脉冲持续多久。短 = 踩在拍点上的一击；长 = 可能延伸到下一拍的保持。波形库的图案会在每次脉冲时从头播放这么久。</string>
+    <string name="x_wave">每次脉冲的图案，来自 DG-Lab 官方波形库。简单脉冲是单一平稳音；库中图案各有节奏与质感。</string>
+    <string name="x_wave_mode">随拍：每一拍重新开始图案并持续"脉冲长度"。连续：像官方 App 一样循环播放，仅强度随音乐变化。</string>
+    <string name="x_rate">每小节一次 = 每 4 拍只在第一拍（需要先找到小节）。每拍、或每拍 2 次 / 4 次用于双倍、四倍节奏。</string>
+    <string name="x_bpm_range">该设备只在锁定节奏处于范围内时输出。可让郊狼在慢歌时保持安静，或让负鼠只在快歌时工作。两端拉到极限 = 任意节奏。</string>
+    <string name="x_timer">替代逐拍输出：峰值模式每个时间窗欠一次输出，在节奏最高点释放（最多累计 3 次；3 次时以最大强度输出）。随机模式在你设定的区间内以不可预测的间隔输出。开启定时后它是郊狼唯一的触发方式。</string>
+    <string name="x_vib_burst">每次震动持续多久。马达需要约 150 ms 才能转起来，太短几乎没感觉；250–400 ms 是每拍一次清晰的震动。</string>
+    <string name="x_vib_any">开：每个检测到的鼓点立刻震动，不需要锁定节拍，音乐一响很快就有反应。关：等待节奏锁定，并使用下方的灵敏度 / 频率 / 范围。</string>
+    <string name="x_motion">以 80×80 读取共享画面，把帧间变化当作运动。舞蹈动作和镜头切换会触发所选设备，即便 BPM 读数跟不上快节奏的舞蹈。本 App 自己的窗口会被忽略。</string>
+    <string name="x_mic_fallback">系统停止录屏时改用麦克风。关 = 直接停止监听，除非你自己点"麦克风"，否则环境噪音不会触发设备。</string>
+    <string name="x_tempo_points">强度在这两个节奏之间缩放：慢 BPM 对应基础 / 最小值，快 BPM 对应最大值。按你常放音乐的节奏范围设置。</string>
+    <string name="x_both">同时以相同图案和强度驱动第二路输出（郊狼：B 通道电极；负鼠：B 马达）。</string>
+    <string name="x_vib_follow">开：震动强度随节奏在最小与最大之间变化。关：固定强度。</string>
+    <string name="x_pip">离开 App 时显示一个小窗：BPM、声音、下一次强度，以及逐渐填满、预示下一次脉冲的进度条。</string>
+    <string name="src_share_note">系统询问共享内容时请选择"整个屏幕"，只共享单个应用往往不起作用。屏幕内容不会离开手机：画面只在内存中逐帧比较，从不保存或上传。源代码公开，你可以自己编译。</string>
 </resources>

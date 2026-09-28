@@ -84,6 +84,15 @@ public final class BeatService extends Service implements BleDevice.Listener {
     public volatile boolean armed = false;
     public volatile boolean audioRunning = false;
     public volatile String audioSource = "none";      // "mic" | "phone" | "none"
+    public volatile boolean muted = false;             // input muted: detector fed silence, nothing fires
+
+    public void setMuted(boolean m) {
+        muted = m;
+        if (m) synchronized (tracker) { tracker.reset(); }
+        log(m ? "input MUTED - beat detection paused" : "input unmuted");
+        UiListener l = ui;
+        if (l != null) main.post(l::onDevices);
+    }
     public volatile int offset = 0;
     public volatile long bursts = 0;
     public volatile int lateTicks = 0;
@@ -113,6 +122,11 @@ public final class BeatService extends Service implements BleDevice.Listener {
     public void setSelfWindow(boolean fullscreen, android.graphics.Rect pipRect) {
         selfFullscreen = fullscreen;
         selfRect = pipRect;
+        // Screen-movement capture costs CPU, so it only runs while the mini window is showing
+        // (that is when the user is watching a video) and is torn down the moment it closes.
+        boolean inPip = pipRect != null;
+        if (inPip && settings.screenMotion && projection != null && !motionRunning) main.post(this::startMotion);
+        if (!inPip && motionRunning) main.post(this::stopMotion);
     }
     private static final int MOTION_W = 80, MOTION_H = 80;
     private ScheduledExecutorService sched;
@@ -462,7 +476,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
             return;
         }
         runAudio(rec, "phone", "phone audio capture @48k (apps that block capture, e.g. DRM video, stay silent)");
-        if (settings.screenMotion) startMotion();
+        if (settings.screenMotion) log("screen movement: will start when the mini window opens");
     }
 
     // ---- screen motion (tiny virtual display of the shared screen, frame differencing) ----------
@@ -470,7 +484,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
     public void setScreenMotion(boolean on) {
         settings.screenMotion = on;
         settings.save(this);
-        if (on && projection != null && !motionRunning) startMotion();
+        if (on && projection != null && selfRect != null && !motionRunning) startMotion();
         if (!on) stopMotion();
     }
 
@@ -487,7 +501,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
                     android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, imageReader.getSurface(), null, h);
             prevLuma = null;
             motionRunning = true;
-            log("screen motion: on (" + MOTION_W + "x" + MOTION_H + " @ <=30 fps)");
+            log("screen movement: on while mini window is showing (" + MOTION_W + "x" + MOTION_H + " @ <=30 fps)");
         } catch (Exception e) {
             log("screen motion failed: " + e.getMessage());
             stopMotion();
@@ -495,6 +509,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
     }
 
     private void stopMotion() {
+        if (motionRunning) log("screen movement: off (mini window closed)");
         motionRunning = false;
         try { if (vDisplay != null) vDisplay.release(); } catch (Exception ignored) {}
         try { if (imageReader != null) imageReader.close(); } catch (Exception ignored) {}
@@ -613,6 +628,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
             int n = rec.read(buf, 0, buf.length, AudioRecord.READ_BLOCKING);
             if (n <= 0) { try { Thread.sleep(5); } catch (InterruptedException e) { return; } continue; }
             double t = System.nanoTime() / 1e9;
+            if (muted) java.util.Arrays.fill(buf, 0, n, (short) 0);      // keep the clock running, hear nothing
             OnsetDetector.Onset o = detector.feed(buf, n, t);
             if (o != null) {
                 onsetCount++;
@@ -685,9 +701,13 @@ public final class BeatService extends Service implements BleDevice.Listener {
     public String readinessNote(String kind) {
         if (!armed) return "off";
         if (deviceActive(kind)) return "▶";
-        if ("coyote".equals(kind) && settings.coyoteTimerMode != 0) return "⏱ " + timerNote;
-        if (!detector.soundPresent()) return "silent";
-        if ("opossum".equals(kind) && settings.vibAnyMusic) return "any sound";
+        if ("coyote".equals(kind) && settings.coyoteTimerMode == 2 && nextRandomAt > 0)
+            return String.format("⏱%.0fs", Math.max(0, nextRandomAt - System.nanoTime() / 1e9));
+        if ("coyote".equals(kind) && settings.coyoteTimerMode == 1)
+            return "⏱" + owed + "/3";
+        if (muted) return "muted";
+        if (!detector.soundPresent()) return "quiet";
+        if ("opossum".equals(kind) && settings.vibAnyMusic) return "sound";
         if (tracker.locked() && !settings.bpmAllowed(kind, tracker.bpm())) return settings.bpmMin(kind) + "-" + settings.bpmMax(kind);
         return "lock";
     }

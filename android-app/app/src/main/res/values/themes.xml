@@ -1,9 +1,22 @@
 <resources>
     <style name="Theme.DGTempo" parent="Theme.AppCompat.NoActionBar">
-        <item name="colorPrimary">#FF7A00</item>
-        <item name="colorPrimaryDark">#C25E00</item>
-        <item name="colorAccent">#4FC3F7</item>
-        <item name="android:windowBackground">#101014</item>
-        <item name="android:statusBarColor">#101014</item>
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorPrimaryDark">@color/bg</item>
+        <item name="colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:textColorPrimary">@color/text</item>
+        <item name="android:textColorSecondary">@color/muted</item>
+        <item name="android:colorControlActivated">@color/accent</item>
+        <item name="colorControlActivated">@color/accent</item>
+        <item name="colorSwitchThumbNormal">@color/muted</item>
+        <item name="android:seekBarStyle">@style/Seek</item>
+        <item name="android:spinnerStyle">@style/SpinnerDark</item>
+        <item name="alertDialogTheme">@style/DialogDark</item>
+    </style>
+    <style name="DialogDark" parent="Theme.AppCompat.Dialog.Alert">
+        <item name="android:background">@color/card</item>
+        <item name="colorAccent">@color/accent</item>
     </style>
 </resources>

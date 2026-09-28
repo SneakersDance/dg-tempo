@@ -122,13 +122,13 @@ jobs:
       - name: Point sneakersdance.com at the new build
         if: ${{ github.event_name == 'push' || inputs.publish }}
         env:
-          SITE_URL: ${{ vars.SITE_URL || 'https://sneakersdance.com' }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://www.sneakersdance.com' }}
           APK_PUBLISH_SECRET: ${{ secrets.APK_PUBLISH_SECRET }}
         run: |
           if [ -z "$APK_PUBLISH_SECRET" ]; then echo "::error::APK_PUBLISH_SECRET not set"; exit 1; fi
           BODY=$(jq -n --arg url "${{ steps.blob.outputs.url }}" --argjson size "${{ steps.blob.outputs.size }}" \
                  --arg version "${{ steps.ver.outputs.name }}" '{url:$url,sizeBytes:$size,version:$version}')
-          HTTP=$(curl -sS -o /tmp/resp.json -w "%{http_code}" -X POST "$SITE_URL/api/apk/ci" \
+          HTTP=$(curl -sSL -o /tmp/resp.json -w "%{http_code}" -X POST "$SITE_URL/api/apk/ci" \
                  -H "Authorization: Bearer $APK_PUBLISH_SECRET" -H "Content-Type: application/json" -d "$BODY")
           cat /tmp/resp.json; echo
           [ "$HTTP" = "200" ] || { echo "::error::site returned HTTP $HTTP"; exit 1; }
