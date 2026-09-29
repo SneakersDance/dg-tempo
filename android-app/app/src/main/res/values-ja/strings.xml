@@ -152,4 +152,6 @@
     <string name="x_pip">アプリを離れると小窓に BPM・音・次の強さ・次のパルスに向けて満ちていくバーを表示。</string>
     <string name="src_share_note">共有内容を聞かれたら「画面全体」を選んでください。アプリ単体の共有はうまく動かないことがあります。画面の内容は端末の外に出ません。メモリ上でフレーム間比較をするだけで、保存も送信もしません。ソースコードは公開されており、自分でビルドできます。</string>
     <string name="phone_audio_reoffer">Android がスマホ内部音声を停止しました（画面ロックで停止します）。画面共有を再度リクエストします…</string>
+    <string name="arm_no_device_title">デバイス未接続</string>
+    <string name="arm_no_device_msg">先に Coyote や Opossum を接続してください（ステップ 2）。DG-Lab 公式アプリを終了し、検索して各デバイスの「接続」をタップ。</string>
 </resources>

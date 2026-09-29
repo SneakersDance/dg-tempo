@@ -152,4 +152,6 @@
     <string name="x_pip">离开 App 时显示一个小窗：BPM、声音、下一次强度，以及逐渐填满、预示下一次脉冲的进度条。</string>
     <string name="src_share_note">系统询问共享内容时请选择"整个屏幕"，只共享单个应用往往不起作用。屏幕内容不会离开手机：画面只在内存中逐帧比较，从不保存或上传。源代码公开，你可以自己编译。</string>
     <string name="phone_audio_reoffer">安卓已停止手机内部音频（锁屏时会中断）。正在重新请求共享屏幕…</string>
+    <string name="arm_no_device_title">尚未连接设备</string>
+    <string name="arm_no_device_msg">请先连接郊狼和/或负鼠（第 2 步）。关闭 DG-Lab 官方 App，然后搜索并点击各设备的"连接"。</string>
 </resources>

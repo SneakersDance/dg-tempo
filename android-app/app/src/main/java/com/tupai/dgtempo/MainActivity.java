@@ -98,7 +98,24 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         llAudio = findViewById(R.id.llAudio);
         llRate = findViewById(R.id.llRate);
 
-        btnArm.setOnClickListener(v -> { if (svc != null) svc.toggleArm(); });
+        btnArm.setOnClickListener(v -> {
+            if (svc == null) return;
+            boolean anyConnected = svc.devices.values().stream().anyMatch(d -> d.connected);
+            if (!svc.armed && !anyConnected) {
+                // nothing to arm: explain and offer to jump straight to scanning
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle(R.string.arm_no_device_title)
+                        .setMessage(R.string.arm_no_device_msg)
+                        .setPositiveButton(R.string.btn_scan, (d, w) -> {
+                            svc.startScan();
+                            findViewById(R.id.btnScan).getParent().requestChildFocus(findViewById(R.id.btnScan), findViewById(R.id.btnScan));
+                        })
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show();
+                return;
+            }
+            svc.toggleArm();
+        });
         findViewById(R.id.btnTest).setOnClickListener(v -> { if (svc != null) svc.testPulse(); });
         findViewById(R.id.btnPip).setOnClickListener(v -> enterPip(true));
         findViewById(R.id.btnScan).setOnClickListener(v -> { if (svc != null) svc.startScan(); });
