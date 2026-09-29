@@ -10,8 +10,11 @@ android {
         applicationId 'com.tupai.dgtempo'
         minSdk 26
         targetSdk 35
-        versionCode 33
-        versionName '0.33'
+        // CI passes -PversionName=1.0.<run number> -PversionCode=<1000 + run number>
+        // (see .github/workflows/android-release.yml). Local builds are 1.0.0-dev, code 999: above the old
+        // 0.33 builds so they still install over them, below every CI build.
+        versionCode = ((project.findProperty('versionCode') ?: '999') as String).toInteger()
+        versionName = (project.findProperty('versionName') ?: '1.0.0-dev') as String
     }
     // CI signing: the workflow decodes a keystore and sets these env vars. Locally (no env) the
     // debug keystore is used, so both builds install over each other only if the SAME keystore is

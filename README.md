@@ -75,7 +75,7 @@ action. Tap _Allow background_ once so the phone does not kill the service off-s
 `.github/workflows/android-release.yml` runs on every push to `main` that touches `android-app/`
 (or manually via *Run workflow*). It:
 
-1. reads `versionName` / `versionCode` from `android-app/app/build.gradle`;
+1. sets the version to `1.0.<run number>` (`versionCode` = 1000 + run number) and passes it to Gradle;
 2. runs the unit tests and builds a **release** APK, signed with the keystore from the GitHub
    environment (falls back to the runner's throwaway debug key with a warning);
 3. uploads it to Vercel Blob as `dg-tempo/dg-tempo-v<version>.apk` (fixed name, overwrite allowed);
@@ -83,8 +83,8 @@ action. Tap _Allow background_ once so the phone does not kill the service off-s
    homepage download link and deletes the previous blob (only one APK is ever stored);
 5. publishes a GitHub release `v<version>` with the APK attached (that is the version history).
 
-**To ship a build:** bump `versionCode` and `versionName` in `android-app/app/build.gradle`,
-commit, push to `main`. The same version pushed twice overwrites the blob and updates the release.
+**To ship a build:** push to `main`. Every run gets a new version from its run number, so nothing
+needs bumping by hand. Local builds are `1.0.0-dev`; the version shows at the bottom of the app.
 
 **GitHub environment `prod`** (Settings → Environments → prod):
 

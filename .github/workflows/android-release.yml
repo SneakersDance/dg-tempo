@@ -2,7 +2,8 @@ name: Android release
 
 # Builds the DG Tempo APK, uploads it to Vercel Blob as dg-tempo/dg-tempo-v<version>.apk,
 # tells sneakersdance.com to point its download link at it, and attaches the APK to a
-# GitHub release tagged v<version>. The version is versionName in android-app/app/build.gradle.
+# GitHub release tagged v<version>. The version is 1.0.<run number> (versionCode 1000 + run number),
+# passed to Gradle as -PversionName/-PversionCode; local builds fall back to 1.0.0-dev (code 999).
 #
 # GitHub environment "prod" must provide:
 #   secrets: BLOB_READ_WRITE_TOKEN, APK_PUBLISH_SECRET,
@@ -37,11 +38,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read version from build.gradle
+      - name: Version from run number
         id: ver
         run: |
-          NAME=$(grep -oP "versionName '\K[^']+" android-app/app/build.gradle)
-          CODE=$(grep -oP "versionCode \K[0-9]+" android-app/app/build.gradle)
+          NAME="1.0.${{ github.run_number }}"
+          CODE=$(( 1000 + ${{ github.run_number }} ))
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
           echo "Building DG Tempo v$NAME (code $CODE)"
@@ -91,7 +92,8 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon testDebugUnitTest assembleRelease
+          ./gradlew --no-daemon -PversionName="${{ steps.ver.outputs.name }}" -PversionCode="${{ steps.ver.outputs.code }}" \
+                    testDebugUnitTest assembleRelease
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
           OUT="$RUNNER_TEMP/dg-tempo-v${{ steps.ver.outputs.name }}.apk"
           cp "$APK" "$OUT"

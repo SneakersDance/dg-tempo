@@ -123,6 +123,10 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
                     Uri.parse("package:" + getPackageName())));
         });
+        try {
+            String ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            ((TextView) findViewById(R.id.tvVersion)).setText(getString(R.string.version_fmt, ver));
+        } catch (Exception ignored) {}
         requestPermissionsThenStart();
     }
 
@@ -289,6 +293,16 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         pipTimer.removeCallbacks(pipTick);
         if (isInPip) pipTimer.post(pipTick);        // own refresh loop: independent of service callbacks while paused
         reportSelfWindow();
+        if (!isInPip) mainRoot.post(this::refitHeaderButtons);   // after the expand animation has settled
+    }
+
+    /** Back from the mini window: force the header buttons to re-measure and re-fit their auto-sized text. */
+    private void refitHeaderButtons() {
+        for (int id : new int[]{R.id.btnArm, R.id.btnTest, R.id.btnMute, R.id.btnPip}) {
+            Button b = findViewById(id);
+            if (b != null) b.setText(b.getText());
+        }
+        mainRoot.requestLayout();
     }
 
     private void updatePip() {

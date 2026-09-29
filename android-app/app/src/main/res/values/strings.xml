@@ -153,4 +153,5 @@
     <string name="x_pip">When you leave the app, a small window shows BPM, sound, the next level and a bar filling toward the next pulse.</string>
     <string name="src_share_note">When Android asks what to share, choose "Entire screen" — sharing a single app often does not work. Nothing from your screen leaves the phone: the picture is only compared frame to frame in memory, never stored or sent. The source code is open; you can build the app yourself.</string>
     <string name="phone_audio_reoffer">Phone audio was stopped by Android (it ends when the phone locks). Asking to share the screen again…</string>
+    <string name="version_fmt" translatable="false">DG Tempo v%1$s</string>
 </resources>
