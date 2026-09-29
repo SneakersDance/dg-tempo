@@ -10,7 +10,7 @@ public final class Settings {
     public int vibMin = 200;           // Opossum intensity at bpmLo
     public int vibMax = 200;           // Opossum intensity at bpmHi; cap
     public boolean vibFollowTempo = true;
-    public int vibManual = 80;         // Opossum intensity when not following tempo
+    public int vibManual = 200;         // Opossum intensity when not following tempo
     public boolean autoStrength = true; // Coyote follows tempo; else coyoteMin fixed
     public double bpmLo = 90, bpmHi = 150;
     public int intensity = 100;        // slot intensity 0-100
@@ -22,7 +22,7 @@ public final class Settings {
     public double sensitivity = 2.0;   // derived from sensitivityLevel
     public int sensitivityLevel = 5;   // derived: max of the two device levels; drives the shared detector
     public int pulseRate = 1;          // legacy (kept for old prefs); per-device rates below are used
-    public int vibBurstMs = 150;       // Opossum pulse length (motors need >= 150 ms)
+    public int vibBurstMs = 3000;       // Opossum pulse length (motors need >= 150 ms)
     public int coyoteSens = 5;         // 1 strict .. 10 eager: how solid the beat must be before the Coyote fires
     public int vibSens = 7;            // same for the Opossum (usually higher: vibration is harmless)
     public int coyotePulseRate = 1;    // 0 once per bar, 1 every beat, 2 twice, 3 four times per beat
@@ -79,7 +79,7 @@ public final class Settings {
         s.vibSens = p.getInt("vibSens", 7);
         s.coyotePulseRate = p.getInt("coyotePulseRate", s.pulseRate);
         s.vibPulseRate = p.getInt("vibPulseRate", s.pulseRate);
-        s.vibIntensity = p.getInt("vibIntensity", 100);
+        s.vibIntensity = p.getInt("vibIntensity", s.vibIntensity);
         s.vibAnyMusic = p.getBoolean("vibAnyMusic", true);
         s.vibBothMotors = p.getBoolean("vibBothMotors", true);
         s.pip = p.getBoolean("pip", true);
