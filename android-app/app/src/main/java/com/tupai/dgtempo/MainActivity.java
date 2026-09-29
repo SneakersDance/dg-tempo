@@ -446,8 +446,8 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         subTitle(llCoyote, R.string.wave_pick);
         addWave(llCoyote, Waveforms.COYOTE, s.coyoteWave, id -> { s.coyoteWave = id; changed(); });
         hint(llCoyote, R.string.x_wave);
-        addSwitch(llCoyote, s.coyoteContinuous ? R.string.wave_mode_cont : R.string.wave_mode_beat, R.string.x_wave_mode, s.coyoteContinuous,
-                v -> { s.coyoteContinuous = v; changed(); buildControls(); });
+        addSwitch(llCoyote, R.string.wave_mode_beat, R.string.x_wave_mode, !s.coyoteContinuous,
+                v -> { s.coyoteContinuous = !v; changed(); });
         addSeek(llCoyote, R.string.coy_intensity, R.string.x_intensity, R.string.end_soft, R.string.end_strong, 0, 100, s.intensity, v -> v + " %", v -> { s.intensity = v; changed(); });
         addSeek(llCoyote, R.string.coy_freq, R.string.x_freq, R.string.end_throb, R.string.end_buzz, 10, 240, s.freq, String::valueOf, v -> { s.freq = v; changed(); });
         addSeek(llCoyote, R.string.timing_burst, R.string.x_burst, R.string.end_short, R.string.end_long, 25, 3000, s.burstMs, v -> v + " ms", v -> { s.burstMs = v; changed(); });
@@ -473,8 +473,8 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         }
         subTitle(llOpossum, R.string.wave_pick);
         addWave(llOpossum, Waveforms.OPOSSUM, s.opossumWave, id -> { s.opossumWave = id; changed(); });
-        addSwitch(llOpossum, s.opossumContinuous ? R.string.wave_mode_cont : R.string.wave_mode_beat, R.string.x_wave_mode, s.opossumContinuous,
-                v -> { s.opossumContinuous = v; changed(); buildControls(); });
+        addSwitch(llOpossum, R.string.wave_mode_beat, R.string.x_wave_mode, !s.opossumContinuous,
+                v -> { s.opossumContinuous = !v; changed(); });
         addSeek(llOpossum, R.string.vib_intensity, R.string.x_intensity, R.string.end_soft, R.string.end_strong, 0, 100, s.vibIntensity, v -> v + " %", v -> { s.vibIntensity = v; changed(); });
         addSeek(llOpossum, R.string.vib_burst, R.string.x_vib_burst, R.string.end_short, R.string.end_long, 100, 3000, s.vibBurstMs, v -> v + " ms", v -> { s.vibBurstMs = v; changed(); });
         addSwitch(llOpossum, R.string.vib_both_motors, R.string.x_both, s.vibBothMotors, v -> { s.vibBothMotors = v; changed(); });

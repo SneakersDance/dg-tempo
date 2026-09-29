@@ -74,8 +74,7 @@
     <string name="dev_pulse_off">脉冲 关（保持连接）</string>
     <string name="phone_audio_denied">未允许捕获手机内部音频 — 继续使用麦克风。</string>
     <string name="wave_pick">波形</string>
-    <string name="wave_mode_beat">波形随拍播放（关 = 连续循环）</string>
-    <string name="wave_mode_cont">波形连续循环（关 = 随拍）</string>
+    <string name="wave_mode_beat">波形随拍重新开始（关 = 连续循环，同官方 App）</string>
     <string name="sens_level">节拍灵敏度</string>
     <string name="sens_hint">每个设备有各自的灵敏度。左 = 严格：只在节拍稳定、可靠锁定时才输出（建议郊狼用）。右 = 灵敏：更早、在较松散的节拍上也输出（负鼠可用）。标题栏中 ♪ 为检测到的鼓点数，锁定 %% 为周期性，C: / O: 一行显示各设备的触发 BPM 范围及当前状态（▶ 正在输出，✗bpm 节奏超出范围，✗lock 节拍不够稳定，· 无节拍）。</string>
     <string name="pulse_rate">脉冲频率</string>

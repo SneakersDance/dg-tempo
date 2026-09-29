@@ -74,8 +74,7 @@
     <string name="dev_pulse_off">パルス OFF（接続は維持）</string>
     <string name="phone_audio_denied">スマホ内部音声のキャプチャが許可されませんでした — マイクを使用します。</string>
     <string name="wave_pick">波形</string>
-    <string name="wave_mode_beat">波形を拍ごとに（オフ＝連続ループ）</string>
-    <string name="wave_mode_cont">波形を連続ループ（オフ＝拍ごと）</string>
+    <string name="wave_mode_beat">波形を拍ごとに再スタート（オフ＝公式アプリのような連続ループ）</string>
     <string name="sens_level">ビート感度</string>
     <string name="sens_hint">デバイスごとに感度を設定できます。左 = 厳格：確実にロックした安定ビートでのみ出力（Coyote 向け）。右 = 敏感：早めに、緩いビートでも出力（Opossum 向け）。ヘッダーの ♪ は検出キック数、ロック %% は周期性、C: / O: の行は各デバイスの出力テンポ範囲と現在の状態（▶ 出力中、✗bpm 範囲外、✗lock ビートが不安定、· ビートなし）。</string>
     <string name="pulse_rate">パルスの頻度</string>

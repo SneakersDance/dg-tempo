@@ -5,24 +5,24 @@ import android.content.SharedPreferences;
 
 /** User settings, persisted. All strength values are device units (0-200). */
 public final class Settings {
-    public int coyoteMin = 5;          // Coyote strength at bpmLo and below
-    public int coyoteMax = 30;         // Coyote strength at bpmHi and above; written as BF soft cap
-    public int vibMin = 40;            // Opossum intensity at bpmLo
-    public int vibMax = 120;           // Opossum intensity at bpmHi; cap
+    public int coyoteMin = 1;          // Coyote strength at bpmLo and below
+    public int coyoteMax = 2;          // Coyote strength at bpmHi and above; written as BF soft cap
+    public int vibMin = 200;           // Opossum intensity at bpmLo
+    public int vibMax = 200;           // Opossum intensity at bpmHi; cap
     public boolean vibFollowTempo = true;
     public int vibManual = 80;         // Opossum intensity when not following tempo
     public boolean autoStrength = true; // Coyote follows tempo; else coyoteMin fixed
     public double bpmLo = 90, bpmHi = 150;
     public int intensity = 100;        // slot intensity 0-100
     public int freq = 30;              // Coyote waveform freq byte 10-240
-    public int burstMs = 100;
+    public int burstMs = 150;
     public int latencyMs = 100;        // fire this early
     public boolean everyBeat = true;
-    public boolean channelB = false;
+    public boolean channelB = true;
     public double sensitivity = 2.0;   // derived from sensitivityLevel
     public int sensitivityLevel = 5;   // derived: max of the two device levels; drives the shared detector
     public int pulseRate = 1;          // legacy (kept for old prefs); per-device rates below are used
-    public int vibBurstMs = 250;       // Opossum pulse length (motors need >= 150 ms)
+    public int vibBurstMs = 150;       // Opossum pulse length (motors need >= 150 ms)
     public int coyoteSens = 5;         // 1 strict .. 10 eager: how solid the beat must be before the Coyote fires
     public int vibSens = 7;            // same for the Opossum (usually higher: vibration is harmless)
     public int coyotePulseRate = 1;    // 0 once per bar, 1 every beat, 2 twice, 3 four times per beat
@@ -30,12 +30,12 @@ public final class Settings {
     public int vibIntensity = 100;     // Opossum slot intensity 0-100 (Coyote uses `intensity`)
     public boolean pip = true;
     public boolean micFallback = false;
-    public boolean coyoteRandomLevel = false;   // each Coyote pulse at a random level between base and max
+    public boolean coyoteRandomLevel = true;    // each Coyote pulse at a random level between base and max
     public boolean screenMotion = false;        // phone-audio mode: also detect screen movement
     public int motionSens = 5;                  // 1 strict .. 10 eager
     public boolean motionCoyote = false, motionOpossum = true;   // which devices fire on screen movement
-    public int coyoteMaxWaitS = 30;     // timer window X seconds
-    public int coyoteTimerMode = 0;     // 0 off, 1 every X s at the BPM peak (accumulates up to 3), 2 random interval
+    public int coyoteMaxWaitS = 5;      // timer window X seconds
+    public int coyoteTimerMode = 1;     // 0 off, 1 every X s at the BPM peak (accumulates up to 3), 2 random interval
     public int coyoteRandMinS = 10, coyoteRandMaxS = 60; // phone audio lost -> switch to the microphone? (off: stop listening)          // picture-in-picture readout when leaving the app
     public boolean vibBothMotors = true; // Opossum: drive motor B with the same pattern as A (default: both)
     public boolean vibAnyMusic = true;  // Opossum: vibrate on every detected kick, no beat lock needed (default)
@@ -43,7 +43,7 @@ public final class Settings {
     public int vibBpmMin = 60, vibBpmMax = 220;         // same for the Opossum
     public int freqBalance = 160, intensityBalance = 0;
     public boolean coyoteEnabled = true, opossumEnabled = true;   // per-device pulse on/off
-    public String coyoteWave = Waveforms.SIMPLE_ID, opossumWave = "BEAT";   // waveform ids
+    public String coyoteWave = "PULSATING", opossumWave = "BEAT";   // waveform ids
     public boolean coyoteContinuous = false, opossumContinuous = false;      // loop like the official app vs on-the-beat
 
     private static final String PREF = "dgtempo";
@@ -74,7 +74,7 @@ public final class Settings {
         s.coyoteContinuous = p.getBoolean("coyoteContinuous", false);
         s.sensitivityLevel = p.getInt("sensitivityLevel", 5);
         s.pulseRate = p.getInt("pulseRate", s.everyBeat ? 1 : 0);
-        s.vibBurstMs = p.getInt("vibBurstMs", 250);
+        s.vibBurstMs = p.getInt("vibBurstMs", s.vibBurstMs);
         s.coyoteSens = p.getInt("coyoteSens", 5);
         s.vibSens = p.getInt("vibSens", 7);
         s.coyotePulseRate = p.getInt("coyotePulseRate", s.pulseRate);
@@ -85,12 +85,12 @@ public final class Settings {
         s.pip = p.getBoolean("pip", true);
         s.micFallback = p.getBoolean("micFallback", false);
         s.screenMotion = p.getBoolean("screenMotion", false);
-        s.coyoteRandomLevel = p.getBoolean("coyoteRandomLevel", false);
+        s.coyoteRandomLevel = p.getBoolean("coyoteRandomLevel", s.coyoteRandomLevel);
         s.motionSens = p.getInt("motionSens", 5);
         s.motionCoyote = p.getBoolean("motionCoyote", false);
         s.motionOpossum = p.getBoolean("motionOpossum", true);
-        s.coyoteMaxWaitS = p.getInt("coyoteMaxWaitS", 30);
-        s.coyoteTimerMode = p.getInt("coyoteTimerMode", 0);
+        s.coyoteMaxWaitS = p.getInt("coyoteMaxWaitS", s.coyoteMaxWaitS);
+        s.coyoteTimerMode = p.getInt("coyoteTimerMode", s.coyoteTimerMode);
         s.coyoteRandMinS = p.getInt("coyoteRandMinS", 10);
         s.coyoteRandMaxS = p.getInt("coyoteRandMaxS", 60);
         s.coyoteBpmMin = p.getInt("coyoteBpmMin", 60); s.coyoteBpmMax = p.getInt("coyoteBpmMax", 220);

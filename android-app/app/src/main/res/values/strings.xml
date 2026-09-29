@@ -74,8 +74,7 @@
     <string name="dev_pulse_off">Pulses OFF (stays connected)</string>
     <string name="phone_audio_denied">Phone audio capture was not allowed — still using the microphone.</string>
     <string name="wave_pick">Waveform</string>
-    <string name="wave_mode_beat">Waveform on each beat (off = continuous loop)</string>
-    <string name="wave_mode_cont">Waveform continuous loop (off = on each beat)</string>
+    <string name="wave_mode_beat">Waveform restarts on each beat (off = continuous loop, like the official app)</string>
     <string name="sens_level">Beat sensitivity</string>
     <string name="sens_hint">Each device has its own sensitivity. Left = strict: fires only on a confidently locked, steady beat (use for the Coyote). Right = eager: fires sooner and on looser beats (fine for the Opossum). In the header, ♪ counts detected kicks, lock %% is how periodic they are, and the C: / O: line shows each device\'s trigger tempo range and whether it fires now (▶ firing, ✗bpm outside its range, ✗lock beat not solid enough for it, · no beat).</string>
     <string name="pulse_rate">How often to pulse</string>
