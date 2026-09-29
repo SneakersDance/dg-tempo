@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/bg">
 
 <com.tupai.dgtempo.PipView android:id="@+id/pipView"
@@ -33,13 +34,17 @@
             android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="4dp"/>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:layout_marginTop="10dp" android:baselineAligned="false">
-            <Button android:id="@+id/btnArm" style="@style/BtnAccent" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="60dp"
+            <Button android:id="@+id/btnArm" style="@style/BtnAccent" android:layout_width="0dp" android:layout_height="60dp" android:maxLines="2" android:breakStrategy="simple"
+                app:autoSizeTextType="uniform" app:autoSizeMinTextSize="10sp" app:autoSizeMaxTextSize="16sp" app:autoSizeStepGranularity="1sp"
                 android:layout_weight="2" android:textSize="16sp" android:text="@string/btn_arm"/>
-            <Button android:id="@+id/btnTest" style="@style/BtnGhost" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="60dp"
+            <Button android:id="@+id/btnTest" style="@style/BtnGhost" android:layout_width="0dp" android:layout_height="60dp" android:maxLines="2" android:breakStrategy="simple"
+                app:autoSizeTextType="uniform" app:autoSizeMinTextSize="8sp" app:autoSizeMaxTextSize="13sp" app:autoSizeStepGranularity="1sp"
                 android:layout_weight="1" android:layout_marginStart="6dp" android:text="@string/btn_test"/>
-            <Button android:id="@+id/btnMute" style="@style/BtnGhost" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="60dp"
+            <Button android:id="@+id/btnMute" style="@style/BtnGhost" android:layout_width="0dp" android:layout_height="60dp" android:maxLines="2" android:breakStrategy="simple"
+                app:autoSizeTextType="uniform" app:autoSizeMinTextSize="8sp" app:autoSizeMaxTextSize="13sp" app:autoSizeStepGranularity="1sp"
                 android:layout_weight="1" android:layout_marginStart="6dp" android:text="@string/btn_mute"/>
-            <Button android:id="@+id/btnPip" style="@style/BtnGhost" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="60dp"
+            <Button android:id="@+id/btnPip" style="@style/BtnGhost" android:layout_width="0dp" android:layout_height="60dp" android:maxLines="2" android:breakStrategy="simple"
+                app:autoSizeTextType="uniform" app:autoSizeMinTextSize="8sp" app:autoSizeMaxTextSize="13sp" app:autoSizeStepGranularity="1sp"
                 android:layout_weight="1" android:layout_marginStart="6dp" android:text="@string/btn_pip_now"/>
         </LinearLayout>
     </LinearLayout>
