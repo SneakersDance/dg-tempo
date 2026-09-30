@@ -5,87 +5,120 @@ import android.content.SharedPreferences;
 
 /** User settings, persisted. All strength values are device units (0-200). */
 public final class Settings {
-    public int coyoteMin = 1;          // Coyote strength at bpmLo and below
-    public int coyoteMax = 2;          // Coyote strength at bpmHi and above; written as BF soft cap
-    public int vibMin = 200;           // Opossum intensity at bpmLo
-    public int vibMax = 200;           // Opossum intensity at bpmHi; cap
+    /**
+     * Output-shaping dials of ONE channel (Coyote A/B electrodes, Opossum A/B motors). Trigger logic
+     * (sensitivity, rate, tempo range, timer, any-music) stays per device and drives both channels.
+     */
+    public static final class ChannelCfg {
+        public int min, max;            // strength at slow tempo / at fast tempo (+ hard cap for the Coyote)
+        public int manual;              // Opossum: fixed strength when not following tempo
+        public int intensity = 100;     // waveform intensity 0-100
+        public int freq = 30;           // Coyote simple-pulse frequency byte 10-240
+        public int burstMs;             // pulse length
+        public String wave;             // waveform id (SIMPLE or a library id)
+        public boolean continuous = false;
+        public boolean randomLevel = false;
+
+        ChannelCfg(int min, int max, int manual, int burstMs, String wave, boolean randomLevel) {
+            this.min = min; this.max = max; this.manual = manual; this.burstMs = burstMs; this.wave = wave; this.randomLevel = randomLevel;
+        }
+        void copyFrom(ChannelCfg o) {
+            min = o.min; max = o.max; manual = o.manual; intensity = o.intensity; freq = o.freq; burstMs = o.burstMs;
+            wave = o.wave; continuous = o.continuous; randomLevel = o.randomLevel;
+        }
+        void load(SharedPreferences p, String sfx, ChannelCfg fallback) {
+            min = p.getInt("coyoteMin" + sfx, fallback.min); max = p.getInt("coyoteMax" + sfx, fallback.max);
+            manual = p.getInt("manual" + sfx, fallback.manual); intensity = p.getInt("intensity" + sfx, fallback.intensity);
+            freq = p.getInt("freq" + sfx, fallback.freq); burstMs = p.getInt("burstMs" + sfx, fallback.burstMs);
+            wave = p.getString("wave" + sfx, fallback.wave); continuous = p.getBoolean("continuous" + sfx, fallback.continuous);
+            randomLevel = p.getBoolean("randomLevel" + sfx, fallback.randomLevel);
+        }
+        void save(SharedPreferences.Editor e, String sfx) {
+            e.putInt("coyoteMin" + sfx, min).putInt("coyoteMax" + sfx, max).putInt("manual" + sfx, manual)
+             .putInt("intensity" + sfx, intensity).putInt("freq" + sfx, freq).putInt("burstMs" + sfx, burstMs)
+             .putString("wave" + sfx, wave).putBoolean("continuous" + sfx, continuous).putBoolean("randomLevel" + sfx, randomLevel);
+        }
+    }
+
+    // Coyote channels A / B, Opossum motors A / B. Linked (default) = B mirrors A.
+    public final ChannelCfg cA = new ChannelCfg(1, 2, 0, 150, "PULSATING", true);
+    public final ChannelCfg cB = new ChannelCfg(1, 2, 0, 150, "PULSATING", true);
+    public final ChannelCfg oA = new ChannelCfg(200, 200, 200, 3000, "BEAT", false);
+    public final ChannelCfg oB = new ChannelCfg(200, 200, 200, 3000, "BEAT", false);
+    public boolean coyoteLink = true, vibLink = true;
+
     public boolean vibFollowTempo = true;
-    public int vibManual = 200;         // Opossum intensity when not following tempo
-    public boolean autoStrength = true; // Coyote follows tempo; else coyoteMin fixed
+    public boolean autoStrength = true; // Coyote follows tempo; else base value
     public double bpmLo = 90, bpmHi = 150;
-    public int intensity = 100;        // slot intensity 0-100
-    public int freq = 30;              // Coyote waveform freq byte 10-240
-    public int burstMs = 150;
     public int latencyMs = 100;        // fire this early
     public boolean everyBeat = true;
-    public boolean channelB = true;
+    public boolean channelB = true;    // Coyote: drive channel B electrodes
     public double sensitivity = 2.0;   // derived from sensitivityLevel
     public int sensitivityLevel = 5;   // derived: max of the two device levels; drives the shared detector
     public int pulseRate = 1;          // legacy (kept for old prefs); per-device rates below are used
-    public int vibBurstMs = 3000;       // Opossum pulse length (motors need >= 150 ms)
     public int coyoteSens = 5;         // 1 strict .. 10 eager: how solid the beat must be before the Coyote fires
     public int vibSens = 7;            // same for the Opossum (usually higher: vibration is harmless)
     public int coyotePulseRate = 1;    // 0 once per bar, 1 every beat, 2 twice, 3 four times per beat
     public int vibPulseRate = 1;
-    public int vibIntensity = 100;     // Opossum slot intensity 0-100 (Coyote uses `intensity`)
     public boolean pip = true;
     public boolean micFallback = false;
-    public boolean coyoteRandomLevel = true;    // each Coyote pulse at a random level between base and max
     public boolean screenMotion = false;        // phone-audio mode: also detect screen movement
     public int motionSens = 5;                  // 1 strict .. 10 eager
     public boolean motionCoyote = false, motionOpossum = true;   // which devices fire on screen movement
     public int coyoteMaxWaitS = 5;      // timer window X seconds
     public int coyoteTimerMode = 1;     // 0 off, 1 every X s at the BPM peak (accumulates up to 3), 2 random interval
-    public int coyoteRandMinS = 10, coyoteRandMaxS = 60; // phone audio lost -> switch to the microphone? (off: stop listening)          // picture-in-picture readout when leaving the app
-    public boolean vibBothMotors = true; // Opossum: drive motor B with the same pattern as A (default: both)
+    public int coyoteRandMinS = 10, coyoteRandMaxS = 60;
+    public boolean vibBothMotors = true; // Opossum: drive motor B
     public boolean vibAnyMusic = true;  // Opossum: vibrate on every detected kick, no beat lock needed (default)
     public int coyoteBpmMin = 60, coyoteBpmMax = 220;   // Coyote fires only while the locked tempo is inside this range
     public int vibBpmMin = 60, vibBpmMax = 220;         // same for the Opossum
     public int freqBalance = 160, intensityBalance = 0;
     public boolean coyoteEnabled = true, opossumEnabled = true;   // per-device pulse on/off
-    public String coyoteWave = "PULSATING", opossumWave = "BEAT";   // waveform ids
-    public boolean coyoteContinuous = false, opossumContinuous = false;      // loop like the official app vs on-the-beat
 
     private static final String PREF = "dgtempo";
 
     public static Settings load(Context c) {
         SharedPreferences p = c.getSharedPreferences(PREF, Context.MODE_PRIVATE);
         Settings s = new Settings();
-        s.coyoteMin = p.getInt("coyoteMin", s.coyoteMin);
-        s.coyoteMax = p.getInt("coyoteMax", s.coyoteMax);
-        s.vibMin = p.getInt("vibMin", s.vibMin);
-        s.vibMax = p.getInt("vibMax", s.vibMax);
+        // Channel A uses the legacy keys (older installs keep their values), B uses "…B" keys and falls back to A.
+        ChannelCfg legacyC = new ChannelCfg(s.cA.min, s.cA.max, 0, s.cA.burstMs, s.cA.wave, s.cA.randomLevel);
+        legacyC.intensity = p.getInt("intensity", 100); legacyC.freq = p.getInt("freq", 30);
+        legacyC.burstMs = p.getInt("burstMs", legacyC.burstMs); legacyC.wave = p.getString("coyoteWave", legacyC.wave);
+        legacyC.continuous = p.getBoolean("coyoteContinuous", false); legacyC.randomLevel = p.getBoolean("coyoteRandomLevel", legacyC.randomLevel);
+        legacyC.min = p.getInt("coyoteMin", legacyC.min); legacyC.max = p.getInt("coyoteMax", legacyC.max);
+        s.cA.load(p, "_cA", legacyC);
+        s.cB.load(p, "_cB", s.cA);
+        ChannelCfg legacyO = new ChannelCfg(s.oA.min, s.oA.max, s.oA.manual, s.oA.burstMs, s.oA.wave, false);
+        legacyO.min = p.getInt("vibMin", legacyO.min); legacyO.max = p.getInt("vibMax", legacyO.max);
+        legacyO.manual = p.getInt("vibManual", legacyO.manual); legacyO.intensity = p.getInt("vibIntensity", 100);
+        legacyO.burstMs = p.getInt("vibBurstMs", legacyO.burstMs); legacyO.wave = p.getString("opossumWave", legacyO.wave);
+        legacyO.continuous = p.getBoolean("opossumContinuous", false);
+        s.oA.load(p, "_oA", legacyO);
+        s.oB.load(p, "_oB", s.oA);
+        s.coyoteLink = p.getBoolean("coyoteLink", true);
+        s.vibLink = p.getBoolean("vibLink", true);
+
         s.vibFollowTempo = p.getBoolean("vibFollowTempo", s.vibFollowTempo);
-        s.vibManual = p.getInt("vibManual", s.vibManual);
         s.autoStrength = p.getBoolean("autoStrength", s.autoStrength);
         s.bpmLo = p.getFloat("bpmLo", (float) s.bpmLo);
         s.bpmHi = p.getFloat("bpmHi", (float) s.bpmHi);
-        s.intensity = p.getInt("intensity", s.intensity);
-        s.freq = p.getInt("freq", s.freq);
-        s.burstMs = p.getInt("burstMs", s.burstMs);
         s.latencyMs = p.getInt("latencyMs", s.latencyMs);
         s.everyBeat = p.getBoolean("everyBeat", s.everyBeat);
         s.channelB = p.getBoolean("channelB", s.channelB);
         s.sensitivity = p.getFloat("sensitivity", (float) s.sensitivity);
         s.coyoteEnabled = p.getBoolean("coyoteEnabled", true);
         s.opossumEnabled = p.getBoolean("opossumEnabled", true);
-        s.coyoteWave = p.getString("coyoteWave", s.coyoteWave);
-        s.opossumWave = p.getString("opossumWave", s.opossumWave);
-        s.coyoteContinuous = p.getBoolean("coyoteContinuous", false);
         s.sensitivityLevel = p.getInt("sensitivityLevel", 5);
         s.pulseRate = p.getInt("pulseRate", s.everyBeat ? 1 : 0);
-        s.vibBurstMs = p.getInt("vibBurstMs", s.vibBurstMs);
         s.coyoteSens = p.getInt("coyoteSens", 5);
         s.vibSens = p.getInt("vibSens", 7);
         s.coyotePulseRate = p.getInt("coyotePulseRate", s.pulseRate);
         s.vibPulseRate = p.getInt("vibPulseRate", s.pulseRate);
-        s.vibIntensity = p.getInt("vibIntensity", s.vibIntensity);
         s.vibAnyMusic = p.getBoolean("vibAnyMusic", true);
         s.vibBothMotors = p.getBoolean("vibBothMotors", true);
         s.pip = p.getBoolean("pip", true);
         s.micFallback = p.getBoolean("micFallback", false);
         s.screenMotion = p.getBoolean("screenMotion", false);
-        s.coyoteRandomLevel = p.getBoolean("coyoteRandomLevel", s.coyoteRandomLevel);
         s.motionSens = p.getInt("motionSens", 5);
         s.motionCoyote = p.getBoolean("motionCoyote", false);
         s.motionOpossum = p.getBoolean("motionOpossum", true);
@@ -95,8 +128,20 @@ public final class Settings {
         s.coyoteRandMaxS = p.getInt("coyoteRandMaxS", 60);
         s.coyoteBpmMin = p.getInt("coyoteBpmMin", 60); s.coyoteBpmMax = p.getInt("coyoteBpmMax", 220);
         s.vibBpmMin = p.getInt("vibBpmMin", 60); s.vibBpmMax = p.getInt("vibBpmMax", 220);
-        s.opossumContinuous = p.getBoolean("opossumContinuous", false);
         return s;
+    }
+
+    /** Effective dials for a device channel (0 = A, 1 = B). Linked -> B uses A's dials. */
+    public ChannelCfg chan(String kind, int ch) {
+        boolean coy = "coyote".equals(kind);
+        if (ch == 0) return coy ? cA : oA;
+        if (coy) return coyoteLink ? cA : cB;
+        return vibLink ? oA : oB;
+    }
+    public boolean linked(String kind) { return "coyote".equals(kind) ? coyoteLink : vibLink; }
+    public void setLinked(String kind, boolean v) {
+        if ("coyote".equals(kind)) { coyoteLink = v; if (v) cB.copyFrom(cA); }
+        else { vibLink = v; if (v) oB.copyFrom(oA); }
     }
 
     public int bpmMin(String kind) { return "coyote".equals(kind) ? coyoteBpmMin : vibBpmMin; }
@@ -108,8 +153,11 @@ public final class Settings {
     public boolean motionFires(String kind) { return screenMotion && ("coyote".equals(kind) ? motionCoyote : motionOpossum); }
     public int sens(String kind) { return "coyote".equals(kind) ? coyoteSens : vibSens; }
     public int pulseRate(String kind) { return "coyote".equals(kind) ? coyotePulseRate : vibPulseRate; }
-    public int intensity(String kind) { return "coyote".equals(kind) ? intensity : vibIntensity; }
-    public int burstMs(String kind) { return "coyote".equals(kind) ? burstMs : vibBurstMs; }
+    /** Longest pulse of the device's active channels (for watchdogs / test pulse). */
+    public int burstMs(String kind) {
+        int a = chan(kind, 0).burstMs;
+        return secondChannel(kind) ? Math.max(a, chan(kind, 1).burstMs) : a;
+    }
     /** Subdivisions per beat for a pulse rate value. */
     public static int subdiv(int rate) { return rate <= 1 ? 1 : rate == 2 ? 2 : 4; }
     /** The shared detector runs at the more eager of the two device levels. */
@@ -127,24 +175,20 @@ public final class Settings {
     public void setEnabled(String kind, boolean v) { if ("coyote".equals(kind)) coyoteEnabled = v; else opossumEnabled = v; }
 
     public void save(Context c) {
-        c.getSharedPreferences(PREF, Context.MODE_PRIVATE).edit()
-                .putInt("coyoteMin", coyoteMin).putInt("coyoteMax", coyoteMax)
-                .putInt("vibMin", vibMin).putInt("vibMax", vibMax)
-                .putBoolean("vibFollowTempo", vibFollowTempo).putInt("vibManual", vibManual)
+        SharedPreferences.Editor e = c.getSharedPreferences(PREF, Context.MODE_PRIVATE).edit();
+        cA.save(e, "_cA"); cB.save(e, "_cB"); oA.save(e, "_oA"); oB.save(e, "_oB");
+        e.putBoolean("coyoteLink", coyoteLink).putBoolean("vibLink", vibLink)
+                .putBoolean("vibFollowTempo", vibFollowTempo)
                 .putBoolean("autoStrength", autoStrength)
                 .putFloat("bpmLo", (float) bpmLo).putFloat("bpmHi", (float) bpmHi)
-                .putInt("intensity", intensity).putInt("freq", freq).putInt("burstMs", burstMs)
                 .putInt("latencyMs", latencyMs).putBoolean("everyBeat", everyBeat)
                 .putBoolean("channelB", channelB).putFloat("sensitivity", (float) sensitivity)
                 .putBoolean("coyoteEnabled", coyoteEnabled).putBoolean("opossumEnabled", opossumEnabled)
-                .putString("coyoteWave", coyoteWave).putString("opossumWave", opossumWave)
-                .putBoolean("coyoteContinuous", coyoteContinuous).putBoolean("opossumContinuous", opossumContinuous)
-                .putInt("sensitivityLevel", sensitivityLevel).putInt("pulseRate", pulseRate).putInt("vibBurstMs", vibBurstMs)
+                .putInt("sensitivityLevel", sensitivityLevel).putInt("pulseRate", pulseRate)
                 .putInt("coyoteSens", coyoteSens).putInt("vibSens", vibSens)
                 .putInt("coyotePulseRate", coyotePulseRate).putInt("vibPulseRate", vibPulseRate)
-                .putInt("vibIntensity", vibIntensity)
                 .putBoolean("vibAnyMusic", vibAnyMusic).putBoolean("vibBothMotors", vibBothMotors).putBoolean("pip", pip).putBoolean("micFallback", micFallback)
-                .putBoolean("screenMotion", screenMotion).putBoolean("coyoteRandomLevel", coyoteRandomLevel).putInt("motionSens", motionSens)
+                .putBoolean("screenMotion", screenMotion).putInt("motionSens", motionSens)
                 .putBoolean("motionCoyote", motionCoyote).putBoolean("motionOpossum", motionOpossum).putInt("coyoteMaxWaitS", coyoteMaxWaitS).putInt("coyoteTimerMode", coyoteTimerMode)
                 .putInt("coyoteRandMinS", coyoteRandMinS).putInt("coyoteRandMaxS", coyoteRandMaxS)
                 .putInt("coyoteBpmMin", coyoteBpmMin).putInt("coyoteBpmMax", coyoteBpmMax)

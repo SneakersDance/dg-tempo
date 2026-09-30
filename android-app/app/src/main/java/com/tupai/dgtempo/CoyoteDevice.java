@@ -7,21 +7,23 @@ public final class CoyoteDevice extends BleDevice {
     private int seq = 0;
     private volatile int pendingSeq = -1;
     private volatile long pendingSince = 0;
-    private int capWritten = -1;
+    private int capWrittenA = -1, capWrittenB = -1;
 
     public CoyoteDevice(BluetoothDevice d, Listener l) { super("coyote", "Coyote", d, l); }
 
-    @Override public int cap() { return capWritten < 0 ? 0 : capWritten; }
+    @Override public int cap() { return capWrittenA < 0 ? 0 : capWrittenA; }
 
     @Override
     protected void afterConnect(Settings s) { writeCap(s); }
 
-    /** BF soft cap; must be rewritten on every (re)connect and whenever the user changes the max. */
+    private int capB(Settings s) { return s.channelB ? s.chan("coyote", 1).max : 0; }
+
+    /** BF soft caps (A and B separately); rewritten on every (re)connect and whenever a max changes. */
     public void writeCap(Settings s) {
-        int capB = s.channelB ? s.coyoteMax : 0;
-        enqueue(Protocol.buildBF(s.coyoteMax, capB, s.freqBalance, s.freqBalance, s.intensityBalance, s.intensityBalance));
-        capWritten = s.coyoteMax;
-        listener.onLog("Coyote: soft cap A=" + s.coyoteMax + " B=" + capB);
+        int capA = s.chan("coyote", 0).max, capB = capB(s);
+        enqueue(Protocol.buildBF(capA, capB, s.freqBalance, s.freqBalance, s.intensityBalance, s.intensityBalance));
+        capWrittenA = capA; capWrittenB = capB;
+        listener.onLog("Coyote: soft cap A=" + capA + " B=" + capB);
     }
 
     @Override
@@ -41,24 +43,23 @@ public final class CoyoteDevice extends BleDevice {
     }
 
     @Override
-    public int targetStrength(double x, int offset, Settings s) {
-        int v = (s.autoStrength || s.coyoteRandomLevel) ? (int) Math.round(s.coyoteMin + x * (s.coyoteMax - s.coyoteMin)) : s.coyoteMin;
+    public int targetStrength(double x, int offset, Settings s, Settings.ChannelCfg c) {
+        int v = (s.autoStrength || c.randomLevel) ? (int) Math.round(c.min + x * (c.max - c.min)) : c.min;
         v += offset;
-        return Math.max(0, Math.min(s.coyoteMax, v));
+        return Math.max(0, Math.min(c.max, v));
     }
 
     @Override
-    public void sendFrame(int strength, boolean setStrength, int[] fa, int[] ia, int[] fb, int[] ib, Settings s) {
+    public void sendFrame(int sa, int sb, boolean setStrength, int[] fa, int[] ia, int[] fb, int[] ib, Settings s) {
         if (!connected) return;
-        if (capWritten != s.coyoteMax) writeCap(s);
+        if (capWrittenA != s.chan("coyote", 0).max || capWrittenB != capB(s)) writeCap(s);
         int sq = 0, mode = 0;
         if (setStrength) {
             seq = seq % 15 + 1;
             sq = seq; mode = 0b1111;
             pendingSeq = sq; pendingSince = System.nanoTime();
-            this.strength = strength;
+            this.strength = sa; this.strengthB = sb;
         }
-        int sb = s.channelB ? strength : 0;
-        enqueue(Protocol.buildB0(sq, mode, strength, sb, fa, ia, fb, ib));
+        enqueue(Protocol.buildB0(sq, mode, sa, s.channelB ? sb : 0, fa, ia, fb, ib));
     }
 }

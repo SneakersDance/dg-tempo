@@ -328,15 +328,15 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         BleDevice dc = svc.devices.get("coyote"), dop = svc.devices.get("opossum");
         Settings st = svc.settings;
         // left: just the cap. In the bar: while firing, the A/B level being sent; otherwise why not (silent / lock / range)
-        String lvC = dc != null && dc.connected ? String.valueOf(st.coyoteMax) : "--";
-        String lvO = dop != null && dop.connected ? String.valueOf(st.vibFollowTempo ? st.vibMax : st.vibManual) : "--";
+        String lvC = dc != null && dc.connected ? String.valueOf(st.chan("coyote", 0).max) : "--";
+        String lvO = dop != null && dop.connected ? String.valueOf(st.vibFollowTempo ? st.chan("opossum", 0).max : st.chan("opossum", 0).manual) : "--";
         // firing: the A/B level being sent. Otherwise: the level the NEXT pulse would have, then why we wait / the countdown
         String nC = svc.readiness("coyote") >= 1 && dc != null
-                ? String.format("A %d  B %d", Math.max(0, dc.strength), st.channelB ? Math.max(0, dc.strength) : 0)
-                : (dc != null && dc.connected ? "→" + svc.nextLevel("coyote") + "  " : "") + svc.readinessNote("coyote");
+                ? String.format("A %d  B %d", Math.max(0, dc.strength), st.channelB ? Math.max(0, dc.strengthB) : 0)
+                : (dc != null && dc.connected ? "→" + svc.nextLevel("coyote", 0) + (st.channelB && !st.coyoteLink ? "/" + svc.nextLevel("coyote", 1) : "") + "  " : "") + svc.readinessNote("coyote");
         String nO = svc.readiness("opossum") >= 1 && dop != null
-                ? String.format("A %d  B %d", Math.max(0, dop.strength), st.vibBothMotors ? Math.max(0, dop.strength) : dop.actualB)
-                : (dop != null && dop.connected ? "→" + svc.nextLevel("opossum") + "  " : "") + svc.readinessNote("opossum");
+                ? String.format("A %d  B %d", Math.max(0, dop.strength), st.vibBothMotors ? Math.max(0, dop.strengthB) : dop.actualB)
+                : (dop != null && dop.connected ? "→" + svc.nextLevel("opossum", 0) + (st.vibBothMotors && !st.vibLink ? "/" + svc.nextLevel("opossum", 1) : "") + "  " : "") + svc.readinessNote("opossum");
         double nowP = java.lang.System.nanoTime() / 1e9;
         pipView.setMotion(svc.motionRunning, svc.motion.level, svc.motion.triggerLevel(), svc.motionRate(),
                 svc.lastMotionAt > 0 && nowP - svc.lastMotionAt < 0.15);
@@ -421,13 +421,16 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             addSwitch(llAudio, R.string.motion_opossum, 0, s.motionOpossum, v -> { s.motionOpossum = v; changed(); });
         }
 
-        // Coyote: strict by default; Opossum: eager by default. Each device decides on its own when the beat is solid enough.
-        addSeek(llCoyote, R.string.coy_max, R.string.x_max, R.string.end_gentle, R.string.end_hard, 0, 200, s.coyoteMax, v -> v + " / 200",
-                v -> { s.coyoteMax = v; if (s.coyoteMin > v) s.coyoteMin = v; changed(); });
-        addSeek(llCoyote, R.string.coy_base, R.string.x_base, R.string.end_gentle, R.string.end_hard, 0, 200, s.coyoteMin, String::valueOf,
-                v -> { s.coyoteMin = Math.min(v, s.coyoteMax); changed(); });
+        // Coyote output dials: one set for A+B when linked, otherwise a set per channel
+        addSwitch(llCoyote, R.string.coy_channel_b, R.string.x_both, s.channelB, v -> { s.channelB = v; changed(); buildControls(); });
+        if (s.channelB) addSwitch(llCoyote, R.string.link_ab, R.string.x_link, s.coyoteLink, v -> { s.setLinked("coyote", v); changed(); buildControls(); });
         addSwitch(llCoyote, R.string.coy_auto, R.string.x_auto, s.autoStrength, v -> { s.autoStrength = v; changed(); });
-        addSwitch(llCoyote, R.string.coy_random_level, R.string.x_random, s.coyoteRandomLevel, v -> { s.coyoteRandomLevel = v; changed(); });
+        if (s.coyoteLink || !s.channelB) {
+            coyoteChannelDials(llCoyote, s.cA, R.string.chan_ab);
+        } else {
+            coyoteChannelDials(llCoyote, s.cA, R.string.chan_a);
+            coyoteChannelDials(llCoyote, s.cB, R.string.chan_b);
+        }
         subTitle(llCoyote, R.string.step4);
         addSeek(llCoyote, R.string.sens_level, R.string.x_sens, R.string.end_strict, R.string.end_eager, 1, 10, s.coyoteSens, v -> v + " / 10", v -> { s.coyoteSens = v; changed(); });
         addRate(llCoyote, s.coyotePulseRate, v -> { s.coyotePulseRate = v; changed(); });
@@ -460,24 +463,16 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             addSeek(llCoyote, R.string.timer_rand_max, 0, R.string.end_sooner, R.string.end_rarer, 1, 600, s.coyoteRandMaxS, v -> v + " s",
                     v -> { s.coyoteRandMaxS = v; if (s.coyoteRandMinS > v) s.coyoteRandMinS = v; changed(); });
         }
-        subTitle(llCoyote, R.string.wave_pick);
-        addWave(llCoyote, Waveforms.COYOTE, s.coyoteWave, id -> { s.coyoteWave = id; changed(); });
-        hint(llCoyote, R.string.x_wave);
-        addSwitch(llCoyote, R.string.wave_mode_beat, R.string.x_wave_mode, !s.coyoteContinuous,
-                v -> { s.coyoteContinuous = !v; changed(); });
-        addSeek(llCoyote, R.string.coy_intensity, R.string.x_intensity, R.string.end_soft, R.string.end_strong, 0, 100, s.intensity, v -> v + " %", v -> { s.intensity = v; changed(); });
-        addSeek(llCoyote, R.string.coy_freq, R.string.x_freq, R.string.end_throb, R.string.end_buzz, 10, 240, s.freq, String::valueOf, v -> { s.freq = v; changed(); });
-        addSeek(llCoyote, R.string.timing_burst, R.string.x_burst, R.string.end_short, R.string.end_long, 25, 3000, s.burstMs, v -> v + " ms", v -> { s.burstMs = v; changed(); });
-        addSwitch(llCoyote, R.string.coy_channel_b, R.string.x_both, s.channelB, v -> { s.channelB = v; changed(); });
 
         addSwitch(llOpossum, R.string.vib_any_music, R.string.x_vib_any, s.vibAnyMusic, v -> { s.vibAnyMusic = v; changed(); buildControls(); });
+        addSwitch(llOpossum, R.string.vib_both_motors, R.string.x_both, s.vibBothMotors, v -> { s.vibBothMotors = v; changed(); buildControls(); });
+        if (s.vibBothMotors) addSwitch(llOpossum, R.string.link_ab, R.string.x_link, s.vibLink, v -> { s.setLinked("opossum", v); changed(); buildControls(); });
         addSwitch(llOpossum, R.string.vib_follow, R.string.x_vib_follow, s.vibFollowTempo, v -> { s.vibFollowTempo = v; changed(); buildControls(); });
-        if (s.vibFollowTempo) {
-            addSeek(llOpossum, R.string.vib_min, 0, R.string.end_gentle, R.string.end_hard, 0, 200, s.vibMin, String::valueOf, v -> { s.vibMin = Math.min(v, s.vibMax); changed(); });
-            addSeek(llOpossum, R.string.vib_max, 0, R.string.end_gentle, R.string.end_hard, 0, 200, s.vibMax, String::valueOf,
-                    v -> { s.vibMax = v; if (s.vibMin > v) s.vibMin = v; changed(); });
+        if (s.vibLink || !s.vibBothMotors) {
+            opossumChannelDials(llOpossum, s.oA, R.string.chan_ab);
         } else {
-            addSeek(llOpossum, R.string.vib_manual, 0, R.string.end_gentle, R.string.end_hard, 0, 200, s.vibManual, v -> v + " / 200", v -> { s.vibManual = v; changed(); });
+            opossumChannelDials(llOpossum, s.oA, R.string.chan_a);
+            opossumChannelDials(llOpossum, s.oB, R.string.chan_b);
         }
         if (!s.vibAnyMusic) {
             subTitle(llOpossum, R.string.step4);
@@ -488,13 +483,6 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             addSeek(llOpossum, R.string.bpm_max, 0, R.string.end_slow, R.string.end_fast, 60, 220, s.vibBpmMax, v -> v >= 220 ? getString(R.string.bpm_any) : v + " BPM",
                     v -> { s.vibBpmMax = v; if (s.vibBpmMin > v) s.vibBpmMin = v; changed(); });
         }
-        subTitle(llOpossum, R.string.wave_pick);
-        addWave(llOpossum, Waveforms.OPOSSUM, s.opossumWave, id -> { s.opossumWave = id; changed(); });
-        addSwitch(llOpossum, R.string.wave_mode_beat, R.string.x_wave_mode, !s.opossumContinuous,
-                v -> { s.opossumContinuous = !v; changed(); });
-        addSeek(llOpossum, R.string.vib_intensity, R.string.x_intensity, R.string.end_soft, R.string.end_strong, 0, 100, s.vibIntensity, v -> v + " %", v -> { s.vibIntensity = v; changed(); });
-        addSeek(llOpossum, R.string.vib_burst, R.string.x_vib_burst, R.string.end_short, R.string.end_long, 100, 3000, s.vibBurstMs, v -> v + " ms", v -> { s.vibBurstMs = v; changed(); });
-        addSwitch(llOpossum, R.string.vib_both_motors, R.string.x_both, s.vibBothMotors, v -> { s.vibBothMotors = v; changed(); });
 
         addSeek(llTiming, R.string.timing_latency, R.string.x_latency, R.string.end_earlier, R.string.end_later, 0, 400, s.latencyMs, v -> v + " ms", v -> { s.latencyMs = v; changed(); });
         Button rot = ghostButton(R.string.btn_rotate);
@@ -505,6 +493,39 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         addSeek(llTiming, R.string.timing_bpm_hi, 0, R.string.end_slow, R.string.end_fast, 61, 220, (int) s.bpmHi, v -> v + " BPM",
                 v -> { s.bpmHi = Math.max(v, s.bpmLo + 1); changed(); });
         addSwitch(llTiming, R.string.pip_switch, R.string.x_pip, s.pip, v -> { s.pip = v; changed(); refreshPipParams(); });
+    }
+
+    /** Coyote output dials for one channel config (strength, random, waveform, mode, intensity, freq, pulse length). */
+    private void coyoteChannelDials(LinearLayout parent, Settings.ChannelCfg c, int titleRes) {
+        subTitle(parent, titleRes);
+        addSeek(parent, R.string.coy_max, R.string.x_max, R.string.end_gentle, R.string.end_hard, 0, 200, c.max, v -> v + " / 200",
+                v -> { c.max = v; if (c.min > v) c.min = v; changed(); });
+        addSeek(parent, R.string.coy_base, R.string.x_base, R.string.end_gentle, R.string.end_hard, 0, 200, c.min, String::valueOf,
+                v -> { c.min = Math.min(v, c.max); changed(); });
+        addSwitch(parent, R.string.coy_random_level, R.string.x_random, c.randomLevel, v -> { c.randomLevel = v; changed(); });
+        addWave(parent, Waveforms.COYOTE, c.wave, id -> { c.wave = id; changed(); });
+        hint(parent, R.string.x_wave);
+        addSwitch(parent, R.string.wave_mode_beat, R.string.x_wave_mode, !c.continuous, v -> { c.continuous = !v; changed(); });
+        addSeek(parent, R.string.coy_intensity, R.string.x_intensity, R.string.end_soft, R.string.end_strong, 0, 100, c.intensity, v -> v + " %", v -> { c.intensity = v; changed(); });
+        addSeek(parent, R.string.coy_freq, R.string.x_freq, R.string.end_throb, R.string.end_buzz, 10, 240, c.freq, String::valueOf, v -> { c.freq = v; changed(); });
+        addSeek(parent, R.string.timing_burst, R.string.x_burst, R.string.end_short, R.string.end_long, 25, 3000, c.burstMs, v -> v + " ms", v -> { c.burstMs = v; changed(); });
+    }
+
+    /** Opossum output dials for one motor config. */
+    private void opossumChannelDials(LinearLayout parent, Settings.ChannelCfg c, int titleRes) {
+        Settings s = svc.settings;
+        subTitle(parent, titleRes);
+        if (s.vibFollowTempo) {
+            addSeek(parent, R.string.vib_min, 0, R.string.end_gentle, R.string.end_hard, 0, 200, c.min, String::valueOf, v -> { c.min = Math.min(v, c.max); changed(); });
+            addSeek(parent, R.string.vib_max, 0, R.string.end_gentle, R.string.end_hard, 0, 200, c.max, String::valueOf,
+                    v -> { c.max = v; if (c.min > v) c.min = v; changed(); });
+        } else {
+            addSeek(parent, R.string.vib_manual, 0, R.string.end_gentle, R.string.end_hard, 0, 200, c.manual, v -> v + " / 200", v -> { c.manual = v; changed(); });
+        }
+        addWave(parent, Waveforms.OPOSSUM, c.wave, id -> { c.wave = id; changed(); });
+        addSwitch(parent, R.string.wave_mode_beat, R.string.x_wave_mode, !c.continuous, v -> { c.continuous = !v; changed(); });
+        addSeek(parent, R.string.vib_intensity, R.string.x_intensity, R.string.end_soft, R.string.end_strong, 0, 100, c.intensity, v -> v + " %", v -> { c.intensity = v; changed(); });
+        addSeek(parent, R.string.vib_burst, R.string.x_vib_burst, R.string.end_short, R.string.end_long, 100, 3000, c.burstMs, v -> v + " ms", v -> { c.burstMs = v; changed(); });
     }
 
     // ---- small view factories (design system) -------------------------------------------------------
@@ -903,7 +924,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         BleDevice dc = svc.devices.get("coyote"), dop = svc.devices.get("opossum");
         boolean cOn = dc != null && dc.connected, oOn = dop != null && dop.connected;
         outCoyote.setData(svc.histCoyote, svc.histPos, svc.strengthNormCoyote, "Coyote",
-                cOn ? String.format("%d/%d  %3d%%", Math.max(0, dc.strength), svc.settings.coyoteMax, svc.slotNowCoyote) : "--",
+                cOn ? String.format("%d/%d  %3d%%", Math.max(0, dc.strength), svc.settings.chan("coyote", 0).max, svc.slotNowCoyote) : "--",
                 C_COYOTE, cOn && svc.settings.coyoteEnabled);
         outOpossum.setData(svc.histOpossum, svc.histPos, svc.strengthNormOpossum, "Opossum",
                 oOn ? String.format("%d/200  %3d%%", Math.max(0, dop.strength), svc.slotNowOpossum) : "--",

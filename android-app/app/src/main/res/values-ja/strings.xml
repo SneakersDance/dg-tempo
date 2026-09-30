@@ -154,4 +154,9 @@
     <string name="phone_audio_reoffer">Android がスマホ内部音声を停止しました（画面ロックで停止します）。画面共有を再度リクエストします…</string>
     <string name="arm_no_device_title">デバイス未接続</string>
     <string name="arm_no_device_msg">先に Coyote や Opossum を接続してください（ステップ 2）。DG-Lab 公式アプリを終了し、検索して各デバイスの「接続」をタップ。</string>
+    <string name="link_ab">A と B を連動（同じ設定を両方に）</string>
+    <string name="x_link">オン：B は A のすべての設定に追従。オフ：A と B に別々の強さ・波形・強度・パルス長を設定（B を弱く A を強く、左右で違うパターンなど）。</string>
+    <string name="chan_ab">A + B</string>
+    <string name="chan_a">チャンネル A</string>
+    <string name="chan_b">チャンネル B</string>
 </resources>

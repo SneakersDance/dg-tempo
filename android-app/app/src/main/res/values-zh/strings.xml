@@ -154,4 +154,9 @@
     <string name="phone_audio_reoffer">安卓已停止手机内部音频（锁屏时会中断）。正在重新请求共享屏幕…</string>
     <string name="arm_no_device_title">尚未连接设备</string>
     <string name="arm_no_device_msg">请先连接郊狼和/或负鼠（第 2 步）。关闭 DG-Lab 官方 App，然后搜索并点击各设备的"连接"。</string>
+    <string name="link_ab">A、B 联动（两路使用同一组设置）</string>
+    <string name="x_link">开：B 通道完全跟随 A 通道的所有设置。关：A 和 B 各自设置强度、波形、强度百分比和脉冲长度，例如 B 轻、A 重，或两侧不同图案。</string>
+    <string name="chan_ab">A + B</string>
+    <string name="chan_a">A 通道</string>
+    <string name="chan_b">B 通道</string>
 </resources>

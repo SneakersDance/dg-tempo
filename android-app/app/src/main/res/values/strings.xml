@@ -155,4 +155,9 @@
     <string name="version_fmt" translatable="false">DG Tempo v%1$s</string>
     <string name="arm_no_device_title">No device connected</string>
     <string name="arm_no_device_msg">Connect the Coyote and/or the Opossum first (Step 2). Close the DG-Lab app, then scan and tap CONNECT on each device.</string>
+    <string name="link_ab">Link A and B (same dials for both)</string>
+    <string name="x_link">On: channel B mirrors every dial of channel A. Off: A and B get their own strength, waveform, intensity and pulse length, e.g. a gentle B under a stronger A, or a different pattern on each side.</string>
+    <string name="chan_ab">A + B</string>
+    <string name="chan_a">Channel A</string>
+    <string name="chan_b">Channel B</string>
 </resources>

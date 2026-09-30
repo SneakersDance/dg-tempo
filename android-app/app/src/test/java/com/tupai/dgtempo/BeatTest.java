@@ -335,6 +335,31 @@ public class BeatTest {
         assertEquals(0, none);
     }
 
+    @Test public void channelLinkAndSplit() {
+        Settings s = new Settings();
+        // linked (default): B resolves to A's dials for both devices
+        assertTrue(s.coyoteLink && s.vibLink);
+        assertSame(s.cA, s.chan("coyote", 1));
+        assertSame(s.oA, s.chan("opossum", 1));
+        // unlink: B gets its own dials, changing them leaves A alone
+        s.setLinked("coyote", false);
+        assertSame(s.cB, s.chan("coyote", 1));
+        s.cB.max = 77; s.cB.wave = "BREATHING";
+        assertEquals(2, s.cA.max);
+        assertEquals("PULSATING", s.cA.wave);
+        // relink copies A over B so the pair is identical again
+        s.cA.max = 33;
+        s.setLinked("coyote", true);
+        assertEquals(33, s.cB.max);
+        assertEquals("PULSATING", s.cB.wave);
+        // burstMs(kind) reports the longest active channel
+        s.setLinked("opossum", false);
+        s.oA.burstMs = 200; s.oB.burstMs = 900; s.vibBothMotors = true;
+        assertEquals(900, s.burstMs("opossum"));
+        s.vibBothMotors = false;
+        assertEquals(200, s.burstMs("opossum"));
+    }
+
     @Test public void testBurstAndInactive() {
         TempoTracker tr = new TempoTracker();
         // test burst ends at 10.2 and is 100 ms long -> it fills the frame starting at 10.1, not 10.0

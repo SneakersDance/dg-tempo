@@ -38,7 +38,8 @@ public abstract class BleDevice {
     public volatile boolean connected = false;
     public volatile int battery = -1;
     public volatile int actualA = 0, actualB = 0;
-    public volatile int strength = -1;       // last strength we commanded (-1 = force a write)
+    public volatile int strength = -1;       // last channel-A strength we commanded (-1 = force a write)
+    public volatile int strengthB = -1;      // last channel-B strength we commanded
     public volatile long frames = 0, dropped = 0;
 
     protected BleDevice(String kind, String label, BluetoothDevice device, Listener listener) {
@@ -48,9 +49,10 @@ public abstract class BleDevice {
     public String address() { return device.getAddress(); }
 
     public abstract int cap();
-    public abstract int targetStrength(double x, int offset, Settings s);
+    /** Strength for one channel given the 0..1 tempo/random position and that channel's dials. */
+    public abstract int targetStrength(double x, int offset, Settings s, Settings.ChannelCfg c);
     /** One 100 ms frame: per-slot frequency + intensity for A and B. */
-    public abstract void sendFrame(int strength, boolean setStrength, int[] fa, int[] ia, int[] fb, int[] ib, Settings s);
+    public abstract void sendFrame(int sa, int sb, boolean setStrength, int[] fa, int[] ia, int[] fb, int[] ib, Settings s);
     protected abstract void afterConnect(Settings s);
     protected abstract void onNotify(byte[] data);
     public boolean strengthChangeAllowed() { return true; }
@@ -87,7 +89,7 @@ public abstract class BleDevice {
         BluetoothGatt g = gatt;
         if (g == null) return;
         if (connected) {
-            try { sendFrame(0, true, new int[]{10, 10, 10, 10}, new int[4], new int[]{10, 10, 10, 10}, new int[4], settings); } catch (Exception ignored) {}
+            try { sendFrame(0, 0, true, new int[]{10, 10, 10, 10}, new int[4], new int[]{10, 10, 10, 10}, new int[4], settings); } catch (Exception ignored) {}
         }
         connected = false;
         new Thread(() -> {

@@ -150,16 +150,20 @@ public final class BeatService extends Service implements BleDevice.Listener {
     private final java.util.Random rng = new java.util.Random();
     public volatile String timerNote = "";
     // random level per Coyote pulse: drawn one pulse ahead so the preview can show it
-    private volatile double randLevelX = -1;
-    private double nextRandDrawAt = 0;
+    private final double[] randLevelX = {-1, -1};      // per Coyote channel (B follows A when linked)
+    private final double[] nextRandDrawAt = {0, 0};
 
     /** Time-based redraw, independent of beats / bursts / tempo: a fresh level every pulse length + 0.25 s (0.5..3 s). */
     private void randLevelTick(double now) {
-        if (!settings.coyoteRandomLevel) { nextRandDrawAt = 0; return; }
-        if (now >= nextRandDrawAt) {
-            randLevelX = drawLevelX();
-            double hold = Math.max(0.5, Math.min(3.0, settings.burstMs / 1000.0 + 0.25));
-            nextRandDrawAt = now + hold;
+        for (int ch = 0; ch < 2; ch++) {
+            Settings.ChannelCfg c = settings.chan("coyote", ch);
+            if (!c.randomLevel) { nextRandDrawAt[ch] = 0; continue; }
+            if (ch == 1 && settings.coyoteLink) { randLevelX[1] = randLevelX[0]; continue; }
+            if (now >= nextRandDrawAt[ch]) {
+                randLevelX[ch] = drawLevelX(ch);
+                double hold = Math.max(0.5, Math.min(3.0, c.burstMs / 1000.0 + 0.25));
+                nextRandDrawAt[ch] = now + hold;
+            }
         }
     }
 
@@ -168,23 +172,24 @@ public final class BeatService extends Service implements BleDevice.Listener {
      * but reaching everywhere), 15% are uniform in the top quarter so the high side keeps showing up.
      * Never repeats within 8% of the previous level so consecutive pulses feel different.
      */
-    private double drawLevelX() {
+    private double drawLevelX(int ch) {
         for (int i = 0; i < 6; i++) {
             double x = rng.nextDouble() < 0.15 ? 0.75 + 0.25 * rng.nextDouble() : Math.pow(rng.nextDouble(), 1.8);
-            if (randLevelX < 0 || Math.abs(x - randLevelX) > 0.08) return x;
+            if (randLevelX[ch] < 0 || Math.abs(x - randLevelX[ch]) > 0.08) return x;
         }
         return rng.nextDouble();
     }
 
-    private double randLevelX() {
-        if (randLevelX < 0) randLevelX = drawLevelX();
-        return randLevelX;
+    private double randLevelX(int ch) {
+        if (ch == 1 && settings.coyoteLink) return randLevelX(0);
+        if (randLevelX[ch] < 0) randLevelX[ch] = drawLevelX(ch);
+        return randLevelX[ch];
     }
 
     /** Queue a train of `count` Coyote pulses, spaced by pulse length + 250 ms. */
     private void forceCoyote(int count, boolean atMax, String why) {
         double now = System.nanoTime() / 1e9;
-        double blen = settings.burstMs / 1000.0;
+        double blen = settings.chan("coyote", 0).burstMs / 1000.0;
         coyoteForceCount = count;
         coyoteForceMax = atMax;
         coyoteForceFrom = now + Protocol.FRAME_S;
@@ -323,7 +328,8 @@ public final class BeatService extends Service implements BleDevice.Listener {
         StringBuilder sb = new StringBuilder();
         sb.append(tracker.locked() ? String.format("%.0f BPM ●", tracker.bpm()) : "… BPM");
         for (BleDevice d : devices.values()) if (d.connected)
-            sb.append("  ").append(d.label.charAt(0)).append(':').append(Math.max(0, d.strength));
+            sb.append("  ").append(d.label.charAt(0)).append(':').append(Math.max(0, d.strength))
+              .append(settings.secondChannel(d.kind) && !settings.linked(d.kind) ? "/" + Math.max(0, d.strengthB) : "");
         sb.append("  ").append(audioLabel()).append(String.format(" %.0f dB", detector.levelDb));
         return sb.toString();
     }
@@ -702,16 +708,19 @@ public final class BeatService extends Service implements BleDevice.Listener {
     }
 
     /** Strength the NEXT pulse of this device would use right now (tempo-mapped, or max for a 3-owed timer train). */
-    public int nextLevel(String kind) {
+    public int nextLevel(String kind) { return nextLevel(kind, 0); }
+
+    public int nextLevel(String kind, int ch) {
         BleDevice d = devices.get(kind);
         if (d == null || !d.connected) return 0;
         boolean coy = "coyote".equals(kind);
+        Settings.ChannelCfg c = settings.chan(kind, ch);
         double x;
         if (coy && settings.coyoteTimerMode == 1 && owed >= 3) x = 1;
-        else if (coy && settings.coyoteRandomLevel) x = randLevelX();
+        else if (coy && c.randomLevel) x = randLevelX(ch);
         else if (tracker.locked()) x = Math.max(0, Math.min(1, (tracker.bpm() - settings.bpmLo) / Math.max(1.0, settings.bpmHi - settings.bpmLo)));
         else x = 0;
-        return d.targetStrength(x, coy ? offset : 0, settings);
+        return d.targetStrength(x, coy ? offset : 0, settings, c);
     }
 
     /** Short reason text for the PiP view. */
@@ -756,10 +765,12 @@ public final class BeatService extends Service implements BleDevice.Listener {
 
     private double tempoX() { return tempoX("opossum"); }
 
-    private double tempoX(String kind) {
+    private double tempoX(String kind) { return tempoX(kind, 0); }
+
+    private double tempoX(String kind, int ch) {
         if (!deviceActive(kind)) return -1;
         if ("coyote".equals(kind) && coyoteForceMax && System.nanoTime() / 1e9 < coyoteForceUntil) return 1;   // timer: 3 owed -> max
-        if ("coyote".equals(kind) && settings.coyoteRandomLevel) return randLevelX();                              // random level per pulse
+        if ("coyote".equals(kind) && settings.chan(kind, ch).randomLevel) return randLevelX(ch);                 // random level per pulse
         if (!tracker.locked()) return 0;          // no beat (any-music mode / test pulse): use the "slow tempo" strength
         double x = (tracker.bpm() - settings.bpmLo) / Math.max(1.0, settings.bpmHi - settings.bpmLo);
         return Math.max(0, Math.min(1, x));
@@ -798,54 +809,66 @@ public final class BeatService extends Service implements BleDevice.Listener {
                 boolean coy = "coyote".equals(d.kind);
                 boolean en = settings.enabled(d.kind);
                 boolean active = deviceActive(d.kind);
-                double x = tempoX(d.kind);
-                int target = (x < 0 || !en) ? 0 : d.targetStrength(x, coy ? offset : 0, settings);
-                boolean set = target != d.strength && d.strengthChangeAllowed();
-                if (set) log(d.label + " strength -> " + target);
-                int strength = set ? target : Math.max(0, d.strength);
-                Waveforms.Waveform w = coy ? Waveforms.find(Waveforms.COYOTE, settings.coyoteWave, settings.freq)
-                                           : Waveforms.find(Waveforms.OPOSSUM, settings.opossumWave, settings.freq);
-                boolean cont = coy ? settings.coyoteContinuous : settings.opossumContinuous;
-                int rate = settings.pulseRate(d.kind);
-                double blen = settings.burstMs(d.kind) / 1000.0;
-                java.util.List<double[]> use;
-                if (cont) {
-                    use = new java.util.ArrayList<>();
-                    if (active) use.add(new double[]{armedAt, Double.POSITIVE_INFINITY});
-                    if (testBurstUntil > tick) use.add(new double[]{testBurstUntil - blen, testBurstUntil});
-                } else if (coy && tick < coyoteForceUntil) {
-                    use = new java.util.ArrayList<>();
-                    for (int k = 0; k < coyoteForceCount; k++) {
-                        double st = coyoteForceFrom + k * (blen + 0.25);
-                        if (st + blen > tick && st < tick + Protocol.FRAME_S) use.add(new double[]{st, st + blen});
-                    }
-                } else if (!coy && settings.vibAnyMusic) {
-                    // any-music mode: one vibration burst per detected kick, starting when it was heard
-                    use = new java.util.ArrayList<>();
-                    if (active) synchronized (recentOnsets) {
-                        for (double ot : recentOnsets)
-                            if (ot + blen > tick && ot < tick + Protocol.FRAME_S) use.add(new double[]{ot, ot + blen});
-                    }
-                    if (testBurstUntil > tick) use.add(new double[]{testBurstUntil - blen, testBurstUntil});
-                } else {
-                    boolean beatActive = active && !(coy && settings.coyoteTimerMode != 0) && detector.soundPresent();
-                    use = Scheduler.burstsIn(tracker, beatActive, tick, tick + Protocol.FRAME_S,
-                            settings.latencyMs / 1000.0, blen, rate >= 1, testBurstUntil, Settings.subdiv(rate));
-                }
-                // screen movement: one burst per motion onset, on the devices that opted in
-                if (settings.motionFires(d.kind) && motionRunning && armed) synchronized (recentMotion) {
-                    for (double mt : recentMotion)
-                        if (mt + blen > tick && mt < tick + Protocol.FRAME_S) use.add(new double[]{mt, mt + blen});
-                }
-                if (!use.isEmpty() && en) anyBurst = true;
-                Scheduler.Slots sl = en ? Scheduler.renderSlots(use, tick, w, settings.intensity(d.kind),
-                        cont || Waveforms.SIMPLE_ID.equals(w.id)) : null;
-                int[] fa = sl == null ? silentF : sl.freq, ia = sl == null ? silentI : sl.inten;
                 boolean second = settings.secondChannel(d.kind);
-                int[] fb = second ? fa : silentF, ib = second ? ia : silentI;
-                d.sendFrame(strength, set, fa, ia, fb, ib, settings);
-                recordOutput(d.kind, strength, coy ? settings.coyoteMax : 200, ia);
-                if (coy && strength > 0 && (ia[0] + ia[1] + ia[2] + ia[3]) > 0) lastCoyoteFire = now;
+                int rate = settings.pulseRate(d.kind);
+                int[] sa = new int[2];                       // strength per channel
+                int[][] fq = new int[2][], in = new int[2][]; // slots per channel
+                boolean anySet = false;
+                for (int ch = 0; ch < 2; ch++) {
+                    boolean chOn = en && (ch == 0 || second);
+                    Settings.ChannelCfg c = settings.chan(d.kind, ch);
+                    double x = tempoX(d.kind, ch);
+                    int target = (x < 0 || !chOn) ? 0 : d.targetStrength(x, coy ? offset : 0, settings, c);
+                    int prev = ch == 0 ? d.strength : d.strengthB;
+                    if (target != prev && d.strengthChangeAllowed()) { anySet = true; }
+                    sa[ch] = target;
+                    // bursts for this channel (its own pulse length / waveform / mode)
+                    Waveforms.Waveform w = coy ? Waveforms.find(Waveforms.COYOTE, c.wave, c.freq)
+                                               : Waveforms.find(Waveforms.OPOSSUM, c.wave, c.freq);
+                    boolean cont = c.continuous;
+                    double blen = c.burstMs / 1000.0;
+                    java.util.List<double[]> use;
+                    if (cont) {
+                        use = new java.util.ArrayList<>();
+                        if (active) use.add(new double[]{armedAt, Double.POSITIVE_INFINITY});
+                        if (testBurstUntil > tick) use.add(new double[]{testBurstUntil - blen, testBurstUntil});
+                    } else if (coy && tick < coyoteForceUntil) {
+                        use = new java.util.ArrayList<>();
+                        for (int k = 0; k < coyoteForceCount; k++) {
+                            double st = coyoteForceFrom + k * (blen + 0.25);
+                            if (st + blen > tick && st < tick + Protocol.FRAME_S) use.add(new double[]{st, st + blen});
+                        }
+                    } else if (!coy && settings.vibAnyMusic) {
+                        // any-music mode: one vibration burst per detected kick, starting when it was heard
+                        use = new java.util.ArrayList<>();
+                        if (active) synchronized (recentOnsets) {
+                            for (double ot : recentOnsets)
+                                if (ot + blen > tick && ot < tick + Protocol.FRAME_S) use.add(new double[]{ot, ot + blen});
+                        }
+                        if (testBurstUntil > tick) use.add(new double[]{testBurstUntil - blen, testBurstUntil});
+                    } else {
+                        boolean beatActive = active && !(coy && settings.coyoteTimerMode != 0) && detector.soundPresent();
+                        use = Scheduler.burstsIn(tracker, beatActive, tick, tick + Protocol.FRAME_S,
+                                settings.latencyMs / 1000.0, blen, rate >= 1, testBurstUntil, Settings.subdiv(rate));
+                    }
+                    // screen movement: one burst per motion onset, on the devices that opted in
+                    if (settings.motionFires(d.kind) && motionRunning && armed) synchronized (recentMotion) {
+                        for (double mt : recentMotion)
+                            if (mt + blen > tick && mt < tick + Protocol.FRAME_S) use.add(new double[]{mt, mt + blen});
+                    }
+                    if (!use.isEmpty() && chOn) anyBurst = true;
+                    Scheduler.Slots sl = chOn ? Scheduler.renderSlots(use, tick, w, c.intensity,
+                            cont || Waveforms.SIMPLE_ID.equals(w.id)) : null;
+                    fq[ch] = sl == null ? silentF : sl.freq;
+                    in[ch] = sl == null ? silentI : sl.inten;
+                }
+                boolean set = anySet && d.strengthChangeAllowed();
+                if (set) log(d.label + " strength -> A " + sa[0] + (second ? " B " + sa[1] : ""));
+                int strengthA = set ? sa[0] : Math.max(0, d.strength);
+                int strengthB = set ? sa[1] : Math.max(0, d.strengthB);
+                d.sendFrame(strengthA, strengthB, set, fq[0], in[0], fq[1], in[1], settings);
+                recordOutput(d.kind, strengthA, coy ? settings.chan(d.kind, 0).max : 200, in[0]);
+                if (coy && (strengthA > 0 || strengthB > 0) && (in[0][0] + in[0][1] + in[0][2] + in[0][3] + in[1][0] + in[1][1] + in[1][2] + in[1][3]) > 0) lastCoyoteFire = now;
             }
             for (String k : new String[]{"coyote", "opossum"}) {
                 BleDevice d = devices.get(k);
@@ -890,7 +913,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
     public void testPulse() {
         if (devices.values().stream().noneMatch(d -> d.connected)) { log("test pulse: nothing connected"); return; }
         if (!armed) { armed = true; testArmed = true; armedAt = System.nanoTime() / 1e9; }
-        testBurstUntil = System.nanoTime() / 1e9 + 2 * Protocol.FRAME_S + Math.max(settings.burstMs, settings.vibBurstMs) / 1000.0;
+        testBurstUntil = System.nanoTime() / 1e9 + 2 * Protocol.FRAME_S + Math.max(settings.burstMs("coyote"), settings.burstMs("opossum")) / 1000.0;
         log("test pulse: " + devices.values().stream().filter(d -> d.connected && settings.enabled(d.kind))
                 .map(d -> d.label).reduce((a, b) -> a + " + " + b).orElse("none enabled"));
     }
