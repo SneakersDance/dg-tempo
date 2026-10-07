@@ -50,7 +50,10 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     private Button btnArm, btnAdvanced, btnMute, btnPhoneAudio, btnMic;
     private static final int C_TEXT = 0xFFE8EEF8, C_MUTED = 0xFF8B97AB, C_DIM = 0xFF5A6577, C_ACCENT = 0xFF00E5FF,
             C_COYOTE = 0xFFFF3D7F, C_OPOSSUM = 0xFF00E5FF, C_GO = 0xFF4DFF88, C_DANGER = 0xFFFF3B5C, C_BG = 0xFF0A0C12;
-    private LinearLayout llDevices, llCoyote, llOpossum, llTiming, llAudio, llRate;
+    private LinearLayout llDevices, llCoyote, llOpossum, llTiming, llAudio, llRate, llCoyoteOut, llOpossumOut, llMotion;
+    private View pageMusic, pageMotion;
+    private Button tabMusic, tabMotion;
+    private MotionReadoutView motionReadout;
 
     private final ServiceConnection conn = new ServiceConnection() {
         @Override public void onServiceConnected(ComponentName n, IBinder b) {
@@ -97,6 +100,16 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         llTiming = findViewById(R.id.llTiming);
         llAudio = findViewById(R.id.llAudio);
         llRate = findViewById(R.id.llRate);
+        llCoyoteOut = findViewById(R.id.llCoyoteOut);
+        llOpossumOut = findViewById(R.id.llOpossumOut);
+        llMotion = findViewById(R.id.llMotion);
+        pageMusic = findViewById(R.id.pageMusic);
+        pageMotion = findViewById(R.id.pageMotion);
+        tabMusic = findViewById(R.id.tabMusic);
+        tabMotion = findViewById(R.id.tabMotion);
+        motionReadout = findViewById(R.id.motionReadout);
+        tabMusic.setOnClickListener(v -> { if (svc != null) { svc.setMode(0); showTab(0); } });
+        tabMotion.setOnClickListener(v -> { if (svc != null) { svc.setMode(1); showTab(1); } });
 
         btnArm.setOnClickListener(v -> {
             if (svc == null) return;
@@ -324,7 +337,9 @@ public final class MainActivity extends AppCompatActivity implements BeatService
 
     private void updatePip() {
         TempoTracker tr = svc.tracker;
-        String bpm = tr.locked() ? String.format("%.0f", tr.bpm()) : tr.bpm() > 0 ? String.format("~%.0f", tr.bpm()) : "—";
+        String bpm = svc.gyroMode()
+                ? String.format("%.0f°", svc.motionSensors != null && svc.motionSensors.running ? svc.motionSensors.tiltDeg : 0)
+                : tr.locked() ? String.format("%.0f", tr.bpm()) : tr.bpm() > 0 ? String.format("~%.0f", tr.bpm()) : "—";
         BleDevice dc = svc.devices.get("coyote"), dop = svc.devices.get("opossum");
         Settings st = svc.settings;
         // left: just the cap. In the bar: while firing, the A/B level being sent; otherwise why not (silent / lock / range)
@@ -407,12 +422,26 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         super.onDestroy();
     }
 
+    // ---- tabs ---------------------------------------------------------------------------------------
+
+    private void showTab(int mode) {
+        pageMusic.setVisibility(mode == 0 ? View.VISIBLE : View.GONE);
+        pageMotion.setVisibility(mode == 1 ? View.VISIBLE : View.GONE);
+        tabMusic.setBackgroundResource(mode == 0 ? R.drawable.bg_btn_accent : R.drawable.bg_btn_ghost);
+        tabMusic.setTextColor(mode == 0 ? C_BG : C_TEXT);
+        tabMotion.setBackgroundResource(mode == 1 ? R.drawable.bg_btn_accent : R.drawable.bg_btn_ghost);
+        tabMotion.setTextColor(mode == 1 ? C_BG : C_TEXT);
+    }
+
     // ---- controls ---------------------------------------------------------------------------------
 
     private void buildControls() {
         Settings s = svc.settings;
         llCoyote.removeAllViews(); llOpossum.removeAllViews(); llTiming.removeAllViews();
-        llAudio.removeAllViews(); llRate.removeAllViews();
+        llAudio.removeAllViews(); llRate.removeAllViews(); llCoyoteOut.removeAllViews(); llOpossumOut.removeAllViews();
+        llMotion.removeAllViews();
+        showTab(s.mode);
+        buildMotionControls(s);
         addSwitch(llAudio, R.string.mic_fallback, R.string.x_mic_fallback, s.micFallback, v -> { s.micFallback = v; changed(); });
         addSwitch(llAudio, R.string.motion_switch, R.string.x_motion, s.screenMotion, v -> { svc.setScreenMotion(v); buildControls(); });
         if (s.screenMotion) {
@@ -421,16 +450,17 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             addSwitch(llAudio, R.string.motion_opossum, 0, s.motionOpossum, v -> { s.motionOpossum = v; changed(); });
         }
 
-        // Coyote output dials: one set for A+B when linked, otherwise a set per channel
-        addSwitch(llCoyote, R.string.coy_channel_b, R.string.x_both, s.channelB, v -> { s.channelB = v; changed(); buildControls(); });
-        if (s.channelB) addSwitch(llCoyote, R.string.link_ab, R.string.x_link, s.coyoteLink, v -> { s.setLinked("coyote", v); changed(); buildControls(); });
-        addSwitch(llCoyote, R.string.coy_auto, R.string.x_auto, s.autoStrength, v -> { s.autoStrength = v; changed(); });
+        // Coyote output dials (common to both tabs): one set for A+B when linked, otherwise a set per channel
+        addSwitch(llCoyoteOut, R.string.coy_channel_b, R.string.x_both, s.channelB, v -> { s.channelB = v; changed(); buildControls(); });
+        if (s.channelB) addSwitch(llCoyoteOut, R.string.link_ab, R.string.x_link, s.coyoteLink, v -> { s.setLinked("coyote", v); changed(); buildControls(); });
         if (s.coyoteLink || !s.channelB) {
-            coyoteChannelDials(llCoyote, s.cA, R.string.chan_ab);
+            coyoteChannelDials(llCoyoteOut, s.cA, R.string.chan_ab);
         } else {
-            coyoteChannelDials(llCoyote, s.cA, R.string.chan_a);
-            coyoteChannelDials(llCoyote, s.cB, R.string.chan_b);
+            coyoteChannelDials(llCoyoteOut, s.cA, R.string.chan_a);
+            coyoteChannelDials(llCoyoteOut, s.cB, R.string.chan_b);
         }
+        // Coyote music triggers
+        addSwitch(llCoyote, R.string.coy_auto, R.string.x_auto, s.autoStrength, v -> { s.autoStrength = v; changed(); });
         subTitle(llCoyote, R.string.step4);
         addSeek(llCoyote, R.string.sens_level, R.string.x_sens, R.string.end_strict, R.string.end_eager, 1, 10, s.coyoteSens, v -> v + " / 10", v -> { s.coyoteSens = v; changed(); });
         addRate(llCoyote, s.coyotePulseRate, v -> { s.coyotePulseRate = v; changed(); });
@@ -464,16 +494,17 @@ public final class MainActivity extends AppCompatActivity implements BeatService
                     v -> { s.coyoteRandMaxS = v; if (s.coyoteRandMinS > v) s.coyoteRandMinS = v; changed(); });
         }
 
-        addSwitch(llOpossum, R.string.vib_any_music, R.string.x_vib_any, s.vibAnyMusic, v -> { s.vibAnyMusic = v; changed(); buildControls(); });
-        addSwitch(llOpossum, R.string.vib_both_motors, R.string.x_both, s.vibBothMotors, v -> { s.vibBothMotors = v; changed(); buildControls(); });
-        if (s.vibBothMotors) addSwitch(llOpossum, R.string.link_ab, R.string.x_link, s.vibLink, v -> { s.setLinked("opossum", v); changed(); buildControls(); });
-        addSwitch(llOpossum, R.string.vib_follow, R.string.x_vib_follow, s.vibFollowTempo, v -> { s.vibFollowTempo = v; changed(); buildControls(); });
+        addSwitch(llOpossumOut, R.string.vib_both_motors, R.string.x_both, s.vibBothMotors, v -> { s.vibBothMotors = v; changed(); buildControls(); });
+        if (s.vibBothMotors) addSwitch(llOpossumOut, R.string.link_ab, R.string.x_link, s.vibLink, v -> { s.setLinked("opossum", v); changed(); buildControls(); });
+        addSwitch(llOpossumOut, R.string.vib_follow, R.string.x_vib_follow, s.vibFollowTempo, v -> { s.vibFollowTempo = v; changed(); buildControls(); });
         if (s.vibLink || !s.vibBothMotors) {
-            opossumChannelDials(llOpossum, s.oA, R.string.chan_ab);
+            opossumChannelDials(llOpossumOut, s.oA, R.string.chan_ab);
         } else {
-            opossumChannelDials(llOpossum, s.oA, R.string.chan_a);
-            opossumChannelDials(llOpossum, s.oB, R.string.chan_b);
+            opossumChannelDials(llOpossumOut, s.oA, R.string.chan_a);
+            opossumChannelDials(llOpossumOut, s.oB, R.string.chan_b);
         }
+        // Opossum music triggers
+        addSwitch(llOpossum, R.string.vib_any_music, R.string.x_vib_any, s.vibAnyMusic, v -> { s.vibAnyMusic = v; changed(); buildControls(); });
         if (!s.vibAnyMusic) {
             subTitle(llOpossum, R.string.step4);
             addSeek(llOpossum, R.string.sens_level, R.string.x_sens, R.string.end_strict, R.string.end_eager, 1, 10, s.vibSens, v -> v + " / 10", v -> { s.vibSens = v; changed(); });
@@ -493,6 +524,89 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         addSeek(llTiming, R.string.timing_bpm_hi, 0, R.string.end_slow, R.string.end_fast, 61, 220, (int) s.bpmHi, v -> v + " BPM",
                 v -> { s.bpmHi = Math.max(v, s.bpmLo + 1); changed(); });
         addSwitch(llTiming, R.string.pip_switch, R.string.x_pip, s.pip, v -> { s.pip = v; changed(); refreshPipParams(); });
+    }
+
+    /** GYRO tab: relations per device + calibration sliders. */
+    private void buildMotionControls(Settings s) {
+        hint(llMotion, R.string.x_motion_mode);
+        subTitle(llMotion, R.string.sec_estim);
+        addRelation(llMotion, R.string.rel_tilt, true, s.coyoteTiltRel, v -> { s.coyoteTiltRel = v; changed(); });
+        addRelation(llMotion, R.string.rel_move, false, s.coyoteMoveRel, v -> { s.coyoteMoveRel = v; changed(); });
+        addGyroWave(llMotion, Waveforms.COYOTE, s.cA, R.string.chan_a);
+        if (s.channelB && !s.coyoteLink) addGyroWave(llMotion, Waveforms.COYOTE, s.cB, R.string.chan_b);
+        subTitle(llMotion, R.string.sec_vib);
+        addRelation(llMotion, R.string.rel_tilt, true, s.vibTiltRel, v -> { s.vibTiltRel = v; changed(); });
+        addRelation(llMotion, R.string.rel_move, false, s.vibMoveRel, v -> { s.vibMoveRel = v; changed(); });
+        addGyroWave(llMotion, Waveforms.OPOSSUM, s.oA, R.string.chan_a);
+        if (s.vibBothMotors && !s.vibLink) addGyroWave(llMotion, Waveforms.OPOSSUM, s.oB, R.string.chan_b);
+        subTitle(llMotion, R.string.step4);
+        addSeek(llMotion, R.string.tilt_dead, 0, R.string.end_flat, R.string.end_upright, 0, 45, s.tiltDeadDeg, v -> v + "°",
+                v -> { s.tiltDeadDeg = v; if (s.tiltMaxDeg <= v) s.tiltMaxDeg = v + 5; changed(); });
+        addSeek(llMotion, R.string.tilt_full, 0, R.string.end_flat, R.string.end_upright, 5, 90, s.tiltMaxDeg, v -> v + "°",
+                v -> { s.tiltMaxDeg = v; if (s.tiltDeadDeg >= v) s.tiltDeadDeg = Math.max(0, v - 5); changed(); });
+        addSeek(llMotion, R.string.move_full, 0, R.string.end_still, R.string.end_vigorous, 5, 150, s.moveFullX10, v -> String.format("%.1f m/s²", v / 10.0),
+                v -> { s.moveFullX10 = v; changed(); });
+        addSeek(llMotion, R.string.gyro_full, 0, R.string.end_still, R.string.end_vigorous, 5, 100, s.gyroFullX10, v -> String.format("%.1f rad/s", v / 10.0),
+                v -> { s.gyroFullX10 = v; changed(); });
+    }
+
+    /** Gyro-mode waveform for one channel: "same as music" (default), the simple pulse, or any library pattern. */
+    private void addGyroWave(LinearLayout parent, Waveforms.Waveform[] table, Settings.ChannelCfg c, int chanRes) {
+        TextView tv = new TextView(this);
+        tv.setTextColor(C_TEXT); tv.setTextSize(14); tv.setPadding(0, dp(10), 0, 0);
+        tv.setText(getString(R.string.gyro_wave) + "  (" + getString(chanRes) + ")");
+        java.util.Locale loc = getResources().getConfiguration().getLocales().get(0);
+        List<String> names = new ArrayList<>();
+        names.add(getString(R.string.wave_same));
+        names.add(Waveforms.Waveform.simple(30).label(loc));
+        for (Waveforms.Waveform w : table) names.add(w.label(loc) + "  (" + String.format("%.1f", w.seconds()) + " s)");
+        Spinner sp = new Spinner(this);
+        ArrayAdapter<String> ad = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, names);
+        ad.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sp.setAdapter(ad);
+        int cur = c.gyroWave.isEmpty() ? 0 : 1 + Waveforms.indexOf(table, c.gyroWave);
+        sp.setSelection(cur, false);
+        sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
+                if (pos == cur) return;
+                c.gyroWave = pos == 0 ? "" : pos == 1 ? Waveforms.SIMPLE_ID : table[pos - 2].id;
+                changed();
+            }
+            @Override public void onNothingSelected(AdapterView<?> p) {}
+        });
+        parent.addView(tv);
+        parent.addView(sp);
+    }
+
+    private void addRelation(LinearLayout parent, int labelRes, boolean tilt, int current, IntConsumer onPick) {
+        TextView tv = new TextView(this);
+        tv.setTextColor(C_TEXT); tv.setTextSize(14); tv.setPadding(0, dp(10), 0, 0);
+        tv.setText(labelRes);
+        Spinner sp = new Spinner(this);
+        ArrayAdapter<String> ad = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{
+                getString(R.string.rel_ignore),
+                getString(tilt ? R.string.rel_more_tilt : R.string.rel_more_move),
+                getString(tilt ? R.string.rel_less_tilt : R.string.rel_less_move)});
+        ad.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sp.setAdapter(ad);
+        sp.setSelection(current, false);
+        sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) { if (pos != current) onPick.accept(pos); }
+            @Override public void onNothingSelected(AdapterView<?> p) {}
+        });
+        parent.addView(tv);
+        parent.addView(sp);
+    }
+
+    private void updateMotionReadout() {
+        MotionSensors m = svc.motionSensors;
+        boolean run = m != null && m.running;
+        Settings s = svc.settings;
+        double dC = svc.drive("coyote"), dO = svc.drive("opossum");
+        int sC = MotionMap.strength(dC, s.chan("coyote", 0).min, s.chan("coyote", 0).max);
+        int sO = MotionMap.strength(dO, s.vibFollowTempo ? s.chan("opossum", 0).min : s.chan("opossum", 0).manual,
+                s.vibFollowTempo ? s.chan("opossum", 0).max : s.chan("opossum", 0).manual);
+        motionReadout.set(run, run ? m.tiltDeg : 0, svc.tiltF, run ? Math.max(m.accel, m.gyro) : 0, svc.moveF, dC, sC, dO, sO);
     }
 
     /** Coyote output dials for one channel config (strength, random, waveform, mode, intensity, freq, pulse length). */
@@ -906,7 +1020,12 @@ public final class MainActivity extends AppCompatActivity implements BeatService
                 + (svc.motionRunning ? String.format("\n▦ motion %.1f (floor %.1f)  onsets %d  downbeat votes %d", svc.motion.level, svc.motion.floorLevel, svc.motion.onsets, tr.evidenceHits) : ""));
         // locked: orange number. Still deciding: grey "~" number with how periodic the beats are. Nothing: dash.
         double now = java.lang.System.nanoTime() / 1e9;
-        if (tr.locked()) {
+        if (svc.gyroMode()) {
+            updateMotionReadout();
+            MotionSensors m = svc.motionSensors;
+            tvBpm.setText(String.format("%.0f°  ⟲%.0f%%", m != null && m.running ? m.tiltDeg : 0, svc.moveF * 100));
+            tvBpm.setTextColor(svc.armed && (svc.drive("coyote") >= 0.05 || svc.drive("opossum") >= 0.05) ? C_ACCENT : C_DIM);
+        } else if (tr.locked()) {
             tvBpm.setText(String.format("%.1f BPM ●", tr.bpm()));
             tvBpm.setTextColor(now - svc.lastFlash < 0.12 ? 0xFFFFFFFF : C_ACCENT);
         } else if (tr.bpm() > 0) {

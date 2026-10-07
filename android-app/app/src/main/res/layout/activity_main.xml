@@ -53,19 +53,7 @@
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical" android:padding="12dp">
 
-            <LinearLayout style="@style/Card">
-                <TextView style="@style/SectionTitle" android:text="@string/step1"/>
-                <TextView android:id="@+id/tvSource" android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:textColor="@color/go" android:textSize="13sp" android:text="@string/src_now_mic"/>
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="8dp">
-                    <Button android:id="@+id/btnPhoneAudio" style="@style/BtnGhost" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/src_phone_btn"/>
-                    <Button android:id="@+id/btnMic" style="@style/BtnGhost" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/src_mic_btn"/>
-                </LinearLayout>
-                <TextView style="@style/Hint" android:text="@string/src_hint"/>
-                <TextView style="@style/Hint" android:textColor="@color/text" android:text="@string/src_share_note"/>
-                <LinearLayout android:id="@+id/llAudio" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
-            </LinearLayout>
-
+            <!-- common: devices + output dials -->
             <LinearLayout style="@style/Card">
                 <TextView style="@style/SectionTitle" android:text="@string/step2"/>
                 <Button android:id="@+id/btnScan" style="@style/BtnGhost" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_scan"/>
@@ -73,22 +61,61 @@
                 <TextView style="@style/Hint" android:text="@string/help_coyote"/>
                 <TextView style="@style/Hint" android:text="@string/help_opossum"/>
             </LinearLayout>
-
             <LinearLayout style="@style/Card">
                 <TextView style="@style/SectionTitle" android:textColor="@color/coyote" android:text="@string/sec_estim"/>
-                <LinearLayout android:id="@+id/llCoyote" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+                <LinearLayout android:id="@+id/llCoyoteOut" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
             </LinearLayout>
-
             <LinearLayout style="@style/Card">
                 <TextView style="@style/SectionTitle" android:textColor="@color/opossum" android:text="@string/sec_vib"/>
-                <LinearLayout android:id="@+id/llOpossum" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+                <LinearLayout android:id="@+id/llOpossumOut" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
             </LinearLayout>
 
-            <LinearLayout style="@style/Card">
-                <TextView style="@style/SectionTitle" android:text="@string/step4"/>
-                <Button android:id="@+id/btnAdvanced" style="@style/BtnGhost" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_advanced_show"/>
-                <LinearLayout android:id="@+id/llTiming" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone"/>
-                <LinearLayout android:id="@+id/llRate" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+            <!-- tabs -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+                <Button android:id="@+id/tabMusic" style="@style/BtnAccent" android:layout_width="0dp" android:layout_weight="1" android:layout_height="52dp" android:text="@string/tab_music"/>
+                <Button android:id="@+id/tabMotion" style="@style/BtnGhost" android:layout_width="0dp" android:layout_weight="1" android:layout_height="52dp" android:layout_marginStart="8dp" android:text="@string/tab_motion"/>
+            </LinearLayout>
+
+            <!-- MUSIC tab -->
+            <LinearLayout android:id="@+id/pageMusic" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/SectionTitle" android:text="@string/step1"/>
+                    <TextView android:id="@+id/tvSource" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:textColor="@color/go" android:textSize="13sp" android:text="@string/src_now_mic"/>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="8dp">
+                        <Button android:id="@+id/btnPhoneAudio" style="@style/BtnGhost" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/src_phone_btn"/>
+                        <Button android:id="@+id/btnMic" style="@style/BtnGhost" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/src_mic_btn"/>
+                    </LinearLayout>
+                    <TextView style="@style/Hint" android:text="@string/src_hint"/>
+                    <TextView style="@style/Hint" android:textColor="@color/text" android:text="@string/src_share_note"/>
+                    <LinearLayout android:id="@+id/llAudio" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+                </LinearLayout>
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/SectionTitle" android:textColor="@color/coyote" android:text="@string/sec_estim"/>
+                    <LinearLayout android:id="@+id/llCoyote" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+                </LinearLayout>
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/SectionTitle" android:textColor="@color/opossum" android:text="@string/sec_vib"/>
+                    <LinearLayout android:id="@+id/llOpossum" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+                </LinearLayout>
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/SectionTitle" android:text="@string/step4"/>
+                    <Button android:id="@+id/btnAdvanced" style="@style/BtnGhost" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_advanced_show"/>
+                    <LinearLayout android:id="@+id/llTiming" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone"/>
+                    <LinearLayout android:id="@+id/llRate" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- GYRO tab -->
+            <LinearLayout android:id="@+id/pageMotion" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/SectionTitle" android:text="@string/sec_motion"/>
+                    <TextView style="@style/Hint" android:text="@string/motion_hint"/>
+                    <TextView style="@style/SubTitle" android:text="@string/motion_now"/>
+                    <com.tupai.dgtempo.MotionReadoutView android:id="@+id/motionReadout"
+                        android:layout_width="match_parent" android:layout_height="150dp" android:layout_marginTop="6dp"/>
+                    <LinearLayout android:id="@+id/llMotion" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout style="@style/Card">

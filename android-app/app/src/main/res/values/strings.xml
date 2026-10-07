@@ -160,4 +160,27 @@
     <string name="chan_ab">A + B</string>
     <string name="chan_a">Channel A</string>
     <string name="chan_b">Channel B</string>
+    <string name="tab_music">♪ MUSIC</string>
+    <string name="tab_motion">⟲ GYRO</string>
+    <string name="sec_motion">Gyroscope · tilt and movement</string>
+    <string name="motion_hint">Output follows how the phone is held. Tilt = how far from lying flat (0° flat, 90° upright). Movement = acceleration or rotation of the phone. Each device decides how tilt and movement drive it; the two multiply, so a factor set to "no output" silences the device.</string>
+    <string name="rel_tilt">Tilt →</string>
+    <string name="rel_move">Movement →</string>
+    <string name="rel_ignore">ignore</string>
+    <string name="rel_more_tilt">more tilt = stronger (level = off)</string>
+    <string name="rel_less_tilt">more tilt = weaker (level = max)</string>
+    <string name="rel_more_move">more movement = stronger (still = off)</string>
+    <string name="rel_less_move">more movement = weaker (still = max)</string>
+    <string name="tilt_dead">Level zone (tilt below this counts as flat)</string>
+    <string name="tilt_full">Full tilt (this angle or more = 100 %%)</string>
+    <string name="move_full">Full movement: acceleration</string>
+    <string name="gyro_full">Full movement: rotation</string>
+    <string name="end_flat">◀ flat</string>
+    <string name="end_upright">upright ▶</string>
+    <string name="end_still">◀ gentle moves count</string>
+    <string name="end_vigorous">only vigorous moves ▶</string>
+    <string name="motion_now">Output now</string>
+    <string name="x_motion_mode">Gyro mode ignores music entirely. Strength comes from tilt and movement through the relations below, between each channel\'s base and max from the output dials above. Patterns loop continuously while a device is driven.</string>
+    <string name="gyro_wave">Waveform in gyro mode</string>
+    <string name="wave_same">Same as music tab</string>
 </resources>

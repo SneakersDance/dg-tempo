@@ -159,4 +159,27 @@
     <string name="chan_ab">A + B</string>
     <string name="chan_a">チャンネル A</string>
     <string name="chan_b">チャンネル B</string>
+    <string name="tab_music">♪ 音楽</string>
+    <string name="tab_motion">⟲ ジャイロ</string>
+    <string name="sec_motion">ジャイロ · 傾きと動き</string>
+    <string name="motion_hint">スマホの持ち方で出力が決まります。傾き＝水平からの角度（0° 水平、90° 直立）。動き＝スマホの加速度や回転。デバイスごとに傾きと動きの効き方を決め、両者は掛け算なので、どちらかが「出力なし」ならそのデバイスは止まります。</string>
+    <string name="rel_tilt">傾き →</string>
+    <string name="rel_move">動き →</string>
+    <string name="rel_ignore">無視</string>
+    <string name="rel_more_tilt">傾くほど強く（水平＝オフ）</string>
+    <string name="rel_less_tilt">傾くほど弱く（水平＝最大）</string>
+    <string name="rel_more_move">動くほど強く（静止＝オフ）</string>
+    <string name="rel_less_move">動くほど弱く（静止＝最大）</string>
+    <string name="tilt_dead">水平ゾーン（この角度未満は水平扱い）</string>
+    <string name="tilt_full">全傾き（この角度以上＝100%%）</string>
+    <string name="move_full">全動き：加速度</string>
+    <string name="gyro_full">全動き：回転</string>
+    <string name="end_flat">◀ 水平</string>
+    <string name="end_upright">直立 ▶</string>
+    <string name="end_still">◀ 軽い動きも反応</string>
+    <string name="end_vigorous">激しい動きのみ ▶</string>
+    <string name="motion_now">現在の出力</string>
+    <string name="x_motion_mode">ジャイロモードでは音楽を完全に無視します。強さは下の関係に従って傾きと動きから決まり、範囲は上の出力設定の各チャンネルの基本〜最大です。駆動中はパターンが連続ループします。</string>
+    <string name="gyro_wave">ジャイロモードの波形</string>
+    <string name="wave_same">音楽タブと同じ</string>
 </resources>

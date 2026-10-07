@@ -159,4 +159,27 @@
     <string name="chan_ab">A + B</string>
     <string name="chan_a">A 通道</string>
     <string name="chan_b">B 通道</string>
+    <string name="tab_music">♪ 音乐</string>
+    <string name="tab_motion">⟲ 陀螺仪</string>
+    <string name="sec_motion">陀螺仪 · 倾斜与运动</string>
+    <string name="motion_hint">输出随手机的姿态变化。倾斜 = 偏离平放的角度（0° 平放，90° 竖直）。运动 = 手机的加速度或旋转。每个设备各自决定倾斜和运动如何驱动它；两者相乘，因此任一项设为"无输出"时设备就静止。</string>
+    <string name="rel_tilt">倾斜 →</string>
+    <string name="rel_move">运动 →</string>
+    <string name="rel_ignore">忽略</string>
+    <string name="rel_more_tilt">越倾斜越强（平放 = 关）</string>
+    <string name="rel_less_tilt">越倾斜越弱（平放 = 最大）</string>
+    <string name="rel_more_move">越动越强（静止 = 关）</string>
+    <string name="rel_less_move">越动越弱（静止 = 最大）</string>
+    <string name="tilt_dead">平放区（低于此角度视为平放）</string>
+    <string name="tilt_full">完全倾斜（达到此角度 = 100%%）</string>
+    <string name="move_full">完全运动：加速度</string>
+    <string name="gyro_full">完全运动：旋转</string>
+    <string name="end_flat">◀ 平放</string>
+    <string name="end_upright">竖直 ▶</string>
+    <string name="end_still">◀ 轻微动作即计入</string>
+    <string name="end_vigorous">只有剧烈动作才计入 ▶</string>
+    <string name="motion_now">当前输出</string>
+    <string name="x_motion_mode">陀螺仪模式完全忽略音乐。强度由倾斜和运动经下方关系决定，范围为上方输出设置中各通道的基础与最大值。设备被驱动时图案连续循环。</string>
+    <string name="gyro_wave">陀螺仪模式波形</string>
+    <string name="wave_same">与音乐页相同</string>
 </resources>

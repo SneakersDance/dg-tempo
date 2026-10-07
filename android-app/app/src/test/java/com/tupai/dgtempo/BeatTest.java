@@ -360,6 +360,30 @@ public class BeatTest {
         assertEquals(200, s.burstMs("opossum"));
     }
 
+    @Test public void motionMapping() {
+        // tilt factor: flat inside the dead band, full at tiltMax
+        assertEquals(0.0, MotionMap.tiltFactor(5, 8, 60), 1e-9);
+        assertEquals(0.5, MotionMap.tiltFactor(34, 8, 60), 1e-9);
+        assertEquals(1.0, MotionMap.tiltFactor(80, 8, 60), 1e-9);
+        // movement: either acceleration or rotation can saturate it
+        assertEquals(0.0, MotionMap.moveFactor(0, 3, 0, 3), 1e-9);
+        assertEquals(1.0, MotionMap.moveFactor(6, 3, 0, 3), 1e-9);
+        assertEquals(1.0, MotionMap.moveFactor(0, 3, 4, 3), 1e-9);
+        // defaults: Coyote = more tilt, less movement; Opossum = more tilt, more movement
+        double tilted = 1.0, flat = 0.0, moving = 1.0, still = 0.0;
+        assertEquals(1.0, MotionMap.drive(tilted, MotionMap.MORE, still, MotionMap.LESS), 1e-9);    // Coyote: tilted + idle = max
+        assertEquals(0.0, MotionMap.drive(tilted, MotionMap.MORE, moving, MotionMap.LESS), 1e-9);   // Coyote: moving = off
+        assertEquals(0.0, MotionMap.drive(flat, MotionMap.MORE, still, MotionMap.LESS), 1e-9);      // Coyote: level = off
+        assertEquals(1.0, MotionMap.drive(tilted, MotionMap.MORE, moving, MotionMap.MORE), 1e-9);   // Opossum: tilted + moving = max
+        assertEquals(0.0, MotionMap.drive(tilted, MotionMap.MORE, still, MotionMap.MORE), 1e-9);    // Opossum: idle = off
+        assertEquals(0.5, MotionMap.drive(0.5, MotionMap.MORE, 0.3, MotionMap.IGNORE), 1e-9);        // ignore = pass-through
+        assertEquals(0.0, MotionMap.drive(1, MotionMap.IGNORE, 1, MotionMap.IGNORE), 1e-9);          // nothing selected = off
+        // strength: off below 5%, else min..max
+        assertEquals(0, MotionMap.strength(0.02, 5, 50));
+        assertEquals(50, MotionMap.strength(1.0, 5, 50));
+        assertEquals(28, MotionMap.strength(0.5, 5, 50));
+    }
+
     @Test public void testBurstAndInactive() {
         TempoTracker tr = new TempoTracker();
         // test burst ends at 10.2 and is 100 ms long -> it fills the frame starting at 10.1, not 10.0

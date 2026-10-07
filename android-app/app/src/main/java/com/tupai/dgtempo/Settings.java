@@ -18,13 +18,15 @@ public final class Settings {
         public String wave;             // waveform id (SIMPLE or a library id)
         public boolean continuous = false;
         public boolean randomLevel = false;
+        public String gyroWave = "";    // waveform used in gyro mode; "" = same as the music waveform
+        public String waveFor(boolean gyro) { return gyro && !gyroWave.isEmpty() ? gyroWave : wave; }
 
         ChannelCfg(int min, int max, int manual, int burstMs, String wave, boolean randomLevel) {
             this.min = min; this.max = max; this.manual = manual; this.burstMs = burstMs; this.wave = wave; this.randomLevel = randomLevel;
         }
         void copyFrom(ChannelCfg o) {
             min = o.min; max = o.max; manual = o.manual; intensity = o.intensity; freq = o.freq; burstMs = o.burstMs;
-            wave = o.wave; continuous = o.continuous; randomLevel = o.randomLevel;
+            wave = o.wave; continuous = o.continuous; randomLevel = o.randomLevel; gyroWave = o.gyroWave;
         }
         void load(SharedPreferences p, String sfx, ChannelCfg fallback) {
             min = p.getInt("coyoteMin" + sfx, fallback.min); max = p.getInt("coyoteMax" + sfx, fallback.max);
@@ -32,11 +34,13 @@ public final class Settings {
             freq = p.getInt("freq" + sfx, fallback.freq); burstMs = p.getInt("burstMs" + sfx, fallback.burstMs);
             wave = p.getString("wave" + sfx, fallback.wave); continuous = p.getBoolean("continuous" + sfx, fallback.continuous);
             randomLevel = p.getBoolean("randomLevel" + sfx, fallback.randomLevel);
+            gyroWave = p.getString("gyroWave" + sfx, fallback.gyroWave);
         }
         void save(SharedPreferences.Editor e, String sfx) {
             e.putInt("coyoteMin" + sfx, min).putInt("coyoteMax" + sfx, max).putInt("manual" + sfx, manual)
              .putInt("intensity" + sfx, intensity).putInt("freq" + sfx, freq).putInt("burstMs" + sfx, burstMs)
-             .putString("wave" + sfx, wave).putBoolean("continuous" + sfx, continuous).putBoolean("randomLevel" + sfx, randomLevel);
+             .putString("wave" + sfx, wave).putBoolean("continuous" + sfx, continuous).putBoolean("randomLevel" + sfx, randomLevel)
+             .putString("gyroWave" + sfx, gyroWave);
         }
     }
 
@@ -46,6 +50,17 @@ public final class Settings {
     public final ChannelCfg oA = new ChannelCfg(200, 200, 200, 3000, "BEAT", false);
     public final ChannelCfg oB = new ChannelCfg(200, 200, 200, 3000, "BEAT", false);
     public boolean coyoteLink = true, vibLink = true;
+
+    // ---- input mode: 0 = music / ambient sound, 1 = gyroscope (tilt + movement)
+    public int mode = 0;
+    public int tiltDeadDeg = 8, tiltMaxDeg = 60;          // tilt below dead = level (no tilt drive); at max = full
+    public int moveFullX10 = 30;                            // linear acceleration (m/s^2 x10) that counts as full movement
+    public int gyroFullX10 = 30;                            // rotation rate (rad/s x10) that counts as full movement
+    // relations: MotionMap.IGNORE / MORE / LESS. Defaults: tilt -> both stronger; movement -> Coyote weaker, Opossum stronger
+    public int coyoteTiltRel = MotionMap.MORE, coyoteMoveRel = MotionMap.LESS;
+    public int vibTiltRel = MotionMap.MORE, vibMoveRel = MotionMap.MORE;
+    public int tiltRel(String kind) { return "coyote".equals(kind) ? coyoteTiltRel : vibTiltRel; }
+    public int moveRel(String kind) { return "coyote".equals(kind) ? coyoteMoveRel : vibMoveRel; }
 
     public boolean vibFollowTempo = true;
     public boolean autoStrength = true; // Coyote follows tempo; else base value
@@ -96,6 +111,11 @@ public final class Settings {
         s.oA.load(p, "_oA", legacyO);
         s.oB.load(p, "_oB", s.oA);
         s.coyoteLink = p.getBoolean("coyoteLink", true);
+        s.mode = p.getInt("mode", 0);
+        s.tiltDeadDeg = p.getInt("tiltDeadDeg", s.tiltDeadDeg); s.tiltMaxDeg = p.getInt("tiltMaxDeg", s.tiltMaxDeg);
+        s.moveFullX10 = p.getInt("moveFullX10", s.moveFullX10); s.gyroFullX10 = p.getInt("gyroFullX10", s.gyroFullX10);
+        s.coyoteTiltRel = p.getInt("coyoteTiltRel", s.coyoteTiltRel); s.coyoteMoveRel = p.getInt("coyoteMoveRel", s.coyoteMoveRel);
+        s.vibTiltRel = p.getInt("vibTiltRel", s.vibTiltRel); s.vibMoveRel = p.getInt("vibMoveRel", s.vibMoveRel);
         s.vibLink = p.getBoolean("vibLink", true);
 
         s.vibFollowTempo = p.getBoolean("vibFollowTempo", s.vibFollowTempo);
@@ -178,6 +198,10 @@ public final class Settings {
         SharedPreferences.Editor e = c.getSharedPreferences(PREF, Context.MODE_PRIVATE).edit();
         cA.save(e, "_cA"); cB.save(e, "_cB"); oA.save(e, "_oA"); oB.save(e, "_oB");
         e.putBoolean("coyoteLink", coyoteLink).putBoolean("vibLink", vibLink)
+                .putInt("mode", mode).putInt("tiltDeadDeg", tiltDeadDeg).putInt("tiltMaxDeg", tiltMaxDeg)
+                .putInt("moveFullX10", moveFullX10).putInt("gyroFullX10", gyroFullX10)
+                .putInt("coyoteTiltRel", coyoteTiltRel).putInt("coyoteMoveRel", coyoteMoveRel)
+                .putInt("vibTiltRel", vibTiltRel).putInt("vibMoveRel", vibMoveRel)
                 .putBoolean("vibFollowTempo", vibFollowTempo)
                 .putBoolean("autoStrength", autoStrength)
                 .putFloat("bpmLo", (float) bpmLo).putFloat("bpmHi", (float) bpmHi)
