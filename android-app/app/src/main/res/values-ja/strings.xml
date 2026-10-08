@@ -190,4 +190,12 @@
     <string name="reset_title">すべて初期化しますか？</string>
     <string name="reset_msg">すべてのダイヤル、波形、関係、上限、モードが初期値に戻ります。出力は停止します。接続中のデバイスはそのままです。元に戻せません。</string>
     <string name="reset_confirm">初期化</string>
+    <string name="move_delay_title">運動ゲーム（ジャイロ）</string>
+    <string name="move_delay">動きで電気刺激を遅らせる</string>
+    <string name="x_move_delay">音楽モード中にスマホのモーションセンサーを使用。動き続ける（ジャンプ、ダンス）限り Coyote は止められ、動くほど保留が長くなる。1 秒止まると保留はリセットされ、刺激が戻る。動きの感度は「ジャイロ」タブの「全動き」スライダーに従う。</string>
+    <string name="move_delay_max">保留は最長</string>
+    <string name="move_delay_need">カウントに必要な動き</string>
+    <string name="move_delay_final">上限に達したら：最大刺激</string>
+    <string name="x_move_delay_final">オン：上限まで動き続けると、下の長さだけ最大強度の刺激が入り、保留はやり直し。オフ：上限に達すると通常の刺激に戻るだけ。</string>
+    <string name="move_delay_shock">最大刺激の長さ</string>
 </resources>

@@ -100,7 +100,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
             if (!motionSensors.start()) log("gyro: no accelerometer on this phone");
             else log("gyro mode: tilt + movement drive the output");
         } else {
-            if (motionSensors != null) motionSensors.stop();
+            if (motionSensors != null && !settings.moveDelayOn) motionSensors.stop();
             log("music mode");
         }
         UiListener l = ui;
@@ -124,6 +124,66 @@ public final class BeatService extends Service implements BleDevice.Listener {
     }
 
     public double drive(String kind) { return driveNow["coyote".equals(kind) ? 0 : 1]; }
+
+    // ---- music mode: movement delays the Coyote ----------------------------------------------
+    public volatile double holdS = 0;                  // seconds of (near-)continuous movement accumulated
+    public volatile double maxShockUntil = 0;          // forced max shock window end
+    private double lastMoveAt = -1, lastDelayTick = 0;
+    public volatile String delayNote = "";
+
+    public boolean needSensors() { return gyroMode() || settings.moveDelayOn; }
+
+    public void setMoveDelay(boolean on) {
+        settings.moveDelayOn = on;
+        settings.save(this);
+        if (on) {
+            if (motionSensors == null) motionSensors = new MotionSensors(this);
+            if (!motionSensors.start()) log("movement delay: no accelerometer on this phone");
+            else log("movement delay ON: keep moving to hold the Coyote off (max " + settings.moveDelayMaxS + " s)");
+        } else if (!gyroMode() && motionSensors != null) {
+            motionSensors.stop();
+        }
+        holdS = 0; maxShockUntil = 0; delayNote = "";
+    }
+
+    /** Is the Coyote currently held off by movement? (music mode only) */
+    public boolean coyoteHeld() {
+        if (gyroMode() || !settings.moveDelayOn || !armed) return false;
+        double now = System.nanoTime() / 1e9;
+        if (now < maxShockUntil) return false;
+        return holdS > 0 && holdS < settings.moveDelayMaxS;
+    }
+
+    private void moveDelayTick(double now) {
+        if (gyroMode() || !settings.moveDelayOn || motionSensors == null || !motionSensors.running) { holdS = 0; delayNote = ""; return; }
+        double dt = lastDelayTick == 0 ? 0 : Math.min(0.5, now - lastDelayTick);
+        lastDelayTick = now;
+        double mf = MotionMap.moveFactor(motionSensors.accel, settings.moveFullX10 / 10.0, motionSensors.gyro, settings.gyroFullX10 / 10.0);
+        moveF = mf;
+        boolean moving = mf >= settings.moveDelayNeedPct / 100.0;
+        if (moving) lastMoveAt = now;
+        if (now < maxShockUntil) { delayNote = String.format("⚡MAX %.0fs", maxShockUntil - now); return; }
+        if (!armed) { holdS = 0; delayNote = ""; return; }
+        boolean recent = lastMoveAt > 0 && now - lastMoveAt < 1.0;      // 1 s grace: a short pause does not reset
+        if (recent) {
+            holdS += dt;
+            if (holdS >= settings.moveDelayMaxS) {
+                if (settings.moveDelayFinal) {
+                    maxShockUntil = now + settings.moveDelayShockS;
+                    log("movement delay: " + settings.moveDelayMaxS + " s reached -> MAX shock for " + settings.moveDelayShockS + " s");
+                } else {
+                    log("movement delay: " + settings.moveDelayMaxS + " s reached -> shocks resume");
+                }
+                holdS = 0; lastMoveAt = -1;
+                delayNote = "";
+                return;
+            }
+            delayNote = String.format("⏳ %.0f/%ds", holdS, settings.moveDelayMaxS);
+        } else {
+            if (holdS > 0) log("movement stopped: Coyote released");
+            holdS = 0; delayNote = "";
+        }
+    }
 
     public void setMuted(boolean m) {
         muted = m;
@@ -298,6 +358,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
         settings = Settings.load(this);
         applySensitivity();
         if (settings.mode == 1) main.post(() -> setMode(1));
+        else if (settings.moveDelayOn) main.post(() -> setMoveDelay(true));
         NotificationManager nm = getSystemService(NotificationManager.class);
         nm.createNotificationChannel(new NotificationChannel(CHANNEL, "DG Tempo", NotificationManager.IMPORTANCE_LOW));
     }
@@ -772,6 +833,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
         if (!armed) return "off";
         if (deviceActive(kind)) return "▶";
         if (gyroMode()) return String.format("%.0f%%", drive(kind) * 100);
+        if ("coyote".equals(kind) && !delayNote.isEmpty()) return delayNote;
         if ("coyote".equals(kind) && settings.coyoteTimerMode == 2 && nextRandomAt > 0)
             return String.format("⏱%.0fs", Math.max(0, nextRandomAt - System.nanoTime() / 1e9));
         if ("coyote".equals(kind) && settings.coyoteTimerMode == 1)
@@ -815,6 +877,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
     private double tempoX(String kind, int ch) {
         if (!deviceActive(kind)) return -1;
         if (gyroMode() && System.nanoTime() / 1e9 >= testBurstUntil) return drive(kind);
+        if ("coyote".equals(kind) && System.nanoTime() / 1e9 < maxShockUntil) return 1;   // max shock window
         if ("coyote".equals(kind) && coyoteForceMax && System.nanoTime() / 1e9 < coyoteForceUntil) return 1;   // timer: 3 owed -> max
         if ("coyote".equals(kind) && settings.chan(kind, ch).randomLevel) return randLevelX(ch);                 // random level per pulse
         if (!tracker.locked()) return 0;          // no beat (any-music mode / test pulse): use the "slow tempo" strength
@@ -833,7 +896,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
             tickCount++;
 
             if (armed && audioRunning && !gyroMode() && now - detector.lastAudio > 2.0) stopOutput("no audio for 2 s");
-            if (gyroMode()) motionTick();
+            if (gyroMode()) motionTick(); else moveDelayTick(now);
             if (tracker.checkTimeout(now)) { wasLocked = false; log("UNLOCKED: beats stopped"); }
             else if (tickCount % 10 == 0) noteTransitions();
             if (audioRunning) {
@@ -875,7 +938,12 @@ public final class BeatService extends Service implements BleDevice.Listener {
                     boolean cont = c.continuous;
                     double blen = c.burstMs / 1000.0;
                     java.util.List<double[]> use;
-                    if (gyroMode()) {
+                    if (coy && !gyroMode() && now < maxShockUntil) {
+                        // movement-delay max shock: pattern loops at max for the configured seconds
+                        use = new java.util.ArrayList<>();
+                        if (chOn) use.add(new double[]{maxShockUntil - settings.moveDelayShockS, maxShockUntil});
+                        cont = true;
+                    } else if (gyroMode()) {
                         // gyro: the pattern loops while the device is driven; strength carries tilt/movement
                         use = new java.util.ArrayList<>();
                         if (chOn && active && now >= testBurstUntil) use.add(new double[]{armedAt, Double.POSITIVE_INFINITY});
@@ -993,6 +1061,8 @@ public final class BeatService extends Service implements BleDevice.Listener {
         double now = System.nanoTime() / 1e9;
         if (now < testBurstUntil) return true;                 // test pulse: every connected device fires
         if (gyroMode()) return drive(kind) >= 0.05;            // gyro: tilt/movement decide, music ignored
+        if ("coyote".equals(kind) && now < maxShockUntil) return true;      // movement-delay max shock
+        if ("coyote".equals(kind) && coyoteHeld()) return false;             // movement holds the Coyote off
         if ("coyote".equals(kind) && now < coyoteForceUntil) return true;   // timer pulse train in progress
         if ("coyote".equals(kind) && settings.coyoteTimerMode != 0) return false;   // timer mode: ONLY the timer fires the Coyote
         if (motionActive(kind, now)) return true;              // screen movement fires this device
@@ -1039,6 +1109,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
         settings = Settings.reset(this);
         applySensitivity();
         if (wasGyro != gyroMode()) setMode(settings.mode);
+        if (!needSensors() && motionSensors != null) motionSensors.stop();
         stopOutput("settings reset");
         log("all settings reset to defaults");
         UiListener l = ui;

@@ -59,7 +59,14 @@ public final class Settings {
     // relations: MotionMap.IGNORE / MORE / LESS. Defaults: tilt -> both stronger; movement -> Coyote weaker, Opossum stronger
     public int coyoteTiltRel = MotionMap.MORE, coyoteMoveRel = MotionMap.LESS;
     public int vibTiltRel = MotionMap.MORE, vibMoveRel = MotionMap.MORE;
-    public int vibGyroConst = 0;                            // gyro mode Opossum: 0 follow tilt/movement, 1 always on, 2 always off
+    public int vibGyroConst = 0;
+    // music mode: movement (gyro) delays the Coyote. Keep moving -> no shock, up to moveDelayMaxS; then (optionally)
+    // a max shock for moveDelayShockS seconds. Stopping resets the hold.
+    public boolean moveDelayOn = false;
+    public int moveDelayMaxS = 30;
+    public boolean moveDelayFinal = true;
+    public int moveDelayShockS = 3;
+    public int moveDelayNeedPct = 25;                       // % of "full movement" that counts as moving                            // gyro mode Opossum: 0 follow tilt/movement, 1 always on, 2 always off
     public int tiltRel(String kind) { return "coyote".equals(kind) ? coyoteTiltRel : vibTiltRel; }
     public int moveRel(String kind) { return "coyote".equals(kind) ? coyoteMoveRel : vibMoveRel; }
 
@@ -124,6 +131,9 @@ public final class Settings {
         s.coyoteTiltRel = p.getInt("coyoteTiltRel", s.coyoteTiltRel); s.coyoteMoveRel = p.getInt("coyoteMoveRel", s.coyoteMoveRel);
         s.vibTiltRel = p.getInt("vibTiltRel", s.vibTiltRel); s.vibMoveRel = p.getInt("vibMoveRel", s.vibMoveRel);
         s.vibGyroConst = p.getInt("vibGyroConst", 0);
+        s.moveDelayOn = p.getBoolean("moveDelayOn", false); s.moveDelayMaxS = p.getInt("moveDelayMaxS", 30);
+        s.moveDelayFinal = p.getBoolean("moveDelayFinal", true); s.moveDelayShockS = p.getInt("moveDelayShockS", 3);
+        s.moveDelayNeedPct = p.getInt("moveDelayNeedPct", 25);
         s.vibLink = p.getBoolean("vibLink", true);
 
         s.vibFollowTempo = p.getBoolean("vibFollowTempo", s.vibFollowTempo);
@@ -210,6 +220,8 @@ public final class Settings {
                 .putInt("moveFullX10", moveFullX10).putInt("gyroFullX10", gyroFullX10)
                 .putInt("coyoteTiltRel", coyoteTiltRel).putInt("coyoteMoveRel", coyoteMoveRel)
                 .putInt("vibTiltRel", vibTiltRel).putInt("vibMoveRel", vibMoveRel).putInt("vibGyroConst", vibGyroConst)
+                .putBoolean("moveDelayOn", moveDelayOn).putInt("moveDelayMaxS", moveDelayMaxS)
+                .putBoolean("moveDelayFinal", moveDelayFinal).putInt("moveDelayShockS", moveDelayShockS).putInt("moveDelayNeedPct", moveDelayNeedPct)
                 .putBoolean("vibFollowTempo", vibFollowTempo)
                 .putBoolean("autoStrength", autoStrength)
                 .putFloat("bpmLo", (float) bpmLo).putFloat("bpmHi", (float) bpmHi)

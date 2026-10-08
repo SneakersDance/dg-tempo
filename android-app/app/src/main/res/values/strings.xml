@@ -191,4 +191,12 @@
     <string name="reset_title">Reset everything?</string>
     <string name="reset_msg">All dials, waveforms, relations, limits and the mode go back to the built-in defaults. Output stops. Connected devices stay connected. This cannot be undone.</string>
     <string name="reset_confirm">RESET</string>
+    <string name="move_delay_title">Movement game (gyro)</string>
+    <string name="move_delay">Movement delays the shock</string>
+    <string name="x_move_delay">Uses the phone\'s motion sensors while in music mode. While you keep moving (jumping, dancing), the Coyote is held off, and the hold keeps growing the longer you move. Stop for a second and the hold resets, so shocks come back. Movement sensitivity follows the "full movement" sliders in the GYRO tab.</string>
+    <string name="move_delay_max">Hold off for at most</string>
+    <string name="move_delay_need">Movement needed to count</string>
+    <string name="move_delay_final">When the limit is reached: MAX shock</string>
+    <string name="x_move_delay_final">On: when you have kept moving for the whole limit, a shock at MAX strength is delivered for the length below, then the hold restarts. Off: reaching the limit just lets normal shocks resume while you move.</string>
+    <string name="move_delay_shock">MAX shock length</string>
 </resources>

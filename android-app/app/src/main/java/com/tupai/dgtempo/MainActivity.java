@@ -470,6 +470,15 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         }
         // Coyote music triggers
         addSwitch(llCoyote, R.string.coy_auto, R.string.x_auto, s.autoStrength, v -> { s.autoStrength = v; changed(); });
+        subTitle(llCoyote, R.string.move_delay_title);
+        addSwitch(llCoyote, R.string.move_delay, R.string.x_move_delay, s.moveDelayOn, v -> { svc.setMoveDelay(v); buildControls(); });
+        if (s.moveDelayOn) {
+            addSeek(llCoyote, R.string.move_delay_max, 0, R.string.end_sooner, R.string.end_rarer, 5, 300, s.moveDelayMaxS, v -> v + " s", v -> { s.moveDelayMaxS = v; changed(); });
+            addSeek(llCoyote, R.string.move_delay_need, 0, R.string.end_still, R.string.end_vigorous, 5, 100, s.moveDelayNeedPct, v -> v + " %", v -> { s.moveDelayNeedPct = v; changed(); });
+            addSwitch(llCoyote, R.string.move_delay_final, R.string.x_move_delay_final, s.moveDelayFinal, v -> { s.moveDelayFinal = v; changed(); buildControls(); });
+            if (s.moveDelayFinal)
+                addSeek(llCoyote, R.string.move_delay_shock, 0, R.string.end_short, R.string.end_long, 1, 30, s.moveDelayShockS, v -> v + " s", v -> { s.moveDelayShockS = v; changed(); }, C_POWER_COYOTE);
+        }
         subTitle(llCoyote, R.string.step4);
         addSeek(llCoyote, R.string.sens_level, R.string.x_sens, R.string.end_strict, R.string.end_eager, 1, 10, s.coyoteSens, v -> v + " / 10", v -> { s.coyoteSens = v; changed(); });
         addRate(llCoyote, s.coyotePulseRate, v -> { s.coyotePulseRate = v; changed(); });
@@ -1067,6 +1076,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
                 svc.detector.levelDb, svc.detector.musicDb)
                 + "\n" + fireLine("C", "coyote") + "   " + fireLine("O", "opossum")
                 + (svc.timerNote.isEmpty() ? "" : "   ⏱ " + svc.timerNote)
+                + (svc.delayNote.isEmpty() ? "" : "   " + svc.delayNote)
                 + (svc.motionRunning ? String.format("\n▦ motion %.1f (floor %.1f)  onsets %d  downbeat votes %d", svc.motion.level, svc.motion.floorLevel, svc.motion.onsets, tr.evidenceHits) : ""));
         // locked: orange number. Still deciding: grey "~" number with how periodic the beats are. Nothing: dash.
         double now = java.lang.System.nanoTime() / 1e9;
