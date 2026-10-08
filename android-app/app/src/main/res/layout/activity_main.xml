@@ -121,6 +121,7 @@
             <LinearLayout style="@style/Card">
                 <TextView style="@style/SectionTitle" android:text="@string/sec_background"/>
                 <Button android:id="@+id/btnBattery" style="@style/BtnGhost" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/btn_battery"/>
+                <Button android:id="@+id/btnReset" style="@style/BtnGhost" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textColor="@color/danger" android:text="@string/btn_reset"/>
                 <Button android:id="@+id/btnQuit" style="@style/BtnGhost" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@string/btn_quit"/>
             </LinearLayout>
 

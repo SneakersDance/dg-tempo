@@ -116,6 +116,8 @@ public final class BeatService extends Service implements BleDevice.Listener {
         String[] kinds = {"coyote", "opossum"};
         for (int i = 0; i < 2; i++) {
             double d = MotionMap.drive(tiltF, settings.tiltRel(kinds[i]), moveF, settings.moveRel(kinds[i]));
+            if (i == 1 && settings.vibGyroConst == 1) d = 1;          // Opossum: constantly on
+            if (i == 1 && settings.vibGyroConst == 2) d = 0;          // Opossum: constantly off
             driveSmooth[i] += (d - driveSmooth[i]) * 0.25;        // ~0.4 s smoothing at 10 Hz
             driveNow[i] = driveSmooth[i];
         }
@@ -1029,6 +1031,18 @@ public final class BeatService extends Service implements BleDevice.Listener {
     public void applyMotionSensitivity() {
         motion.sensitivity = 3.0 - (settings.motionSens - 1) * 0.2;
         motion.gateDb = 10.0 - (settings.motionSens - 1) * 0.8;
+    }
+
+    /** Reset every setting to the defaults (caps are rewritten to the Coyote on the next frame). */
+    public void resetSettings() {
+        boolean wasGyro = gyroMode();
+        settings = Settings.reset(this);
+        applySensitivity();
+        if (wasGyro != gyroMode()) setMode(settings.mode);
+        stopOutput("settings reset");
+        log("all settings reset to defaults");
+        UiListener l = ui;
+        if (l != null) main.post(l::onDevices);
     }
 
     public void setDeviceEnabled(String kind, boolean on) {

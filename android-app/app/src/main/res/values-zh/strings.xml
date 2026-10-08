@@ -182,4 +182,12 @@
     <string name="x_motion_mode">陀螺仪模式完全忽略音乐。强度由倾斜和运动经下方关系决定，范围为上方输出设置中各通道的基础与最大值。设备被驱动时图案连续循环。</string>
     <string name="gyro_wave">陀螺仪模式波形</string>
     <string name="wave_same">与音乐页相同</string>
+    <string name="vib_gyro_const">陀螺仪模式下的负鼠</string>
+    <string name="vib_gyro_follow">跟随倾斜与运动</string>
+    <string name="vib_gyro_on">常开（最大强度）</string>
+    <string name="vib_gyro_off">常关</string>
+    <string name="btn_reset">恢复全部默认设置</string>
+    <string name="reset_title">全部重置？</string>
+    <string name="reset_msg">所有设置、波形、关系、上限和模式都将恢复为内置默认值。输出停止。已连接的设备保持连接。此操作无法撤销。</string>
+    <string name="reset_confirm">重置</string>
 </resources>

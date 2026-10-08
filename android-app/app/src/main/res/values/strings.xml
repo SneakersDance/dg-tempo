@@ -183,4 +183,12 @@
     <string name="x_motion_mode">Gyro mode ignores music entirely. Strength comes from tilt and movement through the relations below, between each channel\'s base and max from the output dials above. Patterns loop continuously while a device is driven.</string>
     <string name="gyro_wave">Waveform in gyro mode</string>
     <string name="wave_same">Same as music tab</string>
+    <string name="vib_gyro_const">Opossum in gyro mode</string>
+    <string name="vib_gyro_follow">Follows tilt and movement</string>
+    <string name="vib_gyro_on">Constantly ON (at max)</string>
+    <string name="vib_gyro_off">Constantly OFF</string>
+    <string name="btn_reset">RESET ALL SETTINGS TO DEFAULTS</string>
+    <string name="reset_title">Reset everything?</string>
+    <string name="reset_msg">All dials, waveforms, relations, limits and the mode go back to the built-in defaults. Output stops. Connected devices stay connected. This cannot be undone.</string>
+    <string name="reset_confirm">RESET</string>
 </resources>

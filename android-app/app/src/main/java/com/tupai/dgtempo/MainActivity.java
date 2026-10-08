@@ -143,6 +143,15 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             btnAdvanced.setText(show ? R.string.btn_advanced_hide : R.string.btn_advanced_show);
         });
         setupLanguageSpinner();
+        findViewById(R.id.btnReset).setOnClickListener(v -> {
+            if (svc == null) return;
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle(R.string.reset_title)
+                    .setMessage(R.string.reset_msg)
+                    .setPositiveButton(R.string.reset_confirm, (d, w) -> { svc.resetSettings(); buildControls(); onState(); })
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+        });
         findViewById(R.id.btnQuit).setOnClickListener(v -> {
             startService(new Intent(this, BeatService.class).setAction(BeatService.ACTION_QUIT));
             finish();
@@ -535,8 +544,28 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         addGyroWave(llMotion, Waveforms.COYOTE, s.cA, R.string.chan_a);
         if (s.channelB && !s.coyoteLink) addGyroWave(llMotion, Waveforms.COYOTE, s.cB, R.string.chan_b);
         subTitle(llMotion, R.string.sec_vib);
-        addRelation(llMotion, R.string.rel_tilt, true, s.vibTiltRel, v -> { s.vibTiltRel = v; changed(); });
-        addRelation(llMotion, R.string.rel_move, false, s.vibMoveRel, v -> { s.vibMoveRel = v; changed(); });
+        TextView tvConst = new TextView(this);
+        tvConst.setTextColor(C_TEXT); tvConst.setTextSize(14); tvConst.setPadding(0, dp(10), 0, 0);
+        tvConst.setText(R.string.vib_gyro_const);
+        Spinner spConst = new Spinner(this);
+        ArrayAdapter<String> adConst = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{
+                getString(R.string.vib_gyro_follow), getString(R.string.vib_gyro_on), getString(R.string.vib_gyro_off)});
+        adConst.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spConst.setAdapter(adConst);
+        spConst.setSelection(s.vibGyroConst, false);
+        spConst.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
+                if (pos == s.vibGyroConst) return;
+                s.vibGyroConst = pos; changed(); buildControls();
+            }
+            @Override public void onNothingSelected(AdapterView<?> p) {}
+        });
+        llMotion.addView(tvConst);
+        llMotion.addView(spConst);
+        if (s.vibGyroConst == 0) {
+            addRelation(llMotion, R.string.rel_tilt, true, s.vibTiltRel, v -> { s.vibTiltRel = v; changed(); });
+            addRelation(llMotion, R.string.rel_move, false, s.vibMoveRel, v -> { s.vibMoveRel = v; changed(); });
+        }
         addGyroWave(llMotion, Waveforms.OPOSSUM, s.oA, R.string.chan_a);
         if (s.vibBothMotors && !s.vibLink) addGyroWave(llMotion, Waveforms.OPOSSUM, s.oB, R.string.chan_b);
         subTitle(llMotion, R.string.step4);
@@ -613,9 +642,9 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     private void coyoteChannelDials(LinearLayout parent, Settings.ChannelCfg c, int titleRes) {
         subTitle(parent, titleRes);
         addSeek(parent, R.string.coy_max, R.string.x_max, R.string.end_gentle, R.string.end_hard, 0, 200, c.max, v -> v + " / 200",
-                v -> { c.max = v; if (c.min > v) c.min = v; changed(); });
+                v -> { c.max = v; if (c.min > v) c.min = v; changed(); }, C_POWER_COYOTE);
         addSeek(parent, R.string.coy_base, R.string.x_base, R.string.end_gentle, R.string.end_hard, 0, 200, c.min, String::valueOf,
-                v -> { c.min = Math.min(v, c.max); changed(); });
+                v -> { c.min = Math.min(v, c.max); changed(); }, C_POWER_COYOTE);
         addSwitch(parent, R.string.coy_random_level, R.string.x_random, c.randomLevel, v -> { c.randomLevel = v; changed(); });
         addWave(parent, Waveforms.COYOTE, c.wave, id -> { c.wave = id; changed(); });
         hint(parent, R.string.x_wave);
@@ -630,11 +659,11 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         Settings s = svc.settings;
         subTitle(parent, titleRes);
         if (s.vibFollowTempo) {
-            addSeek(parent, R.string.vib_min, 0, R.string.end_gentle, R.string.end_hard, 0, 200, c.min, String::valueOf, v -> { c.min = Math.min(v, c.max); changed(); });
+            addSeek(parent, R.string.vib_min, 0, R.string.end_gentle, R.string.end_hard, 0, 200, c.min, String::valueOf, v -> { c.min = Math.min(v, c.max); changed(); }, C_POWER_OPOSSUM);
             addSeek(parent, R.string.vib_max, 0, R.string.end_gentle, R.string.end_hard, 0, 200, c.max, String::valueOf,
-                    v -> { c.max = v; if (c.min > v) c.min = v; changed(); });
+                    v -> { c.max = v; if (c.min > v) c.min = v; changed(); }, C_POWER_OPOSSUM);
         } else {
-            addSeek(parent, R.string.vib_manual, 0, R.string.end_gentle, R.string.end_hard, 0, 200, c.manual, v -> v + " / 200", v -> { c.manual = v; changed(); });
+            addSeek(parent, R.string.vib_manual, 0, R.string.end_gentle, R.string.end_hard, 0, 200, c.manual, v -> v + " / 200", v -> { c.manual = v; changed(); }, C_POWER_OPOSSUM);
         }
         addWave(parent, Waveforms.OPOSSUM, c.wave, id -> { c.wave = id; changed(); });
         addSwitch(parent, R.string.wave_mode_beat, R.string.x_wave_mode, !c.continuous, v -> { c.continuous = !v; changed(); });
@@ -753,6 +782,14 @@ public final class MainActivity extends AppCompatActivity implements BeatService
      */
     private void addSeek(LinearLayout parent, int labelRes, int hintRes, int endLeftRes, int endRightRes,
                          int min, int max, int value, IntFunction<String> fmt, IntConsumer onChange) {
+        addSeek(parent, labelRes, hintRes, endLeftRes, endRightRes, min, max, value, fmt, onChange, 0);
+    }
+
+    private static final int C_POWER_COYOTE = 0xFFFF2A4A, C_POWER_OPOSSUM = 0xFF39FF7A;
+
+    /** accent != 0: a POWER slider: track, thumb, value and steppers glow in the device colour so it stands out. */
+    private void addSeek(LinearLayout parent, int labelRes, int hintRes, int endLeftRes, int endRightRes,
+                         int min, int max, int value, IntFunction<String> fmt, IntConsumer onChange, int accent) {
         String label = getString(labelRes);
         LinearLayout head = new LinearLayout(this);
         head.setOrientation(LinearLayout.HORIZONTAL);
@@ -764,8 +801,13 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         tvName.setText(label);
         tvName.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         TextView tv = new TextView(this);            // the value, tappable
-        tv.setTextColor(C_ACCENT);
-        tv.setTextSize(15);
+        tv.setTextColor(accent != 0 ? accent : C_ACCENT);
+        tv.setTextSize(accent != 0 ? 17 : 15);
+        if (accent != 0) {
+            tv.setShadowLayer(14f, 0, 0, accent);    // neon glow on the number
+            tvName.setTextColor(accent);
+            tvName.setText("⚡ " + label);
+        }
         tv.setTypeface(android.graphics.Typeface.MONOSPACE, android.graphics.Typeface.BOLD);
         tv.setPadding(dp(8), 0, dp(4), 0);
         head.addView(tvName);
@@ -793,6 +835,12 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         SeekBar sb = new SeekBar(this);
         sb.setMin(min); sb.setMax(max); sb.setProgress(value);
         sb.setPadding(dp(14), dp(14), dp(14), dp(14));
+        if (accent != 0) {
+            android.content.res.ColorStateList tint = android.content.res.ColorStateList.valueOf(accent);
+            sb.setProgressTintList(tint);
+            sb.setThumbTintList(tint);
+            sb.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf((accent & 0x00FFFFFF) | 0x33000000));
+        }
         Runnable refresh = () -> tv.setText(fmt.apply(sb.getProgress()));
         refresh.run();
         IntConsumer setValue = v -> {
@@ -828,10 +876,12 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.addView(stepButton("−", -1, sb, setValue));
+        Button minus = stepButton("−", -1, sb, setValue), plus = stepButton("+", +1, sb, setValue);
+        if (accent != 0) { minus.setTextColor(accent); plus.setTextColor(accent); }
+        row.addView(minus);
         sb.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         row.addView(sb);
-        row.addView(stepButton("+", +1, sb, setValue));
+        row.addView(plus);
         parent.addView(head);
         if (tvHint != null) parent.addView(tvHint);
         parent.addView(row);

@@ -182,4 +182,12 @@
     <string name="x_motion_mode">ジャイロモードでは音楽を完全に無視します。強さは下の関係に従って傾きと動きから決まり、範囲は上の出力設定の各チャンネルの基本〜最大です。駆動中はパターンが連続ループします。</string>
     <string name="gyro_wave">ジャイロモードの波形</string>
     <string name="wave_same">音楽タブと同じ</string>
+    <string name="vib_gyro_const">ジャイロモードの Opossum</string>
+    <string name="vib_gyro_follow">傾きと動きに追従</string>
+    <string name="vib_gyro_on">常時オン（最大）</string>
+    <string name="vib_gyro_off">常時オフ</string>
+    <string name="btn_reset">すべての設定を初期化</string>
+    <string name="reset_title">すべて初期化しますか？</string>
+    <string name="reset_msg">すべてのダイヤル、波形、関係、上限、モードが初期値に戻ります。出力は停止します。接続中のデバイスはそのままです。元に戻せません。</string>
+    <string name="reset_confirm">初期化</string>
 </resources>

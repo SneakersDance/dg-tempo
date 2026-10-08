@@ -59,6 +59,7 @@ public final class Settings {
     // relations: MotionMap.IGNORE / MORE / LESS. Defaults: tilt -> both stronger; movement -> Coyote weaker, Opossum stronger
     public int coyoteTiltRel = MotionMap.MORE, coyoteMoveRel = MotionMap.LESS;
     public int vibTiltRel = MotionMap.MORE, vibMoveRel = MotionMap.MORE;
+    public int vibGyroConst = 0;                            // gyro mode Opossum: 0 follow tilt/movement, 1 always on, 2 always off
     public int tiltRel(String kind) { return "coyote".equals(kind) ? coyoteTiltRel : vibTiltRel; }
     public int moveRel(String kind) { return "coyote".equals(kind) ? coyoteMoveRel : vibMoveRel; }
 
@@ -92,6 +93,12 @@ public final class Settings {
 
     private static final String PREF = "dgtempo";
 
+    /** Wipe everything back to the built-in defaults. */
+    public static Settings reset(Context c) {
+        c.getSharedPreferences(PREF, Context.MODE_PRIVATE).edit().clear().apply();
+        return load(c);
+    }
+
     public static Settings load(Context c) {
         SharedPreferences p = c.getSharedPreferences(PREF, Context.MODE_PRIVATE);
         Settings s = new Settings();
@@ -116,6 +123,7 @@ public final class Settings {
         s.moveFullX10 = p.getInt("moveFullX10", s.moveFullX10); s.gyroFullX10 = p.getInt("gyroFullX10", s.gyroFullX10);
         s.coyoteTiltRel = p.getInt("coyoteTiltRel", s.coyoteTiltRel); s.coyoteMoveRel = p.getInt("coyoteMoveRel", s.coyoteMoveRel);
         s.vibTiltRel = p.getInt("vibTiltRel", s.vibTiltRel); s.vibMoveRel = p.getInt("vibMoveRel", s.vibMoveRel);
+        s.vibGyroConst = p.getInt("vibGyroConst", 0);
         s.vibLink = p.getBoolean("vibLink", true);
 
         s.vibFollowTempo = p.getBoolean("vibFollowTempo", s.vibFollowTempo);
@@ -201,7 +209,7 @@ public final class Settings {
                 .putInt("mode", mode).putInt("tiltDeadDeg", tiltDeadDeg).putInt("tiltMaxDeg", tiltMaxDeg)
                 .putInt("moveFullX10", moveFullX10).putInt("gyroFullX10", gyroFullX10)
                 .putInt("coyoteTiltRel", coyoteTiltRel).putInt("coyoteMoveRel", coyoteMoveRel)
-                .putInt("vibTiltRel", vibTiltRel).putInt("vibMoveRel", vibMoveRel)
+                .putInt("vibTiltRel", vibTiltRel).putInt("vibMoveRel", vibMoveRel).putInt("vibGyroConst", vibGyroConst)
                 .putBoolean("vibFollowTempo", vibFollowTempo)
                 .putBoolean("autoStrength", autoStrength)
                 .putFloat("bpmLo", (float) bpmLo).putFloat("bpmHi", (float) bpmHi)
