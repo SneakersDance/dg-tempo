@@ -191,7 +191,7 @@
     <string name="reset_title">Reset everything?</string>
     <string name="reset_msg">All dials, waveforms, relations, limits and the mode go back to the built-in defaults. Output stops. Connected devices stay connected. This cannot be undone.</string>
     <string name="reset_confirm">RESET</string>
-    <string name="move_delay_title">Movement game (gyro)</string>
+    <string name="move_delay_title">Gyro in music mode</string>
     <string name="move_delay">Movement delays the shock</string>
     <string name="x_move_delay">Uses the phone\'s motion sensors while in music mode. While you keep moving (jumping, dancing), the Coyote is held off, and the hold keeps growing the longer you move. Stop for a second and the hold resets, so shocks come back. Movement sensitivity follows the "full movement" sliders in the GYRO tab.</string>
     <string name="move_delay_max">Hold off for at most</string>
@@ -199,4 +199,12 @@
     <string name="move_delay_final">When the limit is reached: MAX shock</string>
     <string name="x_move_delay_final">On: when you have kept moving for the whole limit, a shock at MAX strength is delivered for the length below, then the hold restarts. Off: reaching the limit just lets normal shocks resume while you move.</string>
     <string name="move_delay_shock">MAX shock length</string>
+    <string name="dip_mode">Phone going down = downbeat</string>
+    <string name="x_dip">Detects a dip: the phone accelerating downward, as when your body drops into the beat with the phone in a pocket or hand. "Votes" uses each dip as evidence for which beat is the "1", so once-per-bar shocks land on your dips. "Fires" shocks the selected devices on every dip directly, independent of the audio beat.</string>
+    <string name="dip_off">Off</string>
+    <string name="dip_vote">Dips vote for the downbeat</string>
+    <string name="dip_fire">Fire on every dip</string>
+    <string name="dip_thr">Drop needed to count as a dip</string>
+    <string name="dip_coyote">Coyote fires on dips</string>
+    <string name="dip_opossum">Opossum fires on dips</string>
 </resources>

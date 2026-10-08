@@ -95,14 +95,8 @@ public final class BeatService extends Service implements BleDevice.Listener {
     public void setMode(int mode) {
         settings.mode = mode;
         settings.save(this);
-        if (mode == 1) {
-            if (motionSensors == null) motionSensors = new MotionSensors(this);
-            if (!motionSensors.start()) log("gyro: no accelerometer on this phone");
-            else log("gyro mode: tilt + movement drive the output");
-        } else {
-            if (motionSensors != null && !settings.moveDelayOn) motionSensors.stop();
-            log("music mode");
-        }
+        ensureSensors();
+        log(mode == 1 ? "gyro mode: tilt + movement drive the output" : "music mode");
         UiListener l = ui;
         if (l != null) main.post(l::onDevices);
     }
@@ -131,18 +125,50 @@ public final class BeatService extends Service implements BleDevice.Listener {
     private double lastMoveAt = -1, lastDelayTick = 0;
     public volatile String delayNote = "";
 
-    public boolean needSensors() { return gyroMode() || settings.moveDelayOn; }
+    public boolean needSensors() { return gyroMode() || settings.moveDelayOn || settings.dipMode != 0; }
+
+    // ---- music mode: phone dips (going down) as downbeat -------------------------------------
+    private final ArrayDeque<Double> recentDips = new ArrayDeque<>();
+    public volatile double lastDipAt = -1;
+
+    private void onDip(double t) {
+        if (gyroMode() || settings.dipMode == 0) return;
+        lastDipAt = t;
+        if (settings.dipMode == 1) tracker.addEvidence(t, 1.5);          // a body dip votes strongly for that beat as "1"
+        else synchronized (recentDips) {
+            recentDips.addLast(t);
+            while (recentDips.size() > 32) recentDips.pollFirst();
+        }
+    }
+
+    public void setDipMode(int mode) {
+        settings.dipMode = mode;
+        settings.save(this);
+        ensureSensors();
+        log(mode == 0 ? "dips off" : mode == 1 ? "dips vote for the downbeat" : "dips fire the selected devices");
+    }
+
+    /** Start or stop the motion sensors according to what the current settings need. */
+    private void ensureSensors() {
+        if (needSensors()) {
+            if (motionSensors == null) { motionSensors = new MotionSensors(this); }
+            motionSensors.dipListener = this::onDip;
+            motionSensors.dipThreshold = settings.dipThrX10 / 10.0;
+            if (!motionSensors.running && !motionSensors.start()) log("gyro: no accelerometer on this phone");
+        } else if (motionSensors != null) {
+            motionSensors.stop();
+        }
+    }
+
+    private boolean dipFires(String kind) {
+        return !gyroMode() && settings.dipMode == 2 && ("coyote".equals(kind) ? settings.dipCoyote : settings.dipOpossum);
+    }
 
     public void setMoveDelay(boolean on) {
         settings.moveDelayOn = on;
         settings.save(this);
-        if (on) {
-            if (motionSensors == null) motionSensors = new MotionSensors(this);
-            if (!motionSensors.start()) log("movement delay: no accelerometer on this phone");
-            else log("movement delay ON: keep moving to hold the Coyote off (max " + settings.moveDelayMaxS + " s)");
-        } else if (!gyroMode() && motionSensors != null) {
-            motionSensors.stop();
-        }
+        ensureSensors();
+        if (on) log("movement delay ON: keep moving to hold the Coyote off (max " + settings.moveDelayMaxS + " s)");
         holdS = 0; maxShockUntil = 0; delayNote = "";
     }
 
@@ -357,8 +383,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
         super.onCreate();
         settings = Settings.load(this);
         applySensitivity();
-        if (settings.mode == 1) main.post(() -> setMode(1));
-        else if (settings.moveDelayOn) main.post(() -> setMoveDelay(true));
+        main.post(this::ensureSensors);
         NotificationManager nm = getSystemService(NotificationManager.class);
         nm.createNotificationChannel(new NotificationChannel(CHANNEL, "DG Tempo", NotificationManager.IMPORTANCE_LOW));
     }
@@ -977,6 +1002,11 @@ public final class BeatService extends Service implements BleDevice.Listener {
                         for (double mt : recentMotion)
                             if (mt + blen > tick && mt < tick + Protocol.FRAME_S) use.add(new double[]{mt, mt + blen});
                     }
+                    // phone dips: one burst per dip, on the devices that opted in
+                    if (dipFires(d.kind) && armed) synchronized (recentDips) {
+                        for (double dt2 : recentDips)
+                            if (dt2 + blen > tick && dt2 < tick + Protocol.FRAME_S) use.add(new double[]{dt2, dt2 + blen});
+                    }
                     if (!use.isEmpty() && chOn) anyBurst = true;
                     Scheduler.Slots sl = chOn ? Scheduler.renderSlots(use, tick, w, c.intensity,
                             cont || Waveforms.SIMPLE_ID.equals(w.id)) : null;
@@ -1042,6 +1072,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
     public void settingsChanged() {
         settings.save(this);
         applySensitivity();
+        if (motionSensors != null) motionSensors.dipThreshold = settings.dipThrX10 / 10.0;
     }
 
     private void applySensitivity() {
@@ -1066,6 +1097,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
         if ("coyote".equals(kind) && now < coyoteForceUntil) return true;   // timer pulse train in progress
         if ("coyote".equals(kind) && settings.coyoteTimerMode != 0) return false;   // timer mode: ONLY the timer fires the Coyote
         if (motionActive(kind, now)) return true;              // screen movement fires this device
+        if (dipFires(kind) && lastDipAt > 0 && now - lastDipAt < settings.burstMs(kind) / 1000.0 + 0.2) return true;   // a dip fires it
         if (!detector.soundPresent()) return false;            // music/video stopped: mute at once (~0.3 s)
         if ("opossum".equals(kind) && settings.vibAnyMusic) return musicPresent(now);
         if (!tracker.locked()) return false;
@@ -1109,7 +1141,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
         settings = Settings.reset(this);
         applySensitivity();
         if (wasGyro != gyroMode()) setMode(settings.mode);
-        if (!needSensors() && motionSensors != null) motionSensors.stop();
+        ensureSensors();
         stopOutput("settings reset");
         log("all settings reset to defaults");
         UiListener l = ui;

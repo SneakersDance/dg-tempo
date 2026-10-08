@@ -66,7 +66,11 @@ public final class Settings {
     public int moveDelayMaxS = 30;
     public boolean moveDelayFinal = true;
     public int moveDelayShockS = 3;
-    public int moveDelayNeedPct = 25;                       // % of "full movement" that counts as moving                            // gyro mode Opossum: 0 follow tilt/movement, 1 always on, 2 always off
+    public int moveDelayNeedPct = 25;
+    // music mode: phone "going down" (a dip / bounce) as downbeat. 0 off, 1 votes for the downbeat, 2 fires devices
+    public int dipMode = 0;
+    public int dipThrX10 = 15;                              // m/s^2 x10 downward that counts as a dip
+    public boolean dipCoyote = true, dipOpossum = false;    // which devices fire on dips (mode 2)                       // % of "full movement" that counts as moving                            // gyro mode Opossum: 0 follow tilt/movement, 1 always on, 2 always off
     public int tiltRel(String kind) { return "coyote".equals(kind) ? coyoteTiltRel : vibTiltRel; }
     public int moveRel(String kind) { return "coyote".equals(kind) ? coyoteMoveRel : vibMoveRel; }
 
@@ -134,6 +138,8 @@ public final class Settings {
         s.moveDelayOn = p.getBoolean("moveDelayOn", false); s.moveDelayMaxS = p.getInt("moveDelayMaxS", 30);
         s.moveDelayFinal = p.getBoolean("moveDelayFinal", true); s.moveDelayShockS = p.getInt("moveDelayShockS", 3);
         s.moveDelayNeedPct = p.getInt("moveDelayNeedPct", 25);
+        s.dipMode = p.getInt("dipMode", 0); s.dipThrX10 = p.getInt("dipThrX10", 15);
+        s.dipCoyote = p.getBoolean("dipCoyote", true); s.dipOpossum = p.getBoolean("dipOpossum", false);
         s.vibLink = p.getBoolean("vibLink", true);
 
         s.vibFollowTempo = p.getBoolean("vibFollowTempo", s.vibFollowTempo);
@@ -222,6 +228,7 @@ public final class Settings {
                 .putInt("vibTiltRel", vibTiltRel).putInt("vibMoveRel", vibMoveRel).putInt("vibGyroConst", vibGyroConst)
                 .putBoolean("moveDelayOn", moveDelayOn).putInt("moveDelayMaxS", moveDelayMaxS)
                 .putBoolean("moveDelayFinal", moveDelayFinal).putInt("moveDelayShockS", moveDelayShockS).putInt("moveDelayNeedPct", moveDelayNeedPct)
+                .putInt("dipMode", dipMode).putInt("dipThrX10", dipThrX10).putBoolean("dipCoyote", dipCoyote).putBoolean("dipOpossum", dipOpossum)
                 .putBoolean("vibFollowTempo", vibFollowTempo)
                 .putBoolean("autoStrength", autoStrength)
                 .putFloat("bpmLo", (float) bpmLo).putFloat("bpmHi", (float) bpmHi)

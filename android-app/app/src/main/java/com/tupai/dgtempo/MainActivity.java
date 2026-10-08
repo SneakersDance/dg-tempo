@@ -471,6 +471,29 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         // Coyote music triggers
         addSwitch(llCoyote, R.string.coy_auto, R.string.x_auto, s.autoStrength, v -> { s.autoStrength = v; changed(); });
         subTitle(llCoyote, R.string.move_delay_title);
+        TextView tvDip = label(R.string.dip_mode, R.string.x_dip);
+        Spinner spDip = new Spinner(this);
+        ArrayAdapter<String> adDip = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{
+                getString(R.string.dip_off), getString(R.string.dip_vote), getString(R.string.dip_fire)});
+        adDip.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spDip.setAdapter(adDip);
+        spDip.setSelection(s.dipMode, false);
+        spDip.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
+                if (pos == s.dipMode) return;
+                svc.setDipMode(pos); buildControls();
+            }
+            @Override public void onNothingSelected(AdapterView<?> p) {}
+        });
+        llCoyote.addView(tvDip);
+        hint(llCoyote, R.string.x_dip);
+        llCoyote.addView(spDip);
+        if (s.dipMode != 0)
+            addSeek(llCoyote, R.string.dip_thr, 0, R.string.end_still, R.string.end_vigorous, 3, 60, s.dipThrX10, v -> String.format("%.1f m/s²", v / 10.0), v -> { s.dipThrX10 = v; changed(); });
+        if (s.dipMode == 2) {
+            addSwitch(llCoyote, R.string.dip_coyote, 0, s.dipCoyote, v -> { s.dipCoyote = v; changed(); });
+            addSwitch(llCoyote, R.string.dip_opossum, 0, s.dipOpossum, v -> { s.dipOpossum = v; changed(); });
+        }
         addSwitch(llCoyote, R.string.move_delay, R.string.x_move_delay, s.moveDelayOn, v -> { svc.setMoveDelay(v); buildControls(); });
         if (s.moveDelayOn) {
             addSeek(llCoyote, R.string.move_delay_max, 0, R.string.end_sooner, R.string.end_rarer, 5, 300, s.moveDelayMaxS, v -> v + " s", v -> { s.moveDelayMaxS = v; changed(); });
@@ -1077,6 +1100,8 @@ public final class MainActivity extends AppCompatActivity implements BeatService
                 + "\n" + fireLine("C", "coyote") + "   " + fireLine("O", "opossum")
                 + (svc.timerNote.isEmpty() ? "" : "   ⏱ " + svc.timerNote)
                 + (svc.delayNote.isEmpty() ? "" : "   " + svc.delayNote)
+                + (svc.settings.dipMode != 0 && svc.motionSensors != null && svc.motionSensors.running
+                    ? String.format("   ⇣ %d (%.1f)", svc.motionSensors.dips, svc.motionSensors.vert) : "")
                 + (svc.motionRunning ? String.format("\n▦ motion %.1f (floor %.1f)  onsets %d  downbeat votes %d", svc.motion.level, svc.motion.floorLevel, svc.motion.onsets, tr.evidenceHits) : ""));
         // locked: orange number. Still deciding: grey "~" number with how periodic the beats are. Nothing: dash.
         double now = java.lang.System.nanoTime() / 1e9;

@@ -17,6 +17,14 @@ public final class MotionSensors implements SensorEventListener {
     private final float[] g = new float[3];
     private boolean haveG = false;
     public volatile double tiltDeg = 0, accel = 0, gyro = 0;
+    /** Linear acceleration along world-up (m/s^2): negative = the phone is accelerating DOWN (a drop / dip). */
+    public volatile double vert = 0;
+    public volatile double dipThreshold = 1.5;         // m/s^2 downward that counts as a dip
+    public volatile long dips = 0;
+    private double vertSm = 0, lastDipAt = -1;
+    private boolean below = false;
+    public interface DipListener { void onDip(double t); }
+    public volatile DipListener dipListener;
     public volatile boolean running = false;
     public volatile long samples = 0;
     private double accelHold = 0, gyroHold = 0;
@@ -56,6 +64,21 @@ public final class MotionSensors implements SensorEventListener {
             double lx = e.values[0] - g[0], ly = e.values[1] - g[1], lz = e.values[2] - g[2];
             double lin = Math.sqrt(lx * lx + ly * ly + lz * lz);
             accel = hold(lin, now, true);
+            // vertical component: project linear acceleration on the (measured) up direction
+            if (gm > 0.5) {
+                double v = (lx * g[0] + ly * g[1] + lz * g[2]) / gm;
+                vertSm += (v - vertSm) * 0.5;                     // light smoothing (2 samples)
+                vert = vertSm;
+                double t = now / 1e9;
+                boolean nowBelow = vertSm < -dipThreshold;
+                if (nowBelow && !below && (lastDipAt < 0 || t - lastDipAt > 0.25)) {   // falling edge = start of a drop
+                    lastDipAt = t;
+                    dips++;
+                    DipListener l = dipListener;
+                    if (l != null) l.onDip(t);
+                }
+                below = nowBelow;
+            }
         } else if (e.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
             double w = Math.sqrt(e.values[0] * e.values[0] + e.values[1] * e.values[1] + e.values[2] * e.values[2]);
             gyro = hold(w, now, false);

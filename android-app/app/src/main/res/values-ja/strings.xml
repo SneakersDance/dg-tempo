@@ -190,7 +190,7 @@
     <string name="reset_title">すべて初期化しますか？</string>
     <string name="reset_msg">すべてのダイヤル、波形、関係、上限、モードが初期値に戻ります。出力は停止します。接続中のデバイスはそのままです。元に戻せません。</string>
     <string name="reset_confirm">初期化</string>
-    <string name="move_delay_title">運動ゲーム（ジャイロ）</string>
+    <string name="move_delay_title">音楽モードのジャイロ</string>
     <string name="move_delay">動きで電気刺激を遅らせる</string>
     <string name="x_move_delay">音楽モード中にスマホのモーションセンサーを使用。動き続ける（ジャンプ、ダンス）限り Coyote は止められ、動くほど保留が長くなる。1 秒止まると保留はリセットされ、刺激が戻る。動きの感度は「ジャイロ」タブの「全動き」スライダーに従う。</string>
     <string name="move_delay_max">保留は最長</string>
@@ -198,4 +198,12 @@
     <string name="move_delay_final">上限に達したら：最大刺激</string>
     <string name="x_move_delay_final">オン：上限まで動き続けると、下の長さだけ最大強度の刺激が入り、保留はやり直し。オフ：上限に達すると通常の刺激に戻るだけ。</string>
     <string name="move_delay_shock">最大刺激の長さ</string>
+    <string name="dip_mode">スマホが下がる＝強拍</string>
+    <string name="x_dip">「沈み」を検出：スマホが下向きに加速する動き（拍に合わせて体を沈めるとポケットや手の中のスマホがそうなる）。「投票」は各沈みをどの拍が「1」かの根拠にし、小節ごとの刺激があなたの沈みに合う。「発火」は沈みのたびに選んだデバイスを直接刺激（音のビートとは無関係）。</string>
+    <string name="dip_off">オフ</string>
+    <string name="dip_vote">沈みが強拍に投票</string>
+    <string name="dip_fire">沈みごとに発火</string>
+    <string name="dip_thr">沈みとみなす落下の強さ</string>
+    <string name="dip_coyote">Coyote は沈みで発火</string>
+    <string name="dip_opossum">Opossum は沈みで発火</string>
 </resources>

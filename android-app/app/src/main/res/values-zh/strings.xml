@@ -190,7 +190,7 @@
     <string name="reset_title">全部重置？</string>
     <string name="reset_msg">所有设置、波形、关系、上限和模式都将恢复为内置默认值。输出停止。已连接的设备保持连接。此操作无法撤销。</string>
     <string name="reset_confirm">重置</string>
-    <string name="move_delay_title">运动游戏（陀螺仪）</string>
+    <string name="move_delay_title">音乐模式下的陀螺仪</string>
     <string name="move_delay">运动可延迟电击</string>
     <string name="x_move_delay">音乐模式下使用手机运动传感器。只要你持续运动（跳跃、跳舞），郊狼就被按住不输出，且运动越久按住越久。停下一秒，计时归零，电击恢复。运动灵敏度沿用"陀螺仪"页里的"完全运动"滑块。</string>
     <string name="move_delay_max">最多延迟</string>
@@ -198,4 +198,12 @@
     <string name="move_delay_final">达到上限时：最大电击</string>
     <string name="x_move_delay_final">开：持续运动达到上限后，以最大强度电击下方设定的时长，然后重新计时。关：达到上限后仅恢复正常电击。</string>
     <string name="move_delay_shock">最大电击时长</string>
+    <string name="dip_mode">手机下沉 = 强拍</string>
+    <string name="x_dip">检测"下沉"：手机向下加速，例如随拍子身体下蹲时手机在口袋或手里。"投票"把每次下沉当作判断哪一拍是"1"的依据，让每小节一次的电击落在你的下沉上。"触发"则在每次下沉时直接电击所选设备，与音频节拍无关。</string>
+    <string name="dip_off">关</string>
+    <string name="dip_vote">下沉为强拍投票</string>
+    <string name="dip_fire">每次下沉都触发</string>
+    <string name="dip_thr">计为下沉所需的下落力度</string>
+    <string name="dip_coyote">郊狼随下沉触发</string>
+    <string name="dip_opossum">负鼠随下沉触发</string>
 </resources>
