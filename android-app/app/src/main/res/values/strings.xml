@@ -207,4 +207,42 @@
     <string name="dip_thr">Drop needed to count as a dip</string>
     <string name="dip_coyote">Coyote fires on dips</string>
     <string name="dip_opossum">Opossum fires on dips</string>
+    <string name="tab_cage">▣ CHALK CAGE</string>
+    <string name="sec_cage">Chalk Cage · stay inside the box</string>
+    <string name="cage_hint">Put the phone on a tripod facing the player, then draw a box around them on the preview and lock it. Standing, kneeling or lying all work; the app looks for a body, never a face. Step outside the box and a countdown warns you; stay out and the Coyote shocks. Nothing from the camera is stored or sent.</string>
+    <string name="cage_lock">LOCK BOX</string>
+    <string name="cage_unlock">EDIT BOX</string>
+    <string name="cage_pause">PAUSE ALL</string>
+    <string name="cage_resume">RESUME</string>
+    <string name="cage_flip">FLIP CAMERA</string>
+    <string name="cage_st_draw">draw the box, then LOCK</string>
+    <string name="cage_st_paused">PAUSED — no shocks, no vibration</string>
+    <string name="cage_st_nocam">camera off (permission?)</string>
+    <string name="cage_st_none">NOT DETECTED</string>
+    <string name="cage_st_inside">DETECTED · INSIDE</string>
+    <string name="cage_st_outside">DETECTED · OUTSIDE</string>
+    <string name="cage_st_warn">⚠ OUTSIDE — shock in %1$.0f s</string>
+    <string name="cage_st_shock">⚡ SHOCK — %1$.0f s left</string>
+    <string name="cage_level">Shock level (0 = Coyote MAX)</string>
+    <string name="cage_shock_s">Shock length</string>
+    <string name="cage_warn_s">Warning before the shock</string>
+    <string name="cage_shock_mode">When the player comes back during a shock</string>
+    <string name="cage_mode_full">Full punishment every time (fixed length)</string>
+    <string name="cage_mode_early">Stop the shock when back inside</string>
+    <string name="cage_mode_until">Keep shocking until back inside</string>
+    <string name="cage_vib">Opossum vibrates</string>
+    <string name="cage_vib_off">Off</string>
+    <string name="cage_vib_always">All the time</string>
+    <string name="cage_vib_inside">Only while inside (pauses outside)</string>
+    <string name="cage_vib_outside">Only while outside</string>
+    <string name="cage_outside_pct">Body share outside that counts as "outside"</string>
+    <string name="cage_min_area">Minimum body size to count as detected</string>
+    <string name="cage_notdet">Not detected = outside (after the box is locked)</string>
+    <string name="cage_voice">Voice announcements</string>
+    <string name="say_outside">Outside designated area</string>
+    <string name="say_returned">Returned to position</string>
+    <string name="end_hand">◀ a hand out triggers</string>
+    <string name="end_body">most of the body out ▶</string>
+    <string name="end_small">◀ small / far away</string>
+    <string name="end_big">big / close ▶</string>
 </resources>

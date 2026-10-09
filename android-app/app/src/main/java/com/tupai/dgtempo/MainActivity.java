@@ -51,8 +51,13 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     private static final int C_TEXT = 0xFFE8EEF8, C_MUTED = 0xFF8B97AB, C_DIM = 0xFF5A6577, C_ACCENT = 0xFF00E5FF,
             C_COYOTE = 0xFFFF3D7F, C_OPOSSUM = 0xFF00E5FF, C_GO = 0xFF4DFF88, C_DANGER = 0xFFFF3B5C, C_BG = 0xFF0A0C12;
     private LinearLayout llDevices, llCoyote, llOpossum, llTiming, llAudio, llRate, llCoyoteOut, llOpossumOut, llMotion;
-    private View pageMusic, pageMotion;
-    private Button tabMusic, tabMotion;
+    private View pageMusic, pageMotion, pageCage;
+    private Button tabMusic, tabMotion, tabCage, btnCageLock, btnCagePause;
+    private LinearLayout llCage;
+    private TextView tvCageStatus;
+    private androidx.camera.view.PreviewView cagePreview;
+    private CageOverlayView cageOverlay;
+    private static final int REQ_CAMERA = 3;
     private MotionReadoutView motionReadout;
 
     private final ServiceConnection conn = new ServiceConnection() {
@@ -110,6 +115,32 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         motionReadout = findViewById(R.id.motionReadout);
         tabMusic.setOnClickListener(v -> { if (svc != null) { svc.setMode(0); showTab(0); } });
         tabMotion.setOnClickListener(v -> { if (svc != null) { svc.setMode(1); showTab(1); } });
+        pageCage = findViewById(R.id.pageCage);
+        tabCage = findViewById(R.id.tabCage);
+        llCage = findViewById(R.id.llCage);
+        tvCageStatus = findViewById(R.id.tvCageStatus);
+        cagePreview = findViewById(R.id.cagePreview);
+        cagePreview.setScaleType(androidx.camera.view.PreviewView.ScaleType.FIT_CENTER);
+        cageOverlay = findViewById(R.id.cageOverlay);
+        btnCageLock = findViewById(R.id.btnCageLock);
+        btnCagePause = findViewById(R.id.btnCagePause);
+        tabCage.setOnClickListener(v -> openCage());
+        cageOverlay.listener = r -> { if (svc != null) svc.setCageBox(r.left, r.top, r.right, r.bottom); };
+        btnCageLock.setOnClickListener(v -> {
+            if (svc == null) return;
+            svc.settings.cageLocked = !svc.settings.cageLocked;
+            svc.settingsChanged();
+            if (svc.settings.cageLocked) svc.cageLogic.reset();
+            refreshCageButtons();
+        });
+        btnCagePause.setOnClickListener(v -> {
+            if (svc == null) return;
+            svc.settings.cagePaused = !svc.settings.cagePaused;
+            svc.settingsChanged();
+            svc.log(svc.settings.cagePaused ? "cage: PAUSED" : "cage: resumed");
+            refreshCageButtons();
+        });
+        findViewById(R.id.btnCageFlip).setOnClickListener(v -> { if (svc != null) svc.setCageFront(!svc.settings.cageFront); });
 
         btnArm.setOnClickListener(v -> {
             if (svc == null) return;
@@ -346,7 +377,8 @@ public final class MainActivity extends AppCompatActivity implements BeatService
 
     private void updatePip() {
         TempoTracker tr = svc.tracker;
-        String bpm = svc.gyroMode()
+        String bpm = svc.cageMode() ? svc.cageNote()
+                : svc.gyroMode()
                 ? String.format("%.0f°", svc.motionSensors != null && svc.motionSensors.running ? svc.motionSensors.tiltDeg : 0)
                 : tr.locked() ? String.format("%.0f", tr.bpm()) : tr.bpm() > 0 ? String.format("~%.0f", tr.bpm()) : "—";
         BleDevice dc = svc.devices.get("coyote"), dop = svc.devices.get("opossum");
@@ -410,6 +442,11 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     @Override
     public void onRequestPermissionsResult(int code, String[] perms, int[] results) {
         super.onRequestPermissionsResult(code, perms, results);
+        if (code == REQ_CAMERA) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) openCage();
+            else onLog("camera permission denied: Chalk Cage needs the camera");
+            return;
+        }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             startAndBind();
         } else {
@@ -436,10 +473,88 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     private void showTab(int mode) {
         pageMusic.setVisibility(mode == 0 ? View.VISIBLE : View.GONE);
         pageMotion.setVisibility(mode == 1 ? View.VISIBLE : View.GONE);
-        tabMusic.setBackgroundResource(mode == 0 ? R.drawable.bg_btn_accent : R.drawable.bg_btn_ghost);
-        tabMusic.setTextColor(mode == 0 ? C_BG : C_TEXT);
-        tabMotion.setBackgroundResource(mode == 1 ? R.drawable.bg_btn_accent : R.drawable.bg_btn_ghost);
-        tabMotion.setTextColor(mode == 1 ? C_BG : C_TEXT);
+        pageCage.setVisibility(mode == 2 ? View.VISIBLE : View.GONE);
+        Button[] tabs = {tabMusic, tabMotion, tabCage};
+        for (int i = 0; i < 3; i++) {
+            tabs[i].setBackgroundResource(mode == i ? R.drawable.bg_btn_accent : R.drawable.bg_btn_ghost);
+            tabs[i].setTextColor(mode == i ? C_BG : C_TEXT);
+        }
+        if (mode == 2 && svc != null && svc.cage != null) svc.cage.attachPreview(cagePreview.getSurfaceProvider());
+        refreshCageButtons();
+    }
+
+    private void openCage() {
+        if (svc == null) return;
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQ_CAMERA);
+            return;
+        }
+        svc.setMode(2);
+        showTab(2);
+        if (svc.cage != null) svc.cage.attachPreview(cagePreview.getSurfaceProvider());
+    }
+
+    private void refreshCageButtons() {
+        if (svc == null) return;
+        Settings s = svc.settings;
+        btnCageLock.setText(s.cageLocked ? R.string.cage_unlock : R.string.cage_lock);
+        btnCagePause.setText(s.cagePaused ? R.string.cage_resume : R.string.cage_pause);
+        btnCagePause.setTextColor(s.cagePaused ? C_DANGER : C_TEXT);
+        cageOverlay.locked = s.cageLocked;
+        cageOverlay.box = new android.graphics.RectF(s.cageL, s.cageT, s.cageR, s.cageB);
+        cageOverlay.invalidate();
+    }
+
+    /** CHALK CAGE tab controls. */
+    private void buildCageControls(Settings s) {
+        addSeek(llCage, R.string.cage_level, 0, R.string.end_gentle, R.string.end_hard, 0, 200, Math.max(0, s.cageShockLevel),
+                v -> v == 0 ? "MAX" : String.valueOf(v), v -> { s.cageShockLevel = v == 0 ? -1 : v; changed(); }, C_POWER_COYOTE);
+        addSeek(llCage, R.string.cage_shock_s, 0, R.string.end_short, R.string.end_long, 1, 120, s.cageShockS, v -> v + " s", v -> { s.cageShockS = v; changed(); }, C_POWER_COYOTE);
+        addSeek(llCage, R.string.cage_warn_s, 0, R.string.end_sooner, R.string.end_rarer, 0, 30, s.cageWarnS, v -> v + " s", v -> { s.cageWarnS = v; changed(); });
+        addChoice(llCage, R.string.cage_shock_mode, new int[]{R.string.cage_mode_full, R.string.cage_mode_early, R.string.cage_mode_until}, s.cageShockMode, v -> { s.cageShockMode = v; changed(); });
+        addChoice(llCage, R.string.cage_vib, new int[]{R.string.cage_vib_off, R.string.cage_vib_always, R.string.cage_vib_inside, R.string.cage_vib_outside}, s.cageVib, v -> { s.cageVib = v; changed(); });
+        addSwitch(llCage, R.string.cage_voice, 0, s.cageVoice, v -> { s.cageVoice = v; changed(); });
+        addSwitch(llCage, R.string.cage_notdet, 0, s.cageNotDetOut, v -> { s.cageNotDetOut = v; changed(); });
+        addSeek(llCage, R.string.cage_outside_pct, 0, R.string.end_hand, R.string.end_body, 5, 80, s.cageOutsidePct, v -> v + " %", v -> { s.cageOutsidePct = v; changed(); });
+        addSeek(llCage, R.string.cage_min_area, 0, R.string.end_small, R.string.end_big, 1, 30, s.cageMinAreaPct, v -> v + " %", v -> { s.cageMinAreaPct = v; changed(); });
+    }
+
+    private void addChoice(LinearLayout parent, int labelRes, int[] optionRes, int current, IntConsumer onPick) {
+        TextView tv = new TextView(this);
+        tv.setTextColor(C_TEXT); tv.setTextSize(14); tv.setPadding(0, dp(10), 0, 0);
+        tv.setText(labelRes);
+        String[] names = new String[optionRes.length];
+        for (int i = 0; i < optionRes.length; i++) names[i] = getString(optionRes[i]);
+        Spinner sp = new Spinner(this);
+        ArrayAdapter<String> ad = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, names);
+        ad.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sp.setAdapter(ad);
+        sp.setSelection(current, false);
+        sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) { if (pos != current) onPick.accept(pos); }
+            @Override public void onNothingSelected(AdapterView<?> p) {}
+        });
+        parent.addView(tv);
+        parent.addView(sp);
+    }
+
+    private void updateCageStatus() {
+        Settings s = svc.settings;
+        CageLogic.Out o = svc.cageOut;
+        boolean cam = svc.cage != null && svc.cage.running;
+        String txt; int col;
+        if (!cam) { txt = getString(R.string.cage_st_nocam); col = C_DIM; }
+        else if (s.cagePaused) { txt = getString(R.string.cage_st_paused); col = C_DANGER; }
+        else if (!s.cageLocked) { txt = getString(R.string.cage_st_draw); col = C_ACCENT; }
+        else if (o.state == CageLogic.SHOCK) { txt = getString(R.string.cage_st_shock, o.shockLeft); col = C_POWER_COYOTE; }
+        else if (o.state == CageLogic.WARNING) { txt = getString(R.string.cage_st_warn, o.warnLeft); col = 0xFFFFB300; }
+        else if (!o.detected) { txt = getString(R.string.cage_st_none); col = C_MUTED; }
+        else { txt = getString(o.inside ? R.string.cage_st_inside : R.string.cage_st_outside); col = o.inside ? C_GO : C_DANGER; }
+        tvCageStatus.setText(txt);
+        tvCageStatus.setTextColor(col);
+        cageOverlay.state = o.state; cageOverlay.detected = o.detected; cageOverlay.inside = o.inside;
+        cageOverlay.cx = svc.cageCx; cageOverlay.cy = svc.cageCy;
+        cageOverlay.invalidate();
     }
 
     // ---- controls ---------------------------------------------------------------------------------
@@ -449,8 +564,10 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         llCoyote.removeAllViews(); llOpossum.removeAllViews(); llTiming.removeAllViews();
         llAudio.removeAllViews(); llRate.removeAllViews(); llCoyoteOut.removeAllViews(); llOpossumOut.removeAllViews();
         llMotion.removeAllViews();
+        llCage.removeAllViews();
         showTab(s.mode);
         buildMotionControls(s);
+        buildCageControls(s);
         addSwitch(llAudio, R.string.mic_fallback, R.string.x_mic_fallback, s.micFallback, v -> { s.micFallback = v; changed(); });
         addSwitch(llAudio, R.string.motion_switch, R.string.x_motion, s.screenMotion, v -> { svc.setScreenMotion(v); buildControls(); });
         if (s.screenMotion) {
@@ -1105,7 +1222,11 @@ public final class MainActivity extends AppCompatActivity implements BeatService
                 + (svc.motionRunning ? String.format("\n▦ motion %.1f (floor %.1f)  onsets %d  downbeat votes %d", svc.motion.level, svc.motion.floorLevel, svc.motion.onsets, tr.evidenceHits) : ""));
         // locked: orange number. Still deciding: grey "~" number with how periodic the beats are. Nothing: dash.
         double now = java.lang.System.nanoTime() / 1e9;
-        if (svc.gyroMode()) {
+        if (svc.cageMode()) {
+            updateCageStatus();
+            tvBpm.setText("▣ " + svc.cageNote());
+            tvBpm.setTextColor(svc.cageOut.state == CageLogic.SHOCK ? C_POWER_COYOTE : svc.cageOut.state == CageLogic.WARNING ? 0xFFFFB300 : svc.cageOut.inside ? C_GO : C_DIM);
+        } else if (svc.gyroMode()) {
             updateMotionReadout();
             MotionSensors m = svc.motionSensors;
             tvBpm.setText(String.format("%.0f°  ⟲%.0f%%", m != null && m.running ? m.tiltDeg : 0, svc.moveF * 100));

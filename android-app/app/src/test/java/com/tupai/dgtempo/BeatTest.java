@@ -384,6 +384,57 @@ public class BeatTest {
         assertEquals(28, MotionMap.strength(0.5, 5, 50));
     }
 
+    @Test public void chalkCageRules() {
+        CageLogic g = new CageLogic();
+        CageLogic.Config c = new CageLogic.Config();
+        c.locked = true; c.warnS = 3; c.shockS = 30;
+        double t = 0;
+        CageLogic.Out o = null;
+        // inside for a while: no shock, vibration on (inside-only default)
+        for (int i = 0; i < 20; i++) { o = g.step(t, c, true, 0.2, 0.0); t += 0.1; }
+        assertEquals(CageLogic.INSIDE, o.state); assertFalse(o.shock); assertTrue(o.vib); assertTrue(o.inside);
+        // step out: warning starts after the 1 s majority, announces "outside", vibration pauses
+        String ann = null;
+        for (int i = 0; i < 12; i++) { o = g.step(t, c, true, 0.2, 0.9); t += 0.1; if (o.announce != null) ann = o.announce; }
+        assertEquals("outside", ann); assertEquals(CageLogic.WARNING, o.state); assertFalse(o.vib); assertFalse(o.shock);
+        // stays out past the warning: shock starts and lasts 30 s even after coming back (full punishment)
+        for (int i = 0; i < 35; i++) { o = g.step(t, c, true, 0.2, 0.9); t += 0.1; }
+        assertEquals(CageLogic.SHOCK, o.state); assertTrue(o.shock);
+        for (int i = 0; i < 50; i++) { o = g.step(t, c, true, 0.2, 0.0); t += 0.1; }   // back inside 5 s in
+        assertTrue("full punishment keeps shocking after return", o.shock);
+        for (int i = 0; i < 260; i++) { o = g.step(t, c, true, 0.2, 0.0); t += 0.1; }
+        assertFalse(o.shock); assertEquals(CageLogic.INSIDE, o.state);
+        // stop-early mode: returning ends the shock
+        g.reset(); c.shockMode = CageLogic.SHOCK_STOP_EARLY; t = 0;
+        for (int i = 0; i < 20; i++) g.step(t += 0.1, c, true, 0.2, 0.0);
+        for (int i = 0; i < 50; i++) o = g.step(t += 0.1, c, true, 0.2, 0.9);
+        assertTrue(o.shock);
+        ann = null;
+        for (int i = 0; i < 15; i++) { o = g.step(t += 0.1, c, true, 0.2, 0.0); if (o.announce != null) ann = o.announce; }
+        assertFalse(o.shock); assertEquals("returned", ann);
+        // until-return mode: shock outlives shockS while still outside
+        g.reset(); c.shockMode = CageLogic.SHOCK_UNTIL_RETURN; c.shockS = 1; t = 0;
+        for (int i = 0; i < 20; i++) g.step(t += 0.1, c, true, 0.2, 0.0);
+        for (int i = 0; i < 120; i++) o = g.step(t += 0.1, c, true, 0.2, 0.9);
+        assertTrue("keeps going while outside", o.shock);
+        for (int i = 0; i < 15; i++) o = g.step(t += 0.1, c, true, 0.2, 0.0);
+        assertFalse(o.shock);
+        // not detected counts as outside (after the box is locked); pause stops everything
+        g.reset(); c.shockMode = CageLogic.SHOCK_FULL; c.shockS = 30; t = 0;
+        for (int i = 0; i < 20; i++) g.step(t += 0.1, c, true, 0.2, 0.0);
+        for (int i = 0; i < 50; i++) o = g.step(t += 0.1, c, true, 0.0, 0.0);
+        assertFalse(o.detected); assertEquals(CageLogic.SHOCK, o.state);
+        c.paused = true; o = g.step(t += 0.1, c, true, 0.0, 0.0);
+        assertFalse(o.shock); assertFalse(o.vib); assertEquals(CageLogic.IDLE, o.state);
+        c.paused = false; c.notDetectedIsOutside = false; g.reset();
+        for (int i = 0; i < 50; i++) o = g.step(t += 0.1, c, true, 0.0, 0.0);
+        assertFalse("not-detected treated as inside when the toggle is off", o.shock);
+        // a hand outside (10% of the body) does not count
+        g.reset();
+        for (int i = 0; i < 50; i++) o = g.step(t += 0.1, c, true, 0.2, 0.10);
+        assertEquals(CageLogic.INSIDE, o.state);
+    }
+
     @Test public void testBurstAndInactive() {
         TempoTracker tr = new TempoTracker();
         // test burst ends at 10.2 and is 100 ms long -> it fills the frame starting at 10.1, not 10.0

@@ -206,4 +206,42 @@
     <string name="dip_thr">计为下沉所需的下落力度</string>
     <string name="dip_coyote">郊狼随下沉触发</string>
     <string name="dip_opossum">负鼠随下沉触发</string>
+    <string name="tab_cage">▣ 画地为牢</string>
+    <string name="sec_cage">画地为牢 · 留在框内</string>
+    <string name="cage_hint">把手机放在三脚架上对准玩家，在画面上框出玩家所在区域并锁定。站着、跪着、躺着都可以；App 只识别身体，从不识别人脸。踏出框外会有倒计时警告；继续在外则郊狼电击。摄像头画面不会保存或上传。</string>
+    <string name="cage_lock">锁定区域</string>
+    <string name="cage_unlock">编辑区域</string>
+    <string name="cage_pause">全部暂停</string>
+    <string name="cage_resume">继续</string>
+    <string name="cage_flip">切换摄像头</string>
+    <string name="cage_st_draw">先画出区域，然后锁定</string>
+    <string name="cage_st_paused">已暂停 — 无电击、无震动</string>
+    <string name="cage_st_nocam">摄像头未开启（权限？）</string>
+    <string name="cage_st_none">未检测到玩家</string>
+    <string name="cage_st_inside">已检测 · 在框内</string>
+    <string name="cage_st_outside">已检测 · 在框外</string>
+    <string name="cage_st_warn">⚠ 已出界 — %1$.0f 秒后电击</string>
+    <string name="cage_st_shock">⚡ 电击中 — 剩余 %1$.0f 秒</string>
+    <string name="cage_level">电击强度（0 = 郊狼最大）</string>
+    <string name="cage_shock_s">电击时长</string>
+    <string name="cage_warn_s">电击前的警告时间</string>
+    <string name="cage_shock_mode">电击期间玩家回到框内时</string>
+    <string name="cage_mode_full">每次足额惩罚（固定时长）</string>
+    <string name="cage_mode_early">回到框内即停止电击</string>
+    <string name="cage_mode_until">持续电击直到回到框内</string>
+    <string name="cage_vib">负鼠震动</string>
+    <string name="cage_vib_off">关</string>
+    <string name="cage_vib_always">一直震动</string>
+    <string name="cage_vib_inside">仅在框内震动（出界即停）</string>
+    <string name="cage_vib_outside">仅在框外震动</string>
+    <string name="cage_outside_pct">身体露出框外多少算"出界"</string>
+    <string name="cage_min_area">算作检测到的最小身体大小</string>
+    <string name="cage_notdet">未检测到 = 出界（锁定区域后生效）</string>
+    <string name="cage_voice">语音播报</string>
+    <string name="say_outside">你已离开指定区域</string>
+    <string name="say_returned">玩家已回到位置</string>
+    <string name="end_hand">◀ 伸手出去就算</string>
+    <string name="end_body">大半身体出去才算 ▶</string>
+    <string name="end_small">◀ 很小 / 很远</string>
+    <string name="end_big">很大 / 很近 ▶</string>
 </resources>

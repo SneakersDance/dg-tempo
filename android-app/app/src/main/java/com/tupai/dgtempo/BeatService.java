@@ -48,7 +48,10 @@ import java.util.concurrent.TimeUnit;
  * other apps or the screen is off.
  */
 @SuppressLint("MissingPermission")
-public final class BeatService extends Service implements BleDevice.Listener {
+public final class BeatService extends Service implements BleDevice.Listener, androidx.lifecycle.LifecycleOwner {
+    // CameraX needs a LifecycleOwner; the service is one (RESUMED while running)
+    private final androidx.lifecycle.LifecycleRegistry lifecycle = new androidx.lifecycle.LifecycleRegistry(this);
+    @Override public androidx.lifecycle.Lifecycle getLifecycle() { return lifecycle; }
     public static final String ACTION_START = "com.tupai.dgtempo.START";
     public static final String ACTION_STOP_OUTPUT = "com.tupai.dgtempo.STOP_OUTPUT";
     public static final String ACTION_QUIT = "com.tupai.dgtempo.QUIT";
@@ -90,13 +93,79 @@ public final class BeatService extends Service implements BleDevice.Listener {
     public final double[] driveNow = {0, 0};           // per device drive 0..1 (coyote, opossum), smoothed
     private final double[] driveSmooth = {0, 0};
     public boolean gyroMode() { return settings.mode == 1; }
+    public boolean cageMode() { return settings.mode == 2; }
+
+    // ---- Chalk Cage -----------------------------------------------------------------------------
+    public CageDetector cage;
+    public final CageLogic cageLogic = new CageLogic();
+    public volatile CageLogic.Out cageOut = new CageLogic.Out();
+    public volatile double cageArea = 0, cageOutsideShare = 1; public volatile float cageCx = -1, cageCy = -1;
+    private android.speech.tts.TextToSpeech tts; private boolean ttsReady = false;
+    private android.media.ToneGenerator tone;
+
+    public void startCage() {
+        if (cage == null) cage = new CageDetector(this, this);
+        if (checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) { log("cage: camera permission not granted"); return; }
+        startForegroundCompat(projection != null);          // re-declare types incl. camera
+        cage.box = new android.graphics.RectF(settings.cageL, settings.cageT, settings.cageR, settings.cageB);
+        cage.listener = (area, share, cx, cy) -> { cageArea = area; cageOutsideShare = share; cageCx = cx; cageCy = cy; };
+        if (!cage.running) cage.start(settings.cageFront);
+        if (tts == null) tts = new android.speech.tts.TextToSpeech(this, st -> { ttsReady = st == android.speech.tts.TextToSpeech.SUCCESS; if (ttsReady) try { tts.setLanguage(getResources().getConfiguration().getLocales().get(0)); } catch (Exception ignored) {} });
+        if (tone == null) try { tone = new android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 90); } catch (Exception ignored) {}
+        cageLogic.reset();
+        log("Chalk Cage: camera on (" + (settings.cageFront ? "front" : "back") + ")");
+    }
+
+    public void stopCage() {
+        if (cage != null) cage.stop();
+        cageLogic.reset();
+        cageOut = new CageLogic.Out();
+    }
+
+    public void setCageBox(float l, float t, float r, float b) {
+        settings.cageL = l; settings.cageT = t; settings.cageR = r; settings.cageB = b;
+        settings.save(this);
+        if (cage != null) cage.box = new android.graphics.RectF(l, t, r, b);
+    }
+
+    public void setCageFront(boolean f) { settings.cageFront = f; settings.save(this); if (cage != null) cage.setFront(f); }
+
+    private void say(String what) {
+        if (!settings.cageVoice) return;
+        try { if (tone != null) tone.startTone(android.media.ToneGenerator.TONE_PROP_BEEP2, 250); } catch (Exception ignored) {}
+        if (!ttsReady || tts == null) return;
+        String text = "outside".equals(what) ? getString(R.string.say_outside) : getString(R.string.say_returned);
+        tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "cage");
+    }
+
+    private CageLogic.Config cageConfig() {
+        CageLogic.Config c = new CageLogic.Config();
+        c.warnS = settings.cageWarnS; c.shockS = settings.cageShockS; c.shockMode = settings.cageShockMode; c.vibMode = settings.cageVib;
+        c.outsideShare = settings.cageOutsidePct / 100.0; c.minArea = settings.cageMinAreaPct / 100.0;
+        c.notDetectedIsOutside = settings.cageNotDetOut; c.paused = settings.cagePaused; c.locked = settings.cageLocked;
+        return c;
+    }
+
+    private void cageTick(double now) {
+        boolean camOk = cage != null && cage.running;
+        CageLogic.Out o = cageLogic.step(now, cageConfig(), armed && camOk, camOk ? cageArea : 0, cageOutsideShare);
+        if (o.announce != null) { log("cage: " + o.announce); say(o.announce); }
+        cageOut = o;
+    }
+
+    /** Strength a device gets in cage mode (Coyote: configured shock level; Opossum: its channel max). */
+    private int cageStrength(String kind, Settings.ChannelCfg c) {
+        if ("coyote".equals(kind)) return Math.max(0, Math.min(c.max, settings.cageShockLevel < 0 ? c.max : settings.cageShockLevel));
+        return settings.vibFollowTempo ? c.max : c.manual;
+    }
 
     /** Switch input mode: 0 = music, 1 = gyro. Sensors run only in gyro mode. */
     public void setMode(int mode) {
         settings.mode = mode;
         settings.save(this);
         ensureSensors();
-        log(mode == 1 ? "gyro mode: tilt + movement drive the output" : "music mode");
+        if (mode == 2) startCage(); else stopCage();
+        log(mode == 1 ? "gyro mode: tilt + movement drive the output" : mode == 2 ? "Chalk Cage mode" : "music mode");
         UiListener l = ui;
         if (l != null) main.post(l::onDevices);
     }
@@ -381,9 +450,11 @@ public final class BeatService extends Service implements BleDevice.Listener {
     @Override
     public void onCreate() {
         super.onCreate();
+        lifecycle.setCurrentState(androidx.lifecycle.Lifecycle.State.RESUMED);
         settings = Settings.load(this);
         applySensitivity();
         main.post(this::ensureSensors);
+        if (settings.mode == 2) main.post(this::startCage);
         NotificationManager nm = getSystemService(NotificationManager.class);
         nm.createNotificationChannel(new NotificationChannel(CHANNEL, "DG Tempo", NotificationManager.IMPORTANCE_LOW));
     }
@@ -428,6 +499,8 @@ public final class BeatService extends Service implements BleDevice.Listener {
     @Override
     public void onDestroy() {
         quitInternal();
+        lifecycle.setCurrentState(androidx.lifecycle.Lifecycle.State.DESTROYED);
+        if (tts != null) { try { tts.shutdown(); } catch (Exception ignored) {} tts = null; }
         super.onDestroy();
     }
 
@@ -437,6 +510,9 @@ public final class BeatService extends Service implements BleDevice.Listener {
         if (Build.VERSION.SDK_INT >= 29) types |= ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE;
         if (Build.VERSION.SDK_INT >= 30) types |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
         if (withProjection && Build.VERSION.SDK_INT >= 29) types |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
+        if (settings != null && settings.mode == 2 && Build.VERSION.SDK_INT >= 30
+                && checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
+            types |= ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA;
         try {
             if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIF_ID, n, types);
             else startForeground(NOTIF_ID, n);
@@ -452,12 +528,13 @@ public final class BeatService extends Service implements BleDevice.Listener {
     private String notifText() {
         if (!armed) return getString(R.string.notif_stopped) + " · " + (gyroMode() ? "gyro" : audioLabel());
         StringBuilder sb = new StringBuilder();
-        if (gyroMode()) sb.append(String.format("tilt %.0f° move %.0f%%", motionSensors == null ? 0 : motionSensors.tiltDeg, moveF * 100));
+        if (cageMode()) sb.append("cage: ").append(cageNote());
+        else if (gyroMode()) sb.append(String.format("tilt %.0f° move %.0f%%", motionSensors == null ? 0 : motionSensors.tiltDeg, moveF * 100));
         else sb.append(tracker.locked() ? String.format("%.0f BPM ●", tracker.bpm()) : "… BPM");
         for (BleDevice d : devices.values()) if (d.connected)
             sb.append("  ").append(d.label.charAt(0)).append(':').append(Math.max(0, d.strength))
               .append(settings.secondChannel(d.kind) && !settings.linked(d.kind) ? "/" + Math.max(0, d.strengthB) : "");
-        if (!gyroMode()) sb.append("  ").append(audioLabel()).append(String.format(" %.0f dB", detector.levelDb));
+        if (!gyroMode() && !cageMode()) sb.append("  ").append(audioLabel()).append(String.format(" %.0f dB", detector.levelDb));
         return sb.toString();
     }
 
@@ -508,6 +585,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
         stopScan();
         if (sched != null) { sched.shutdownNow(); sched = null; }
         if (motionSensors != null) motionSensors.stop();
+        stopCage();
         stopAudio();
         stopProjection();
         if (wakeLock != null) { wakeLock.release(); wakeLock = null; }
@@ -820,6 +898,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
         if (!armed) return 0;
         if (deviceActive(kind)) return 1;
         if (gyroMode()) return Math.min(0.99, drive(kind));
+        if (cageMode()) return cageOut.state == CageLogic.WARNING ? Math.min(0.99, 1 - cageOut.warnLeft / Math.max(1, settings.cageWarnS)) : 0;
         if ("coyote".equals(kind) && settings.coyoteTimerMode == 2 && nextRandomAt > 0) {
             double lo = Math.min(settings.coyoteRandMinS, settings.coyoteRandMaxS), hi = Math.max(settings.coyoteRandMinS, settings.coyoteRandMaxS);
             double span = Math.max(1, hi), left = Math.max(0, nextRandomAt - System.nanoTime() / 1e9);
@@ -853,11 +932,21 @@ public final class BeatService extends Service implements BleDevice.Listener {
         return d.targetStrength(x, coy ? offset : 0, settings, c);
     }
 
+    public String cageNote() {
+        CageLogic.Out o = cageOut;
+        if (settings.cagePaused) return "paused";
+        if (!settings.cageLocked) return "draw box";
+        if (o.state == CageLogic.SHOCK) return String.format("⚡%.0fs", o.shockLeft);
+        if (o.state == CageLogic.WARNING) return String.format("⚠%.0fs", o.warnLeft);
+        return o.detected ? (o.inside ? "inside" : "outside") : "no one";
+    }
+
     /** Short reason text for the PiP view. */
     public String readinessNote(String kind) {
         if (!armed) return "off";
         if (deviceActive(kind)) return "▶";
         if (gyroMode()) return String.format("%.0f%%", drive(kind) * 100);
+        if (cageMode()) return cageNote();
         if ("coyote".equals(kind) && !delayNote.isEmpty()) return delayNote;
         if ("coyote".equals(kind) && settings.coyoteTimerMode == 2 && nextRandomAt > 0)
             return String.format("⏱%.0fs", Math.max(0, nextRandomAt - System.nanoTime() / 1e9));
@@ -902,6 +991,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
     private double tempoX(String kind, int ch) {
         if (!deviceActive(kind)) return -1;
         if (gyroMode() && System.nanoTime() / 1e9 >= testBurstUntil) return drive(kind);
+        if (cageMode() && System.nanoTime() / 1e9 >= testBurstUntil) return 1;   // cage: absolute level set in the tick
         if ("coyote".equals(kind) && System.nanoTime() / 1e9 < maxShockUntil) return 1;   // max shock window
         if ("coyote".equals(kind) && coyoteForceMax && System.nanoTime() / 1e9 < coyoteForceUntil) return 1;   // timer: 3 owed -> max
         if ("coyote".equals(kind) && settings.chan(kind, ch).randomLevel) return randLevelX(ch);                 // random level per pulse
@@ -920,8 +1010,8 @@ public final class BeatService extends Service implements BleDevice.Listener {
             if (now - tick > 0.3) { tick = now; nextTick = now + Protocol.FRAME_S; }
             tickCount++;
 
-            if (armed && audioRunning && !gyroMode() && now - detector.lastAudio > 2.0) stopOutput("no audio for 2 s");
-            if (gyroMode()) motionTick(); else moveDelayTick(now);
+            if (armed && audioRunning && !gyroMode() && !cageMode() && now - detector.lastAudio > 2.0) stopOutput("no audio for 2 s");
+            if (gyroMode()) motionTick(); else if (cageMode()) cageTick(now); else moveDelayTick(now);
             if (tracker.checkTimeout(now)) { wasLocked = false; log("UNLOCKED: beats stopped"); }
             else if (tickCount % 10 == 0) noteTransitions();
             if (audioRunning) {
@@ -937,7 +1027,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
 
             boolean anyBurst = false;
             int[] silentF = {10, 10, 10, 10}, silentI = new int[4];
-            if (!gyroMode()) { timerTick(now); randLevelTick(now); } else { timerNote = ""; }
+            if (!gyroMode() && !cageMode()) { timerTick(now); randLevelTick(now); } else { timerNote = ""; }
             for (BleDevice d : devices.values()) {
                 if (!d.connected) continue;
                 boolean coy = "coyote".equals(d.kind);
@@ -952,7 +1042,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
                     boolean chOn = en && (ch == 0 || second);
                     Settings.ChannelCfg c = settings.chan(d.kind, ch);
                     double x = tempoX(d.kind, ch);
-                    int target = (x < 0 || !chOn) ? 0 : d.targetStrength(x, coy ? offset : 0, settings, c);
+                    int target = (x < 0 || !chOn) ? 0 : cageMode() && now >= testBurstUntil ? cageStrength(d.kind, c) : d.targetStrength(x, coy ? offset : 0, settings, c);
                     int prev = ch == 0 ? d.strength : d.strengthB;
                     if (target != prev && d.strengthChangeAllowed()) { anySet = true; }
                     sa[ch] = target;
@@ -963,7 +1053,13 @@ public final class BeatService extends Service implements BleDevice.Listener {
                     boolean cont = c.continuous;
                     double blen = c.burstMs / 1000.0;
                     java.util.List<double[]> use;
-                    if (coy && !gyroMode() && now < maxShockUntil) {
+                    if (cageMode()) {
+                        // cage: shock / vibration loop continuously while the rules say so
+                        use = new java.util.ArrayList<>();
+                        if (chOn && active && now >= testBurstUntil) use.add(new double[]{armedAt, Double.POSITIVE_INFINITY});
+                        if (testBurstUntil > tick) use.add(new double[]{testBurstUntil - blen, testBurstUntil});
+                        cont = true;
+                    } else if (coy && !gyroMode() && now < maxShockUntil) {
                         // movement-delay max shock: pattern loops at max for the configured seconds
                         use = new java.util.ArrayList<>();
                         if (chOn) use.add(new double[]{maxShockUntil - settings.moveDelayShockS, maxShockUntil});
@@ -1092,6 +1188,7 @@ public final class BeatService extends Service implements BleDevice.Listener {
         double now = System.nanoTime() / 1e9;
         if (now < testBurstUntil) return true;                 // test pulse: every connected device fires
         if (gyroMode()) return drive(kind) >= 0.05;            // gyro: tilt/movement decide, music ignored
+        if (cageMode()) return "coyote".equals(kind) ? cageOut.shock : cageOut.vib;
         if ("coyote".equals(kind) && now < maxShockUntil) return true;      // movement-delay max shock
         if ("coyote".equals(kind) && coyoteHeld()) return false;             // movement holds the Coyote off
         if ("coyote".equals(kind) && now < coyoteForceUntil) return true;   // timer pulse train in progress

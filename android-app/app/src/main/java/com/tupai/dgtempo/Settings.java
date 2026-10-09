@@ -70,7 +70,13 @@ public final class Settings {
     // music mode: phone "going down" (a dip / bounce) as downbeat. 0 off, 1 votes for the downbeat, 2 fires devices
     public int dipMode = 0;
     public int dipThrX10 = 15;                              // m/s^2 x10 downward that counts as a dip
-    public boolean dipCoyote = true, dipOpossum = false;    // which devices fire on dips (mode 2)                       // % of "full movement" that counts as moving                            // gyro mode Opossum: 0 follow tilt/movement, 1 always on, 2 always off
+    public boolean dipCoyote = true, dipOpossum = false;    // which devices fire on dips (mode 2)
+    // ---- Chalk Cage (mode 2): camera box
+    public float cageL = 0.2f, cageT = 0.1f, cageR = 0.8f, cageB = 0.9f;
+    public boolean cageLocked = false, cageFront = false, cagePaused = false, cageVoice = true, cageNotDetOut = true;
+    public int cageShockLevel = -1;                        // -1 = Coyote MAX (channel A max), else absolute 0-200
+    public int cageShockS = 30, cageWarnS = 3, cageShockMode = CageLogic.SHOCK_FULL, cageVib = CageLogic.VIB_INSIDE;
+    public int cageOutsidePct = 20, cageMinAreaPct = 2;                       // % of "full movement" that counts as moving                            // gyro mode Opossum: 0 follow tilt/movement, 1 always on, 2 always off
     public int tiltRel(String kind) { return "coyote".equals(kind) ? coyoteTiltRel : vibTiltRel; }
     public int moveRel(String kind) { return "coyote".equals(kind) ? coyoteMoveRel : vibMoveRel; }
 
@@ -140,6 +146,12 @@ public final class Settings {
         s.moveDelayNeedPct = p.getInt("moveDelayNeedPct", 25);
         s.dipMode = p.getInt("dipMode", 0); s.dipThrX10 = p.getInt("dipThrX10", 15);
         s.dipCoyote = p.getBoolean("dipCoyote", true); s.dipOpossum = p.getBoolean("dipOpossum", false);
+        s.cageL = p.getFloat("cageL", 0.2f); s.cageT = p.getFloat("cageT", 0.1f); s.cageR = p.getFloat("cageR", 0.8f); s.cageB = p.getFloat("cageB", 0.9f);
+        s.cageLocked = p.getBoolean("cageLocked", false); s.cageFront = p.getBoolean("cageFront", false);
+        s.cageVoice = p.getBoolean("cageVoice", true); s.cageNotDetOut = p.getBoolean("cageNotDetOut", true);
+        s.cageShockLevel = p.getInt("cageShockLevel", -1); s.cageShockS = p.getInt("cageShockS", 30); s.cageWarnS = p.getInt("cageWarnS", 3);
+        s.cageShockMode = p.getInt("cageShockMode", CageLogic.SHOCK_FULL); s.cageVib = p.getInt("cageVib", CageLogic.VIB_INSIDE);
+        s.cageOutsidePct = p.getInt("cageOutsidePct", 20); s.cageMinAreaPct = p.getInt("cageMinAreaPct", 2);
         s.vibLink = p.getBoolean("vibLink", true);
 
         s.vibFollowTempo = p.getBoolean("vibFollowTempo", s.vibFollowTempo);
@@ -229,6 +241,10 @@ public final class Settings {
                 .putBoolean("moveDelayOn", moveDelayOn).putInt("moveDelayMaxS", moveDelayMaxS)
                 .putBoolean("moveDelayFinal", moveDelayFinal).putInt("moveDelayShockS", moveDelayShockS).putInt("moveDelayNeedPct", moveDelayNeedPct)
                 .putInt("dipMode", dipMode).putInt("dipThrX10", dipThrX10).putBoolean("dipCoyote", dipCoyote).putBoolean("dipOpossum", dipOpossum)
+                .putFloat("cageL", cageL).putFloat("cageT", cageT).putFloat("cageR", cageR).putFloat("cageB", cageB)
+                .putBoolean("cageLocked", cageLocked).putBoolean("cageFront", cageFront).putBoolean("cageVoice", cageVoice).putBoolean("cageNotDetOut", cageNotDetOut)
+                .putInt("cageShockLevel", cageShockLevel).putInt("cageShockS", cageShockS).putInt("cageWarnS", cageWarnS)
+                .putInt("cageShockMode", cageShockMode).putInt("cageVib", cageVib).putInt("cageOutsidePct", cageOutsidePct).putInt("cageMinAreaPct", cageMinAreaPct)
                 .putBoolean("vibFollowTempo", vibFollowTempo)
                 .putBoolean("autoStrength", autoStrength)
                 .putFloat("bpmLo", (float) bpmLo).putFloat("bpmHi", (float) bpmHi)

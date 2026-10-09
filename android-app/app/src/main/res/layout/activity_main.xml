@@ -74,6 +74,27 @@
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
                 <Button android:id="@+id/tabMusic" style="@style/BtnAccent" android:layout_width="0dp" android:layout_weight="1" android:layout_height="52dp" android:text="@string/tab_music"/>
                 <Button android:id="@+id/tabMotion" style="@style/BtnGhost" android:layout_width="0dp" android:layout_weight="1" android:layout_height="52dp" android:layout_marginStart="8dp" android:text="@string/tab_motion"/>
+                <Button android:id="@+id/tabCage" style="@style/BtnGhost" android:layout_width="0dp" android:layout_weight="1" android:layout_height="52dp" android:layout_marginStart="8dp" android:text="@string/tab_cage"/>
+            </LinearLayout>
+
+            <!-- CHALK CAGE tab -->
+            <LinearLayout android:id="@+id/pageCage" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/SectionTitle" android:text="@string/sec_cage"/>
+                    <TextView style="@style/Hint" android:text="@string/cage_hint"/>
+                    <TextView android:id="@+id/tvCageStatus" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:textSize="22sp" android:textStyle="bold" android:fontFamily="monospace" android:textColor="@color/muted" android:layout_marginTop="8dp" android:text="—"/>
+                    <FrameLayout android:id="@+id/cageFrame" android:layout_width="match_parent" android:layout_height="300dp" android:layout_marginTop="8dp" android:background="#000000">
+                        <androidx.camera.view.PreviewView android:id="@+id/cagePreview" android:layout_width="match_parent" android:layout_height="match_parent"/>
+                        <com.tupai.dgtempo.CageOverlayView android:id="@+id/cageOverlay" android:layout_width="match_parent" android:layout_height="match_parent"/>
+                    </FrameLayout>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="8dp">
+                        <Button android:id="@+id/btnCageLock" style="@style/BtnAccent" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/cage_lock"/>
+                        <Button android:id="@+id/btnCagePause" style="@style/BtnGhost" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/cage_pause"/>
+                        <Button android:id="@+id/btnCageFlip" style="@style/BtnGhost" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/cage_flip"/>
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/llCage" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+                </LinearLayout>
             </LinearLayout>
 
             <!-- MUSIC tab -->
