@@ -452,7 +452,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         BleDevice dc = devices.get("coyote");
         boolean ready = settings.coyoteTimerMode != 0 && armed && settings.coyoteEnabled && dc != null && dc.connected;
         if (!ready) { winStart = 0; winMaxBpm = 0; owed = 0; nextRandomAt = 0; timerNote = ""; return; }
-        boolean sound = musicOn;
+        boolean sound = musicOn && tracker.locked();        // timers fire only on real music: sustained sound AND a locked beat
         if (settings.coyoteTimerMode == 2) {
             int lo = Math.min(settings.coyoteRandMinS, settings.coyoteRandMaxS), hi = Math.max(settings.coyoteRandMinS, settings.coyoteRandMaxS);
             if (nextRandomAt == 0 || lo != randLoUsed || hi != randHiUsed) {   // first time, or the range was changed: redraw
@@ -460,7 +460,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
                 randLoUsed = lo; randHiUsed = hi;
                 log(String.format("Coyote random timer: next in %.0f s (%d-%d)", nextRandomAt - now, lo, hi));
             }
-            timerNote = String.format("rnd %.0fs%s", Math.max(0, nextRandomAt - now), sound ? "" : " (waiting for sound)");
+            timerNote = String.format("rnd %.0fs%s", Math.max(0, nextRandomAt - now), sound ? "" : " (waiting for music)");
             if (now >= nextRandomAt && sound && now >= coyoteForceUntil) {
                 forceCoyote(1, false, "random interval");
                 nextRandomAt = now + lo + rng.nextDouble() * (hi - lo);
