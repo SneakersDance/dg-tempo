@@ -452,7 +452,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         BleDevice dc = devices.get("coyote");
         boolean ready = settings.coyoteTimerMode != 0 && armed && settings.coyoteEnabled && dc != null && dc.connected;
         if (!ready) { winStart = 0; winMaxBpm = 0; owed = 0; nextRandomAt = 0; timerNote = ""; return; }
-        boolean sound = detector.soundPresent();
+        boolean sound = musicOn;
         if (settings.coyoteTimerMode == 2) {
             int lo = Math.min(settings.coyoteRandMinS, settings.coyoteRandMaxS), hi = Math.max(settings.coyoteRandMinS, settings.coyoteRandMaxS);
             if (nextRandomAt == 0 || lo != randLoUsed || hi != randHiUsed) {   // first time, or the range was changed: redraw
@@ -961,7 +961,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
             return Math.min(0.99, 1 - left / span);                       // bar fills as the random moment approaches
         }
         if ("coyote".equals(kind) && settings.coyoteTimerMode == 1) return Math.min(0.99, owed / 3.0 + 0.2 * Math.min(1, (System.nanoTime() / 1e9 - winStart) / Math.max(1, settings.coyoteMaxWaitS)));
-        if (!detector.soundPresent()) return 0;
+        if (!musicOn) return 0;
         if ("opossum".equals(kind) && settings.vibAnyMusic) return 0.5;
         int lvl = settings.sens(kind);
         double c = tracker.confidence / Settings.confMin(lvl);
@@ -1011,7 +1011,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         if ("coyote".equals(kind) && settings.coyoteTimerMode == 1)
             return "⏱" + owed + "/3";
         if (muted) return "muted";
-        if (!detector.soundPresent()) return "quiet";
+        if (!musicOn) return "quiet";
         if ("opossum".equals(kind) && settings.vibAnyMusic) return "sound";
         if (tracker.locked() && !settings.bpmAllowed(kind, tracker.bpm())) return settings.bpmMin(kind) + "-" + settings.bpmMax(kind);
         return "lock";
@@ -1069,6 +1069,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
             tickCount++;
 
             if (armed && audioRunning && !gyroMode() && !cageMode() && now - detector.lastAudio > 2.0) stopOutput("no audio for 2 s");
+            soundGateTick(now);
             if (gyroMode()) motionTick(); else if (cageMode()) cageTick(now); else moveDelayTick(now);
             if (tracker.checkTimeout(now)) { wasLocked = false; log("UNLOCKED: beats stopped"); }
             else if (tickCount % 10 == 0) noteTransitions();
@@ -1147,7 +1148,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
                         }
                         if (testBurstUntil > tick) use.add(new double[]{testBurstUntil - blen, testBurstUntil});
                     } else {
-                        boolean beatActive = active && !(coy && settings.coyoteTimerMode != 0) && detector.soundPresent();
+                        boolean beatActive = active && !(coy && settings.coyoteTimerMode != 0) && musicOn;
                         use = Scheduler.burstsIn(tracker, beatActive, tick, tick + Protocol.FRAME_S,
                                 settings.latencyMs / 1000.0, blen, rate >= 1, testBurstUntil, Settings.subdiv(rate));
                     }
@@ -1254,7 +1255,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         if ("coyote".equals(kind) && settings.coyoteTimerMode != 0) return false;   // timer mode: ONLY the timer fires the Coyote
         if (motionActive(kind, now)) return true;              // screen movement fires this device
         if (dipFires(kind) && lastDipAt > 0 && now - lastDipAt < settings.burstMs(kind) / 1000.0 + 0.2) return true;   // a dip fires it
-        if (!detector.soundPresent()) return false;            // music/video stopped: mute at once (~0.3 s)
+        if (!musicOn) return false;                            // needs >= 1 s of sound to start; stops at once when it ends
         if ("opossum".equals(kind) && settings.vibAnyMusic) return musicPresent(now);
         if (!tracker.locked()) return false;
         int lvl = settings.sens(kind);
@@ -1269,6 +1270,18 @@ public final class BeatService extends Service implements BleDevice.Listener, an
     private static final double MUSIC_PRESENT_S = 2.0;
 
     public boolean musicPresent(double now) { return audioRunning && lastOnsetAt > 0 && now - lastOnsetAt < MUSIC_PRESENT_S; }
+
+    // Sustained-sound gate: music-mode triggers may START only after >= 1 s of continuous sound above the
+    // noise floor (a notification ping or a UI click must not fire anything); they STOP the instant sound stops.
+    private double soundSince = -1;
+    private static final double SOUND_SUSTAIN_S = 1.0;
+    public volatile boolean musicOn = false;
+
+    private void soundGateTick(double now) {
+        if (detector.soundPresent()) { if (soundSince < 0) soundSince = now; }
+        else soundSince = -1;
+        musicOn = soundSince >= 0 && now - soundSince >= SOUND_SUSTAIN_S;
+    }
 
     /** Output history per device kind, one value per 25 ms slot (0..1 of the device cap), 3 s ring. */
     public static final int HIST_SLOTS = 120;
