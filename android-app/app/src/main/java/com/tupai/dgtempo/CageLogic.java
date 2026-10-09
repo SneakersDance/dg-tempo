@@ -18,12 +18,17 @@ public final class CageLogic {
         public boolean notDetectedIsOutside = true;
         public boolean paused = false;
         public boolean locked = false;           // box drawn and locked: the game is live
+        public boolean dance = false;            // dance mode: standing still gets shocked
+        public double danceGraceS = 3;           // seconds of stillness before the shock
+        public double danceMoveMin = 0.15;       // silhouette motion share that counts as moving
     }
 
     public static final class Out {
         public int state = IDLE;
         public boolean shock, vib, inside, detected;
         public boolean returnedDuringShock;      // back inside while the punishment still runs
+        public boolean danceShock;               // dance mode: still too long -> shocking until movement resumes
+        public double stillS;                    // how long the player has been still
         public double warnLeft, shockLeft;
         public String announce;                  // "outside" / "returned" / null
     }
@@ -34,14 +39,18 @@ public final class CageLogic {
     private int ringN = 0, ringPos = 0;
     private boolean wasOutside = false;
     private boolean returnedInShock = false;
+    private double stillSince = -1; private boolean danceOn = false;
 
-    public void reset() { state = IDLE; ringN = ringPos = 0; wasOutside = false; returnedInShock = false; }
+    public void reset() { state = IDLE; ringN = ringPos = 0; wasOutside = false; returnedInShock = false; stillSince = -1; danceOn = false; }
 
     /**
      * @param area    person mask area as share of the frame (0..1)
      * @param outside share of the person mask outside the box (0..1), meaningless when area is tiny
      */
-    public Out step(double now, Config c, boolean armed, double area, double outside) {
+    public Out step(double now, Config c, boolean armed, double area, double outside) { return step(now, c, armed, area, outside, 1.0); }
+
+    /** @param motion share of the body silhouette that changed since the last frame (0 = frozen, ~0.3+ = dancing) */
+    public Out step(double now, Config c, boolean armed, double area, double outside, double motion) {
         Out o = new Out();
         o.detected = area >= c.minArea;
         boolean rawOutside = o.detected ? outside >= c.outsideShare : c.notDetectedIsOutside;
@@ -52,10 +61,22 @@ public final class CageLogic {
 
         if (!armed || !c.locked || c.paused) {
             if (state != IDLE && !isOutside && wasOutside) o.announce = "returned";
-            state = IDLE; wasOutside = false;
+            state = IDLE; wasOutside = false; stillSince = -1; danceOn = false;
             o.state = IDLE; o.shock = false; o.vib = false;
             return o;
         }
+        // dance rule: detected, inside the box, and the silhouette has not changed for danceGraceS
+        if (c.dance && o.detected && !isOutside) {
+            if (motion >= c.danceMoveMin) { stillSince = -1; danceOn = false; }
+            else {
+                if (stillSince < 0) stillSince = now;
+                o.stillS = now - stillSince;
+                if (o.stillS >= c.danceGraceS) {
+                    if (!danceOn) { danceOn = true; if (o.announce == null) o.announce = "move"; }
+                }
+            }
+        } else { stillSince = -1; danceOn = false; }
+        o.danceShock = danceOn;
 
         switch (state) {
             case IDLE:

@@ -78,7 +78,9 @@ public final class Settings {
     public int cageShockS = 30, cageWarnS = 3, cageShockMode = CageLogic.SHOCK_FULL, cageVib = CageLogic.VIB_INSIDE;
     public int cageOutsidePct = 20, cageMinAreaPct = 2;
     public int cageZoomX10 = 10;
-    public boolean cageDebug = false;                       // show the detected body mask on the preview                            // camera zoom ratio x10 (10 = 1.0x; <10 = ultra-wide if available)                       // % of "full movement" that counts as moving                            // gyro mode Opossum: 0 follow tilt/movement, 1 always on, 2 always off
+    public boolean cageDebug = false;                       // show the detected body mask on the preview
+    public boolean cageDance = false;                       // dance mode: still too long -> shock
+    public int cageDanceGraceS = 3, cageDanceMovePct = 15, cageDanceLevel = -1;   // -1 = same as the cage shock level                            // camera zoom ratio x10 (10 = 1.0x; <10 = ultra-wide if available)                       // % of "full movement" that counts as moving                            // gyro mode Opossum: 0 follow tilt/movement, 1 always on, 2 always off
     public int tiltRel(String kind) { return "coyote".equals(kind) ? coyoteTiltRel : vibTiltRel; }
     public int moveRel(String kind) { return "coyote".equals(kind) ? coyoteMoveRel : vibMoveRel; }
 
@@ -156,6 +158,8 @@ public final class Settings {
         s.cageOutsidePct = p.getInt("cageOutsidePct", 20); s.cageMinAreaPct = p.getInt("cageMinAreaPct", 2);
         s.cageZoomX10 = p.getInt("cageZoomX10", 10);
         s.cageDebug = p.getBoolean("cageDebug", false);
+        s.cageDance = p.getBoolean("cageDance", false); s.cageDanceGraceS = p.getInt("cageDanceGraceS", 3);
+        s.cageDanceMovePct = p.getInt("cageDanceMovePct", 15); s.cageDanceLevel = p.getInt("cageDanceLevel", -1);
         s.vibLink = p.getBoolean("vibLink", true);
 
         s.vibFollowTempo = p.getBoolean("vibFollowTempo", s.vibFollowTempo);
@@ -249,6 +253,7 @@ public final class Settings {
                 .putBoolean("cageLocked", cageLocked).putBoolean("cageFront", cageFront).putBoolean("cageVoice", cageVoice).putBoolean("cageNotDetOut", cageNotDetOut)
                 .putInt("cageShockLevel", cageShockLevel).putInt("cageShockS", cageShockS).putInt("cageWarnS", cageWarnS)
                 .putInt("cageShockMode", cageShockMode).putInt("cageVib", cageVib).putInt("cageOutsidePct", cageOutsidePct).putInt("cageMinAreaPct", cageMinAreaPct).putInt("cageZoomX10", cageZoomX10).putBoolean("cageDebug", cageDebug)
+                .putBoolean("cageDance", cageDance).putInt("cageDanceGraceS", cageDanceGraceS).putInt("cageDanceMovePct", cageDanceMovePct).putInt("cageDanceLevel", cageDanceLevel)
                 .putBoolean("vibFollowTempo", vibFollowTempo)
                 .putBoolean("autoStrength", autoStrength)
                 .putFloat("bpmLo", (float) bpmLo).putFloat("bpmHi", (float) bpmHi)

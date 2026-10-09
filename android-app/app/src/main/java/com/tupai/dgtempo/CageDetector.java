@@ -29,7 +29,7 @@ import java.util.concurrent.Executors;
  * the mirrored preview.
  */
 public final class CageDetector {
-    public interface Listener { void onFrame(double area, double outsideShare, float cx, float cy); }
+    public interface Listener { void onFrame(double area, double outsideShare, float cx, float cy, double motion); }
 
     private final Context ctx;
     private final LifecycleOwner owner;
@@ -43,6 +43,8 @@ public final class CageDetector {
     public volatile long frames = 0;
     public volatile int maskW = 0, maskH = 0;
     public volatile boolean debugMask = false;           // build a small translucent bitmap of the person mask
+    private boolean[] prevGrid;                          // person cells of the previous frame (for silhouette motion)
+    public volatile double motion = 0;                   // share of the silhouette that changed since the last frame, smoothed
     public volatile android.graphics.Bitmap maskBitmap;
     private long lastAt = 0;
     private volatile Preview.SurfaceProvider pendingSurface;
@@ -147,6 +149,8 @@ public final class CageDetector {
         int step = Math.max(1, w / 128);                      // sample ~128 columns: cheap and plenty
         int gw = (w + step - 1) / step, gh = (h + step - 1) / step;
         int[] px = debugMask ? new int[gw * gh] : null;
+        boolean[] grid = new boolean[gw * gh];
+        long changed = 0, union = 0;
         for (int y = 0; y < h; y += step) {
             float fy = (y + 0.5f) / h;
             boolean yIn = fy >= b.top && fy <= b.bottom;
@@ -156,7 +160,14 @@ public final class CageDetector {
                     int gx = x / step; if (front) gx = gw - 1 - gx;       // mirror like the preview
                     px[(y / step) * gw + gx] = conf >= 0.85f ? 0x9900FF88 : 0x6600FF88;
                 }
-                if (conf < 0.6f) continue;
+                boolean isP = conf >= 0.6f;
+                int gi = (y / step) * gw + (x / step);
+                grid[gi] = isP;
+                if (prevGrid != null && prevGrid.length == grid.length) {
+                    boolean was = prevGrid[gi];
+                    if (isP || was) { union++; if (isP != was) changed++; }
+                }
+                if (!isP) continue;
                 person++;
                 float fx = (x + 0.5f) / w;
                 sx += fx; sy += fy;
@@ -164,6 +175,11 @@ public final class CageDetector {
             }
         }
         frames++;
+        if (prevGrid != null && union > 0) {
+            double m = changed / (double) union;
+            motion += (m - motion) * 0.4;                     // ~3-frame smoothing at 10 fps
+        }
+        prevGrid = grid;
         if (px != null) {
             android.graphics.Bitmap bm = android.graphics.Bitmap.createBitmap(px, gw, gh, android.graphics.Bitmap.Config.ARGB_8888);
             maskBitmap = bm;
@@ -174,6 +190,6 @@ public final class CageDetector {
         float cx = person == 0 ? -1 : (float) (sx / person), cy = person == 0 ? -1 : (float) (sy / person);
         if (front && cx >= 0) cx = 1 - cx;
         Listener l = listener;
-        if (l != null) l.onFrame(area, share, cx, cy);
+        if (l != null) l.onFrame(area, share, cx, cy, motion);
     }
 }
