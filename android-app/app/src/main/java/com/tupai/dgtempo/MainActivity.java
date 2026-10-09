@@ -480,6 +480,9 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             tabs[i].setTextColor(mode == i ? C_BG : C_TEXT);
         }
         if (mode == 2 && svc != null && svc.cage != null) svc.cage.attachPreview(cagePreview.getSurfaceProvider());
+        // camera game: never let the screen dim or lock while this tab is active
+        if (mode == 2) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        else getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         refreshCageButtons();
     }
 

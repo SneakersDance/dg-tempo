@@ -100,7 +100,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
     public final CageLogic cageLogic = new CageLogic();
     public volatile CageLogic.Out cageOut = new CageLogic.Out();
     public volatile double cageArea = 0, cageOutsideShare = 1; public volatile float cageCx = -1, cageCy = -1;
-    private android.speech.tts.TextToSpeech tts; private boolean ttsReady = false;
+    private android.media.MediaPlayer voice;             // bundled announcement clips (no TTS engine needed)
     private android.media.ToneGenerator tone;
 
     public void startCage() {
@@ -111,7 +111,6 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         cage.listener = (area, share, cx, cy) -> { cageArea = area; cageOutsideShare = share; cageCx = cx; cageCy = cy; };
         cage.setZoom(settings.cageZoomX10 / 10f);
         if (!cage.running) cage.start(settings.cageFront);
-        if (tts == null) tts = new android.speech.tts.TextToSpeech(this, st -> { ttsReady = st == android.speech.tts.TextToSpeech.SUCCESS; if (ttsReady) try { tts.setLanguage(getResources().getConfiguration().getLocales().get(0)); } catch (Exception ignored) {} });
         if (tone == null) try { tone = new android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 90); } catch (Exception ignored) {}
         cageLogic.reset();
         log("Chalk Cage: camera on (" + (settings.cageFront ? "front" : "back") + ")");
@@ -133,12 +132,28 @@ public final class BeatService extends Service implements BleDevice.Listener, an
 
     public void setCageFront(boolean f) { settings.cageFront = f; settings.save(this); if (cage != null) cage.setFront(f); }
 
+    /** Beep, then the bundled clip for the app language (en / zh / ja), at full media volume. */
     private void say(String what) {
         if (!settings.cageVoice) return;
-        try { if (tone != null) tone.startTone(android.media.ToneGenerator.TONE_PROP_BEEP2, 250); } catch (Exception ignored) {}
-        if (!ttsReady || tts == null) return;
-        String text = "outside".equals(what) ? getString(R.string.say_outside) : getString(R.string.say_returned);
-        tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "cage");
+        try { if (tone != null) tone.startTone(android.media.ToneGenerator.TONE_PROP_BEEP2, 200); } catch (Exception ignored) {}
+        String lang = getResources().getConfiguration().getLocales().get(0).getLanguage();
+        String sfx = lang.startsWith("zh") ? "zh" : lang.startsWith("ja") ? "ja" : "en";
+        int res = getResources().getIdentifier("say_" + what + "_" + sfx, "raw", getPackageName());
+        if (res == 0) return;
+        main.postDelayed(() -> {
+            try {
+                if (voice != null) { voice.release(); voice = null; }
+                voice = android.media.MediaPlayer.create(this, res, new android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)   // ducks music, audible over it
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH).build(), 0);
+                if (voice == null) return;
+                voice.setVolume(1f, 1f);
+                voice.setOnCompletionListener(mp -> { mp.release(); if (voice == mp) voice = null; });
+                voice.start();
+            } catch (Exception e) {
+                log("voice: " + e.getMessage());
+            }
+        }, 250);
     }
 
     private CageLogic.Config cageConfig() {
@@ -503,7 +518,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
     public void onDestroy() {
         quitInternal();
         lifecycle.setCurrentState(androidx.lifecycle.Lifecycle.State.DESTROYED);
-        if (tts != null) { try { tts.shutdown(); } catch (Exception ignored) {} tts = null; }
+        if (voice != null) { try { voice.release(); } catch (Exception ignored) {} voice = null; }
         super.onDestroy();
     }
 
