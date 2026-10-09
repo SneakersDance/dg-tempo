@@ -88,6 +88,7 @@
                         <androidx.camera.view.PreviewView android:id="@+id/cagePreview" android:layout_width="match_parent" android:layout_height="match_parent"/>
                         <com.tupai.dgtempo.CageOverlayView android:id="@+id/cageOverlay" android:layout_width="match_parent" android:layout_height="match_parent"/>
                     </FrameLayout>
+                    <TextView style="@style/Hint" android:textColor="@color/text" android:text="@string/cage_howto"/>
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="8dp">
                         <Button android:id="@+id/btnCageLock" style="@style/BtnAccent" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/cage_lock"/>
                         <Button android:id="@+id/btnCagePause" style="@style/BtnGhost" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/cage_pause"/>

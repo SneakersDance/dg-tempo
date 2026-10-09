@@ -245,4 +245,5 @@
     <string name="end_body">most of the body out ▶</string>
     <string name="end_small">◀ small / far away</string>
     <string name="end_big">big / close ▶</string>
+    <string name="cage_howto">Adjusting the box: drag an edge or a corner handle to resize it, drag inside the box to move it, or drag across an empty part of the picture to draw a new box. Leave some margin around the player. Tap LOCK BOX when it looks right; EDIT BOX unlocks it again. The box stays put while locked, so scrolling the page cannot change it.</string>
 </resources>

@@ -32,18 +32,55 @@ public final class CageOverlayView extends View {
         pText.setShadowLayer(6f, 0, 0, 0xFF000000);
     }
 
+    // drag modes
+    private static final int NONE = 0, DRAW = 1, MOVE = 2, RESIZE = 3;
+    private int mode = NONE;
+    private boolean dragL, dragT, dragR, dragB;
+    private RectF start;
+
     @Override
     public boolean onTouchEvent(MotionEvent e) {
         if (locked) return false;
         float x = e.getX() / getWidth(), y = e.getY() / getHeight();
+        float grab = 28f * getResources().getDisplayMetrics().density;        // finger-sized handle zone
+        float gx = grab / getWidth(), gy = grab / getHeight();
         switch (e.getActionMasked()) {
-            case MotionEvent.ACTION_DOWN: sx = x; sy = y; dragging = true; return true;
+            case MotionEvent.ACTION_DOWN:
+                getParent().requestDisallowInterceptTouchEvent(true);      // keep the ScrollView out of it
+                sx = x; sy = y; start = new RectF(box);
+                dragL = Math.abs(x - box.left) < gx && y > box.top - gy && y < box.bottom + gy;
+                dragR = Math.abs(x - box.right) < gx && y > box.top - gy && y < box.bottom + gy;
+                dragT = Math.abs(y - box.top) < gy && x > box.left - gx && x < box.right + gx;
+                dragB = Math.abs(y - box.bottom) < gy && x > box.left - gx && x < box.right + gx;
+                if (dragL || dragR || dragT || dragB) mode = RESIZE;
+                else if (box.contains(x, y)) mode = MOVE;
+                else mode = DRAW;
+                dragging = true;
+                return true;
             case MotionEvent.ACTION_MOVE:
             case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
                 if (!dragging) return false;
-                box = new RectF(clamp(Math.min(sx, x)), clamp(Math.min(sy, y)), clamp(Math.max(sx, x)), clamp(Math.max(sy, y)));
-                if (e.getActionMasked() == MotionEvent.ACTION_UP) {
-                    dragging = false;
+                float dx = x - sx, dy = y - sy;
+                if (mode == DRAW) {
+                    box = new RectF(clamp(Math.min(sx, x)), clamp(Math.min(sy, y)), clamp(Math.max(sx, x)), clamp(Math.max(sy, y)));
+                } else if (mode == MOVE) {
+                    float w = start.width(), h = start.height();
+                    float l = Math.max(0, Math.min(1 - w, start.left + dx)), t = Math.max(0, Math.min(1 - h, start.top + dy));
+                    box = new RectF(l, t, l + w, t + h);
+                } else {
+                    RectF r = new RectF(start);
+                    if (dragL) r.left = clamp(start.left + dx);
+                    if (dragR) r.right = clamp(start.right + dx);
+                    if (dragT) r.top = clamp(start.top + dy);
+                    if (dragB) r.bottom = clamp(start.bottom + dy);
+                    if (r.right - r.left < 0.05f) { if (dragL) r.left = r.right - 0.05f; else r.right = r.left + 0.05f; }
+                    if (r.bottom - r.top < 0.05f) { if (dragT) r.top = r.bottom - 0.05f; else r.bottom = r.top + 0.05f; }
+                    box = r;
+                }
+                if (e.getActionMasked() != MotionEvent.ACTION_MOVE) {
+                    dragging = false; mode = NONE;
+                    getParent().requestDisallowInterceptTouchEvent(false);
                     if (box.width() < 0.05f || box.height() < 0.05f) box = new RectF(0.2f, 0.1f, 0.8f, 0.9f);
                     if (listener != null) listener.onBox(box);
                 }
@@ -64,6 +101,13 @@ public final class CageOverlayView extends View {
         RectF r = new RectF(box.left * w, box.top * h, box.right * w, box.bottom * h);
         c.drawRect(r, pFill);
         c.drawRect(r, pBox);
+        if (!locked) {                                            // corner + edge handles while editing
+            pDot.setColor(col);
+            float hs = 12f;
+            float[] hx = {r.left, r.right, r.left, r.right, r.centerX(), r.centerX(), r.left, r.right};
+            float[] hy = {r.top, r.top, r.bottom, r.bottom, r.top, r.bottom, r.centerY(), r.centerY()};
+            for (int i = 0; i < hx.length; i++) c.drawCircle(hx[i], hy[i], hs, pDot);
+        }
         if (cx >= 0) {
             pDot.setColor(detected ? col : 0xFF8B97AB);
             c.drawCircle(cx * w, cy * h, 14f, pDot);
