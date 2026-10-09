@@ -20,6 +20,8 @@ public final class CageOverlayView extends View {
     public int state = CageLogic.IDLE;
     public boolean detected = false, inside = true;
     public double shockLeft = 0;
+    public double motion = 0, motionMin = 0.15;           // camera-measured movement and the "dancing" threshold
+    public boolean showMotion = false;
     public float cx = -1, cy = -1;
     public android.graphics.Bitmap mask;                  // debug: translucent person mask
     private final Paint pMask = new Paint(Paint.FILTER_BITMAP_FLAG);
@@ -121,6 +123,24 @@ public final class CageOverlayView extends View {
         String where = !detected ? "NOT DETECTED" : inside ? "INSIDE" : "OUTSIDE";
         String t = !locked ? "DRAW THE CAGE" : state == CageLogic.SHOCK ? String.format("⚡ SHOCK %.0fs", shockLeft) : state == CageLogic.WARNING ? "⚠ " + where : where;
         c.drawText(t, 20, 46, pText);
+        if (showMotion && detected) {
+            // movement meter top-right: bar with the dancing threshold, badge MOVING / STILL
+            boolean moving = motion >= motionMin;
+            float bw = w * 0.32f, bh = 18f, bx = w - 20 - bw, by = 24;
+            Paint pb = new Paint(Paint.ANTI_ALIAS_FLAG);
+            pb.setColor(0xAA000000); c.drawRoundRect(bx - 8, by - 8, bx + bw + 8, by + bh + 36, 10, 10, pb);
+            pb.setColor(0xFF1C2231); c.drawRoundRect(bx, by, bx + bw, by + bh, 9, 9, pb);
+            pb.setColor(moving ? 0xFF4DFF88 : 0xFFFFB300);
+            float lv = (float) Math.min(1, motion / 0.6);                       // 60% silhouette change = full bar
+            c.drawRoundRect(bx, by, bx + bw * Math.max(0.03f, lv), by + bh, 9, 9, pb);
+            pb.setColor(0xFFFFFFFF);
+            float tx = bx + bw * (float) Math.min(1, motionMin / 0.6);
+            c.drawRect(tx - 2, by - 4, tx + 2, by + bh + 4, pb);
+            pText.setTextSize(26f);
+            pText.setColor(moving ? 0xFF4DFF88 : 0xFFFFB300);
+            c.drawText((moving ? "● MOVING " : "○ STILL ") + String.format("%.0f%%", motion * 100), bx, by + bh + 26, pText);
+            pText.setTextSize(34f); pText.setColor(0xFFFFFFFF);
+        }
         if (state == CageLogic.SHOCK && inside && detected) {
             // the player is back: say so loudly on screen while the punishment runs out
             Paint ban = new Paint(Paint.ANTI_ALIAS_FLAG);

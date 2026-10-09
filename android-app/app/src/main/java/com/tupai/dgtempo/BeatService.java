@@ -129,6 +129,27 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         if (cage != null) cage.box = new android.graphics.RectF(l, t, r, b);
     }
 
+    private PowerManager.WakeLock screenLock;
+
+    /** Chalk Cage: hold the screen on from the service too (belt and braces with the window flag). */
+    @SuppressWarnings("deprecation")
+    public void setScreenHold(boolean on) {
+        try {
+            if (on) {
+                if (screenLock == null) {
+                    PowerManager pm = getSystemService(PowerManager.class);
+                    screenLock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE, "dgtempo:cage-screen");
+                }
+                if (!screenLock.isHeld()) { screenLock.acquire(); log("screen: kept on for Chalk Cage"); }
+            } else if (screenLock != null && screenLock.isHeld()) {
+                screenLock.release();
+                log("screen: normal timeout again");
+            }
+        } catch (Exception e) {
+            log("screen hold: " + e.getMessage());
+        }
+    }
+
     public void setCageZoom(int x10) { settings.cageZoomX10 = x10; settings.save(this); if (cage != null) cage.setZoom(x10 / 10f); }
 
     public void setCageFront(boolean f) { settings.cageFront = f; settings.save(this); if (cage != null) cage.setFront(f); }
@@ -189,7 +210,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         settings.mode = mode;
         settings.save(this);
         ensureSensors();
-        if (mode == 2) startCage(); else stopCage();
+        if (mode == 2) startCage(); else { stopCage(); setScreenHold(false); }
         log(mode == 1 ? "gyro mode: tilt + movement drive the output" : mode == 2 ? "Chalk Cage mode" : "music mode");
         UiListener l = ui;
         if (l != null) main.post(l::onDevices);
@@ -620,6 +641,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         if (sched != null) { sched.shutdownNow(); sched = null; }
         if (motionSensors != null) motionSensors.stop();
         stopCage();
+        setScreenHold(false);
         stopAudio();
         stopProjection();
         if (wakeLock != null) { wakeLock.release(); wakeLock = null; }

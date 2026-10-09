@@ -483,6 +483,9 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         // camera game: never let the screen dim or lock while this tab is active
         if (mode == 2) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         else getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        mainRoot.setKeepScreenOn(mode == 2);                 // view-level flag as well (survives window recreation)
+        cagePreview.setKeepScreenOn(mode == 2);
+        if (svc != null) svc.setScreenHold(mode == 2);        // and a screen wake lock held by the service
         refreshCageButtons();
     }
 
@@ -579,6 +582,8 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         cageOverlay.state = o.state; cageOverlay.detected = o.detected; cageOverlay.inside = o.inside; cageOverlay.shockLeft = o.shockLeft;
         cageOverlay.cx = svc.cageCx; cageOverlay.cy = svc.cageCy;
         cageOverlay.mask = s.cageDebug && svc.cage != null ? svc.cage.maskBitmap : null;
+        cageOverlay.showMotion = cam && s.cageLocked;
+        cageOverlay.motion = svc.cageMotion; cageOverlay.motionMin = s.cageDanceMovePct / 100.0;
         cageOverlay.invalidate();
     }
 
