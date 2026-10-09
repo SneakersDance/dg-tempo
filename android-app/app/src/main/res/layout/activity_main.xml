@@ -6,6 +6,24 @@
 <com.tupai.dgtempo.PipView android:id="@+id/pipView"
     android:layout_width="match_parent" android:layout_height="match_parent" android:visibility="gone"/>
 
+<!-- full-screen Chalk Cage camera view with corner HUD -->
+<FrameLayout android:id="@+id/fullCage" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#000000" android:visibility="gone" android:keepScreenOn="true">
+    <androidx.camera.view.PreviewView android:id="@+id/fullPreview" android:layout_width="match_parent" android:layout_height="match_parent"/>
+    <com.tupai.dgtempo.CageOverlayView android:id="@+id/fullOverlay" android:layout_width="match_parent" android:layout_height="match_parent"/>
+    <TextView android:id="@+id/fullTL" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="top|start"
+        android:layout_margin="14dp" android:layout_marginTop="56dp" android:padding="8dp" android:background="#AA000000"
+        android:fontFamily="monospace" android:textSize="15sp" android:textStyle="bold" android:textColor="#FFFFFF"/>
+    <TextView android:id="@+id/fullBL" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="bottom|start"
+        android:layout_margin="14dp" android:padding="8dp" android:background="#AA000000"
+        android:fontFamily="monospace" android:textSize="14sp" android:textColor="#E8EEF8"/>
+    <TextView android:id="@+id/fullBR" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="bottom|end"
+        android:layout_margin="14dp" android:padding="8dp" android:background="#AA000000" android:gravity="end"
+        android:fontFamily="monospace" android:textSize="14sp" android:textColor="#E8EEF8"/>
+    <Button android:id="@+id/btnFullExit" style="@style/BtnGhost" android:layout_width="wrap_content" android:layout_height="40dp"
+        android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="14dp" android:textSize="12sp" android:text="@string/cage_exit_full"/>
+</FrameLayout>
+
 <LinearLayout android:id="@+id/mainRoot"
     android:layout_width="match_parent" android:layout_height="match_parent"
     android:orientation="vertical" android:fitsSystemWindows="true">
@@ -94,6 +112,7 @@
                         <Button android:id="@+id/btnCagePause" style="@style/BtnGhost" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/cage_pause"/>
                         <Button android:id="@+id/btnCageFlip" style="@style/BtnGhost" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/cage_flip"/>
                     </LinearLayout>
+                    <Button android:id="@+id/btnCageFull" style="@style/BtnGhost" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@string/cage_full"/>
                     <LinearLayout android:id="@+id/llCage" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
                 </LinearLayout>
             </LinearLayout>

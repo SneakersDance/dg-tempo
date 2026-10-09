@@ -264,4 +264,6 @@
     <string name="x_move_delay_random">每次新的计时开始时，上限在 1 秒到上方数值之间随机抽取，且不显示：跳的人只能看到已经跳了多久，看不到还剩多久。关闭 = 上限始终等于上方数值，并显示倒计时。</string>
     <string name="move_delay_show">显示抽到的上限</string>
     <string name="x_move_delay_show">开：状态栏和小窗在已跳时间旁显示本次随机上限，例如 ⏳ 12/23s，跳的人可以照着来。关：只显示已跳时间，上限由控制者保密。</string>
+    <string name="cage_full">全屏摄像头</string>
+    <string name="cage_exit_full">退出全屏</string>
 </resources>

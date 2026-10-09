@@ -56,7 +56,11 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     private LinearLayout llCage;
     private TextView tvCageStatus;
     private androidx.camera.view.PreviewView cagePreview;
-    private CageOverlayView cageOverlay;
+    private CageOverlayView cageOverlay, fullOverlay;
+    private View fullCage;
+    private androidx.camera.view.PreviewView fullPreview;
+    private TextView fullTL, fullBL, fullBR;
+    private boolean inFullCage = false;
     private static final int REQ_CAMERA = 3;
     private MotionReadoutView motionReadout;
 
@@ -141,6 +145,20 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             refreshCageButtons();
         });
         findViewById(R.id.btnCageFlip).setOnClickListener(v -> { if (svc != null) svc.setCageFront(!svc.settings.cageFront); });
+        fullCage = findViewById(R.id.fullCage);
+        fullPreview = findViewById(R.id.fullPreview);
+        fullPreview.setScaleType(androidx.camera.view.PreviewView.ScaleType.FIT_CENTER);
+        fullOverlay = findViewById(R.id.fullOverlay);
+        fullOverlay.listener = cageOverlay.listener;
+        fullTL = findViewById(R.id.fullTL); fullBL = findViewById(R.id.fullBL); fullBR = findViewById(R.id.fullBR);
+        findViewById(R.id.btnCageFull).setOnClickListener(v -> enterFullCage());
+        findViewById(R.id.btnFullExit).setOnClickListener(v -> exitFullCage());
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() {
+                if (inFullCage) exitFullCage();
+                else { setEnabled(false); getOnBackPressedDispatcher().onBackPressed(); setEnabled(true); }
+            }
+        });
 
         btnArm.setOnClickListener(v -> {
             if (svc == null) return;
@@ -501,15 +519,42 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> { if (svc != null && svc.cageMode()) buildControls(); }, 1500);   // zoom range known
     }
 
+    // ---- full-screen camera view ----------------------------------------------------------------------
+
+    private void enterFullCage() {
+        if (svc == null || svc.cage == null || inFullCage) return;
+        inFullCage = true;
+        mainRoot.setVisibility(View.GONE);
+        fullCage.setVisibility(View.VISIBLE);
+        androidx.core.view.WindowInsetsControllerCompat ic = androidx.core.view.WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        ic.setSystemBarsBehavior(androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        ic.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars());
+        svc.cage.attachPreview(fullPreview.getSurfaceProvider());
+        refreshCageButtons();
+        updateCageStatus();
+    }
+
+    private void exitFullCage() {
+        if (!inFullCage) return;
+        inFullCage = false;
+        fullCage.setVisibility(View.GONE);
+        mainRoot.setVisibility(View.VISIBLE);
+        androidx.core.view.WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .show(androidx.core.view.WindowInsetsCompat.Type.systemBars());
+        if (svc != null && svc.cage != null) svc.cage.attachPreview(cagePreview.getSurfaceProvider());
+    }
+
     private void refreshCageButtons() {
         if (svc == null) return;
         Settings s = svc.settings;
         btnCageLock.setText(s.cageLocked ? R.string.cage_unlock : R.string.cage_lock);
         btnCagePause.setText(s.cagePaused ? R.string.cage_resume : R.string.cage_pause);
         btnCagePause.setTextColor(s.cagePaused ? C_DANGER : C_TEXT);
-        cageOverlay.locked = s.cageLocked;
-        cageOverlay.box = new android.graphics.RectF(s.cageL, s.cageT, s.cageR, s.cageB);
-        cageOverlay.invalidate();
+        for (CageOverlayView ov : new CageOverlayView[]{cageOverlay, fullOverlay}) {
+            ov.locked = s.cageLocked;
+            ov.box = new android.graphics.RectF(s.cageL, s.cageT, s.cageR, s.cageB);
+            ov.invalidate();
+        }
     }
 
     /** CHALK CAGE tab controls. */
@@ -579,12 +624,31 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         else { txt = getString(o.inside ? R.string.cage_st_inside : R.string.cage_st_outside); col = o.inside ? C_GO : C_DANGER; }
         tvCageStatus.setText(txt);
         tvCageStatus.setTextColor(col);
-        cageOverlay.state = o.state; cageOverlay.detected = o.detected; cageOverlay.inside = o.inside; cageOverlay.shockLeft = o.shockLeft;
-        cageOverlay.cx = svc.cageCx; cageOverlay.cy = svc.cageCy;
-        cageOverlay.mask = s.cageDebug && svc.cage != null ? svc.cage.maskBitmap : null;
-        cageOverlay.showMotion = cam && s.cageLocked;
-        cageOverlay.motion = svc.cageMotion; cageOverlay.motionMin = s.cageDanceMovePct / 100.0;
-        cageOverlay.invalidate();
+        for (CageOverlayView ov : new CageOverlayView[]{cageOverlay, fullOverlay}) {
+            ov.state = o.state; ov.detected = o.detected; ov.inside = o.inside; ov.shockLeft = o.shockLeft;
+            ov.cx = svc.cageCx; ov.cy = svc.cageCy;
+            ov.mask = s.cageDebug && svc.cage != null ? svc.cage.maskBitmap : null;
+            ov.showMotion = cam && s.cageLocked;
+            ov.motion = svc.cageMotion; ov.motionMin = s.cageDanceMovePct / 100.0;
+            ov.invalidate();
+        }
+        if (inFullCage) {
+            // corner HUD: top-left = status; bottom-left = devices + rules; bottom-right = timers + flags
+            fullTL.setText(txt); fullTL.setTextColor(col);
+            BleDevice dc = svc.devices.get("coyote"), dop = svc.devices.get("opossum");
+            String lvl = s.cageShockLevel < 0 ? "MAX" : String.valueOf(s.cageShockLevel);
+            String[] vib = {"off", "always", "inside", "outside"};
+            fullBL.setText(String.format("C %s%s   O %s\nshock %s · %ds   warn %ds\nvib %s%s",
+                    dc != null && dc.connected ? String.valueOf(Math.max(0, dc.strength)) : "--", dc != null && dc.connected && dc.strength > 0 ? "⚡" : "",
+                    dop != null && dop.connected ? String.valueOf(Math.max(0, dop.strength)) : "--",
+                    lvl, s.cageShockS, s.cageWarnS, vib[Math.max(0, Math.min(3, s.cageVib))],
+                    s.cageDance ? String.format("   dance ≥%d%% / %ds", s.cageDanceMovePct, s.cageDanceGraceS) : ""));
+            String timers = o.state == CageLogic.SHOCK ? String.format("⚡ %.0f s", o.shockLeft)
+                    : o.state == CageLogic.WARNING ? String.format("⚠ %.0f s", o.warnLeft)
+                    : s.cageDance && o.stillS > 0.5 ? String.format("💃 %.0f / %d s", o.stillS, s.cageDanceGraceS) : "";
+            fullBR.setText((timers.isEmpty() ? "" : timers + "\n") + (s.cagePaused ? "PAUSED\n" : "") + (s.cageLocked ? "locked" : "editing")
+                    + (svc.armed ? " · armed" : " · not armed") + String.format("\nzoom %.1f×", s.cageZoomX10 / 10.0));
+        }
     }
 
     // ---- controls ---------------------------------------------------------------------------------
