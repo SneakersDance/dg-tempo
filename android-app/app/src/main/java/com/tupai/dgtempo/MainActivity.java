@@ -556,13 +556,16 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         if (!cam) { txt = getString(R.string.cage_st_nocam); col = C_DIM; }
         else if (s.cagePaused) { txt = getString(R.string.cage_st_paused); col = C_DANGER; }
         else if (!s.cageLocked) { txt = getString(R.string.cage_st_draw); col = C_ACCENT; }
-        else if (o.state == CageLogic.SHOCK) { txt = getString(R.string.cage_st_shock, o.shockLeft); col = C_POWER_COYOTE; }
+        else if (o.state == CageLogic.SHOCK) {
+            txt = getString(R.string.cage_st_shock, o.shockLeft) + (o.returnedDuringShock ? "  " + getString(R.string.cage_st_back) : "");
+            col = o.returnedDuringShock ? C_GO : C_POWER_COYOTE;
+        }
         else if (o.state == CageLogic.WARNING) { txt = getString(R.string.cage_st_warn, o.warnLeft); col = 0xFFFFB300; }
         else if (!o.detected) { txt = getString(R.string.cage_st_none); col = C_MUTED; }
         else { txt = getString(o.inside ? R.string.cage_st_inside : R.string.cage_st_outside); col = o.inside ? C_GO : C_DANGER; }
         tvCageStatus.setText(txt);
         tvCageStatus.setTextColor(col);
-        cageOverlay.state = o.state; cageOverlay.detected = o.detected; cageOverlay.inside = o.inside;
+        cageOverlay.state = o.state; cageOverlay.detected = o.detected; cageOverlay.inside = o.inside; cageOverlay.shockLeft = o.shockLeft;
         cageOverlay.cx = svc.cageCx; cageOverlay.cy = svc.cageCy;
         cageOverlay.mask = s.cageDebug && svc.cage != null ? svc.cage.maskBitmap : null;
         cageOverlay.invalidate();

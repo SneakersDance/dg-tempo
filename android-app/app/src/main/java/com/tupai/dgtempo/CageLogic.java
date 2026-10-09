@@ -23,6 +23,7 @@ public final class CageLogic {
     public static final class Out {
         public int state = IDLE;
         public boolean shock, vib, inside, detected;
+        public boolean returnedDuringShock;      // back inside while the punishment still runs
         public double warnLeft, shockLeft;
         public String announce;                  // "outside" / "returned" / null
     }
@@ -32,8 +33,9 @@ public final class CageLogic {
     private final boolean[] ring = new boolean[10];   // last ~1 s of outside/inside votes
     private int ringN = 0, ringPos = 0;
     private boolean wasOutside = false;
+    private boolean returnedInShock = false;
 
-    public void reset() { state = IDLE; ringN = ringPos = 0; wasOutside = false; }
+    public void reset() { state = IDLE; ringN = ringPos = 0; wasOutside = false; returnedInShock = false; }
 
     /**
      * @param area    person mask area as share of the frame (0..1)
@@ -63,15 +65,18 @@ public final class CageLogic {
                 break;
             case WARNING:
                 if (!isOutside) { state = INSIDE; o.announce = "returned"; }
-                else if (now - warnStart >= c.warnS) { state = SHOCK; shockUntil = now + c.shockS; }
+                else if (now - warnStart >= c.warnS) { state = SHOCK; shockUntil = now + c.shockS; returnedInShock = false; }
                 break;
             case SHOCK:
+                if (!isOutside && wasOutside && !returnedInShock) { returnedInShock = true; o.announce = "returned"; }   // acknowledge at once
+                if (isOutside) returnedInShock = false;
                 boolean over = now >= shockUntil;
                 if (c.shockMode == SHOCK_STOP_EARLY && !isOutside) over = true;
                 if (c.shockMode == SHOCK_UNTIL_RETURN && isOutside) over = false;
                 if (over) {
                     if (isOutside) { state = WARNING; warnStart = now; o.announce = "outside"; }
-                    else { state = INSIDE; o.announce = "returned"; }
+                    else { state = INSIDE; if (!returnedInShock) o.announce = "returned"; }
+                    returnedInShock = false;
                 }
                 break;
         }
@@ -80,6 +85,7 @@ public final class CageLogic {
 
         o.state = state;
         o.shock = state == SHOCK;
+        o.returnedDuringShock = state == SHOCK && !isOutside;
         o.warnLeft = state == WARNING ? Math.max(0, c.warnS - (now - warnStart)) : 0;
         o.shockLeft = state == SHOCK ? Math.max(0, shockUntil - now) : 0;
         switch (c.vibMode) {

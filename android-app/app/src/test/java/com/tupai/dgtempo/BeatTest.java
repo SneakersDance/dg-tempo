@@ -400,10 +400,14 @@ public class BeatTest {
         // stays out past the warning: shock starts and lasts 30 s even after coming back (full punishment)
         for (int i = 0; i < 35; i++) { o = g.step(t, c, true, 0.2, 0.9); t += 0.1; }
         assertEquals(CageLogic.SHOCK, o.state); assertTrue(o.shock);
-        for (int i = 0; i < 50; i++) { o = g.step(t, c, true, 0.2, 0.0); t += 0.1; }   // back inside 5 s in
+        int returnedAnn = 0;
+        for (int i = 0; i < 50; i++) { o = g.step(t, c, true, 0.2, 0.0); t += 0.1; if ("returned".equals(o.announce)) returnedAnn++; }   // back inside 5 s in
         assertTrue("full punishment keeps shocking after return", o.shock);
-        for (int i = 0; i < 260; i++) { o = g.step(t, c, true, 0.2, 0.0); t += 0.1; }
+        assertTrue("return is acknowledged while the shock continues", o.returnedDuringShock);
+        assertEquals("announced once, immediately", 1, returnedAnn);
+        for (int i = 0; i < 260; i++) { o = g.step(t, c, true, 0.2, 0.0); t += 0.1; if ("returned".equals(o.announce)) returnedAnn++; }
         assertFalse(o.shock); assertEquals(CageLogic.INSIDE, o.state);
+        assertEquals("not announced again when the shock ends", 1, returnedAnn);
         // stop-early mode: returning ends the shock
         g.reset(); c.shockMode = CageLogic.SHOCK_STOP_EARLY; t = 0;
         for (int i = 0; i < 20; i++) g.step(t += 0.1, c, true, 0.2, 0.0);

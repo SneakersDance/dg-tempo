@@ -250,4 +250,5 @@
     <string name="end_tele">更近 ▶</string>
     <string name="cage_debug">调试：显示识别出的身体</string>
     <string name="x_cage_debug">在画面上用半透明绿色画出检测器认为是人的区域，便于确认各种姿势下都能看到玩家，且没有把家具或阴影当成人体。</string>
+    <string name="cage_st_back">✓ 已回到框内，惩罚继续</string>
 </resources>
