@@ -639,7 +639,9 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         addSwitch(llCoyote, R.string.move_delay, R.string.x_move_delay, s.moveDelayOn, v -> { svc.setMoveDelay(v); buildControls(); });
         if (s.moveDelayOn) {
             addSeek(llCoyote, R.string.move_delay_max, 0, R.string.end_sooner, R.string.end_rarer, 5, 300, s.moveDelayMaxS, v -> v + " s", v -> { s.moveDelayMaxS = v; changed(); });
-            addSwitch(llCoyote, R.string.move_delay_random, R.string.x_move_delay_random, s.moveDelayRandom, v -> { s.moveDelayRandom = v; changed(); });
+            addSwitch(llCoyote, R.string.move_delay_random, R.string.x_move_delay_random, s.moveDelayRandom, v -> { s.moveDelayRandom = v; changed(); buildControls(); });
+            if (s.moveDelayRandom)
+                addSwitch(llCoyote, R.string.move_delay_show, R.string.x_move_delay_show, s.moveDelayShowLimit, v -> { s.moveDelayShowLimit = v; changed(); });
             addSeek(llCoyote, R.string.move_delay_need, 0, R.string.end_still, R.string.end_vigorous, 5, 100, s.moveDelayNeedPct, v -> v + " %", v -> { s.moveDelayNeedPct = v; changed(); });
             addSwitch(llCoyote, R.string.move_delay_final, R.string.x_move_delay_final, s.moveDelayFinal, v -> { s.moveDelayFinal = v; changed(); buildControls(); });
             if (s.moveDelayFinal)

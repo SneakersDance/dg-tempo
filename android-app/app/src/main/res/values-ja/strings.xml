@@ -262,4 +262,6 @@
     <string name="cage_st_still">💃 静止 %1$.0f / %2$d 秒</string>
     <string name="move_delay_random">上限をランダムに（1 秒〜上の値）</string>
     <string name="x_move_delay_random">新しい保留が始まるたびに、上限は 1 秒〜上の値の間でランダムに決まり、表示されません。跳ぶ側はどれだけ動いたかしか見えず、残り時間は分かりません。オフ＝上限は常に上の値で、カウントダウンに表示されます。</string>
+    <string name="move_delay_show">抽選した上限を表示</string>
+    <string name="x_move_delay_show">オン：ステータスと小窓に経過時間と今回のランダム上限を表示（例 ⏳ 12/23s）。跳ぶ側はそれに合わせて動けます。オフ：経過時間のみ表示し、上限はコントローラーの秘密のまま。</string>
 </resources>

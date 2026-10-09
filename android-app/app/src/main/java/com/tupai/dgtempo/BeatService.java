@@ -305,8 +305,9 @@ public final class BeatService extends Service implements BleDevice.Listener, an
                 delayNote = "";
                 return;
             }
-            delayNote = settings.moveDelayRandom ? String.format("⏳ %.0fs", holdS)        // random: the limit stays hidden
-                                                 : String.format("⏳ %.0f/%ds", holdS, settings.moveDelayMaxS);
+            delayNote = settings.moveDelayRandom && !settings.moveDelayShowLimit
+                    ? String.format("⏳ %.0fs", holdS)                                   // random + hidden: elapsed only
+                    : String.format("⏳ %.0f/%.0fs", holdS, delayLimit);                 // fixed, or random shown
         } else {
             if (holdS > 0) log("movement stopped: Coyote released");
             holdS = 0; delayNote = "";

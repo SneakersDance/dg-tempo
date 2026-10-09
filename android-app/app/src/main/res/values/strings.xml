@@ -263,4 +263,6 @@
     <string name="cage_st_still">💃 still %1$.0f / %2$d s</string>
     <string name="move_delay_random">Random limit (1 s up to the value above)</string>
     <string name="x_move_delay_random">Every time a new hold starts, the limit is drawn at random between 1 second and the value above, and it is not shown: the jumper sees only how long they have been moving, never how long is left. Off: the limit is always exactly the value above and the countdown shows it.</string>
+    <string name="move_delay_show">Show the drawn limit</string>
+    <string name="x_move_delay_show">On: the status and the mini window show the current random limit next to the elapsed time, e.g. ⏳ 12/23s, so the jumper can play to it. Off: only the elapsed time is shown and the limit stays the controller\'s secret.</string>
 </resources>
