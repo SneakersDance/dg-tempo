@@ -404,7 +404,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
     private volatile int coyoteForceCount = 0;         // pulses in the train
     private volatile boolean coyoteForceMax = false;   // train at max strength
     // timer engine state
-    private double winStart = 0, winMaxBpm = 0, debtSince = 0;
+    private double winStart = 0, winMaxBpm = 0, debtSince = 0, lastTimerTick = 0;
     private int owed = 0;
     private double nextRandomAt = 0;
     private int randLoUsed = -1, randHiUsed = -1;
@@ -464,7 +464,17 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         BleDevice dc = devices.get("coyote");
         boolean ready = settings.coyoteTimerMode != 0 && armed && settings.coyoteEnabled && dc != null && dc.connected;
         if (!ready) { winStart = 0; winMaxBpm = 0; owed = 0; nextRandomAt = 0; timerNote = ""; return; }
-        boolean sound = musicOn && tracker.locked();        // timers fire only on real music: sustained sound AND a locked beat
+        boolean sound = musicStable(now);                   // timers run only on real music
+        double dt = lastTimerTick == 0 ? 0 : Math.min(0.5, now - lastTimerTick);
+        lastTimerTick = now;
+        if (!sound) {
+            // no music: the timer is frozen - nothing counts, nothing is owed, nothing can fire
+            if (nextRandomAt > 0) nextRandomAt += dt;
+            if (winStart > 0) winStart += dt;
+            owed = 0; winMaxBpm = 0;
+            timerNote = "waiting for music";
+            return;
+        }
         if (settings.coyoteTimerMode == 2) {
             int lo = Math.min(settings.coyoteRandMinS, settings.coyoteRandMaxS), hi = Math.max(settings.coyoteRandMinS, settings.coyoteRandMaxS);
             if (nextRandomAt == 0 || lo != randLoUsed || hi != randHiUsed) {   // first time, or the range was changed: redraw
@@ -1289,11 +1299,18 @@ public final class BeatService extends Service implements BleDevice.Listener, an
     private static final double SOUND_SUSTAIN_S = 1.0;
     public volatile boolean musicOn = false;
 
+    private double lockedSince = -1;
+    private static final double LOCK_STABLE_S = 2.0;
+
     private void soundGateTick(double now) {
         if (detector.soundPresent()) { if (soundSince < 0) soundSince = now; }
         else soundSince = -1;
         musicOn = soundSince >= 0 && now - soundSince >= SOUND_SUSTAIN_S;
+        if (tracker.locked()) { if (lockedSince < 0) lockedSince = now; } else lockedSince = -1;
     }
+
+    /** Real music for the timers: sustained sound AND a beat lock that has held for 2 s (no momentary speech locks). */
+    public boolean musicStable(double now) { return musicOn && lockedSince >= 0 && now - lockedSince >= LOCK_STABLE_S; }
 
     /** Output history per device kind, one value per 25 ms slot (0..1 of the device cap), 3 s ring. */
     public static final int HIST_SLOTS = 120;
