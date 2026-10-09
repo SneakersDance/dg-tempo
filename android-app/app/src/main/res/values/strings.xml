@@ -249,4 +249,6 @@
     <string name="cage_zoom">Camera zoom</string>
     <string name="end_wide">◀ wider (more room)</string>
     <string name="end_tele">closer ▶</string>
+    <string name="cage_debug">Debug: show the detected body</string>
+    <string name="x_cage_debug">Paints what the detector thinks is a person in translucent green on the preview, so you can check it sees the player in each posture and is not confusing furniture or shadows for a body.</string>
 </resources>

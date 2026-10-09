@@ -523,6 +523,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         addChoice(llCage, R.string.cage_shock_mode, new int[]{R.string.cage_mode_full, R.string.cage_mode_early, R.string.cage_mode_until}, s.cageShockMode, v -> { s.cageShockMode = v; changed(); });
         addChoice(llCage, R.string.cage_vib, new int[]{R.string.cage_vib_off, R.string.cage_vib_always, R.string.cage_vib_inside, R.string.cage_vib_outside}, s.cageVib, v -> { s.cageVib = v; changed(); });
         addSwitch(llCage, R.string.cage_voice, 0, s.cageVoice, v -> { s.cageVoice = v; changed(); });
+        addSwitch(llCage, R.string.cage_debug, R.string.x_cage_debug, s.cageDebug, v -> { s.cageDebug = v; changed(); });
         addSwitch(llCage, R.string.cage_notdet, 0, s.cageNotDetOut, v -> { s.cageNotDetOut = v; changed(); });
         addSeek(llCage, R.string.cage_outside_pct, 0, R.string.end_hand, R.string.end_body, 5, 80, s.cageOutsidePct, v -> v + " %", v -> { s.cageOutsidePct = v; changed(); });
         addSeek(llCage, R.string.cage_min_area, 0, R.string.end_small, R.string.end_big, 1, 30, s.cageMinAreaPct, v -> v + " %", v -> { s.cageMinAreaPct = v; changed(); });
@@ -563,6 +564,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         tvCageStatus.setTextColor(col);
         cageOverlay.state = o.state; cageOverlay.detected = o.detected; cageOverlay.inside = o.inside;
         cageOverlay.cx = svc.cageCx; cageOverlay.cy = svc.cageCy;
+        cageOverlay.mask = s.cageDebug && svc.cage != null ? svc.cage.maskBitmap : null;
         cageOverlay.invalidate();
     }
 

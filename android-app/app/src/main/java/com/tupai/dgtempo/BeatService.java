@@ -110,6 +110,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         cage.box = new android.graphics.RectF(settings.cageL, settings.cageT, settings.cageR, settings.cageB);
         cage.listener = (area, share, cx, cy) -> { cageArea = area; cageOutsideShare = share; cageCx = cx; cageCy = cy; };
         cage.setZoom(settings.cageZoomX10 / 10f);
+        cage.debugMask = settings.cageDebug;
         if (!cage.running) cage.start(settings.cageFront);
         if (tone == null) try { tone = new android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 90); } catch (Exception ignored) {}
         cageLogic.reset();
@@ -1187,6 +1188,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         settings.save(this);
         applySensitivity();
         if (motionSensors != null) motionSensors.dipThreshold = settings.dipThrX10 / 10.0;
+        if (cage != null) cage.debugMask = settings.cageDebug;
     }
 
     private void applySensitivity() {

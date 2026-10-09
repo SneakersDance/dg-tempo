@@ -248,4 +248,6 @@
     <string name="cage_zoom">カメラズーム</string>
     <string name="end_wide">◀ 広く（部屋全体）</string>
     <string name="end_tele">寄る ▶</string>
+    <string name="cage_debug">デバッグ：検出した体を表示</string>
+    <string name="x_cage_debug">検出器が人と判断した領域を半透明の緑でプレビューに描きます。各姿勢でプレイヤーが見えているか、家具や影を人と誤認していないかを確認できます。</string>
 </resources>

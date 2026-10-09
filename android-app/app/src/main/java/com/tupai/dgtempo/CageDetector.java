@@ -42,6 +42,8 @@ public final class CageDetector {
     public volatile Listener listener;
     public volatile long frames = 0;
     public volatile int maskW = 0, maskH = 0;
+    public volatile boolean debugMask = false;           // build a small translucent bitmap of the person mask
+    public volatile android.graphics.Bitmap maskBitmap;
     private long lastAt = 0;
     private volatile Preview.SurfaceProvider pendingSurface;
     private androidx.camera.core.Camera camera;
@@ -143,11 +145,17 @@ public final class CageDetector {
         long person = 0, outside = 0;
         double sx = 0, sy = 0;
         int step = Math.max(1, w / 128);                      // sample ~128 columns: cheap and plenty
+        int gw = (w + step - 1) / step, gh = (h + step - 1) / step;
+        int[] px = debugMask ? new int[gw * gh] : null;
         for (int y = 0; y < h; y += step) {
             float fy = (y + 0.5f) / h;
             boolean yIn = fy >= b.top && fy <= b.bottom;
             for (int x = 0; x < w; x += step) {
                 float conf = buf.get(y * w + x);
+                if (px != null && conf >= 0.6f) {
+                    int gx = x / step; if (front) gx = gw - 1 - gx;       // mirror like the preview
+                    px[(y / step) * gw + gx] = conf >= 0.85f ? 0x9900FF88 : 0x6600FF88;
+                }
                 if (conf < 0.6f) continue;
                 person++;
                 float fx = (x + 0.5f) / w;
@@ -156,7 +164,11 @@ public final class CageDetector {
             }
         }
         frames++;
-        long cells = ((h + step - 1) / step) * (long) ((w + step - 1) / step);
+        if (px != null) {
+            android.graphics.Bitmap bm = android.graphics.Bitmap.createBitmap(px, gw, gh, android.graphics.Bitmap.Config.ARGB_8888);
+            maskBitmap = bm;
+        } else maskBitmap = null;
+        long cells = (long) gh * gw;
         double area = person / (double) Math.max(1, cells);
         double share = person == 0 ? 1.0 : outside / (double) person;
         float cx = person == 0 ? -1 : (float) (sx / person), cy = person == 0 ? -1 : (float) (sy / person);

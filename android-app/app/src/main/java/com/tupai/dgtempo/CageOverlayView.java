@@ -20,6 +20,8 @@ public final class CageOverlayView extends View {
     public int state = CageLogic.IDLE;
     public boolean detected = false, inside = true;
     public float cx = -1, cy = -1;
+    public android.graphics.Bitmap mask;                  // debug: translucent person mask
+    private final Paint pMask = new Paint(Paint.FILTER_BITMAP_FLAG);
     public Listener listener;
     private float sx, sy; private boolean dragging;
     private final Paint pBox = new Paint(Paint.ANTI_ALIAS_FLAG), pFill = new Paint(), pDot = new Paint(Paint.ANTI_ALIAS_FLAG), pText = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -95,7 +97,10 @@ public final class CageOverlayView extends View {
     @Override
     protected void onDraw(Canvas c) {
         int w = getWidth(), h = getHeight();
-        int col = !locked ? 0xFF00E5FF : state == CageLogic.SHOCK ? 0xFFFF2A4A : state == CageLogic.WARNING ? 0xFFFFB300 : inside ? 0xFF4DFF88 : 0xFFFF2A4A;
+        android.graphics.Bitmap m = mask;
+        if (m != null) c.drawBitmap(m, null, new RectF(0, 0, w, h), pMask);
+        // box colour = where the player IS (green inside / red outside / amber in the warning), label = what is happening
+        int col = !locked ? 0xFF00E5FF : state == CageLogic.WARNING ? 0xFFFFB300 : !detected ? 0xFF8B97AB : inside ? 0xFF4DFF88 : 0xFFFF2A4A;
         pBox.setColor(col);
         pFill.setColor((col & 0x00FFFFFF) | 0x22000000);
         RectF r = new RectF(box.left * w, box.top * h, box.right * w, box.bottom * h);
@@ -112,7 +117,13 @@ public final class CageOverlayView extends View {
             pDot.setColor(detected ? col : 0xFF8B97AB);
             c.drawCircle(cx * w, cy * h, 14f, pDot);
         }
-        String t = !locked ? "DRAW THE CAGE" : state == CageLogic.SHOCK ? "⚡ SHOCK" : state == CageLogic.WARNING ? "⚠ OUTSIDE" : detected ? (inside ? "INSIDE" : "OUTSIDE") : "NOT DETECTED";
+        String where = !detected ? "NOT DETECTED" : inside ? "INSIDE" : "OUTSIDE";
+        String t = !locked ? "DRAW THE CAGE" : state == CageLogic.SHOCK ? "⚡ SHOCK · " + where : state == CageLogic.WARNING ? "⚠ " + where : where;
+        if (state == CageLogic.SHOCK) {                         // red pulsing frame while the shock runs, whatever the position
+            pBox.setColor(((System.currentTimeMillis() / 250) % 2 == 0) ? 0xFFFF2A4A : 0x88FF2A4A);
+            c.drawRect(3, 3, w - 3, h - 3, pBox);
+            postInvalidateDelayed(120);
+        }
         c.drawText(t, 20, 46, pText);
     }
 }
