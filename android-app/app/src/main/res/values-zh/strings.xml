@@ -245,4 +245,7 @@
     <string name="end_small">◀ 很小 / 很远</string>
     <string name="end_big">很大 / 很近 ▶</string>
     <string name="cage_howto">调整区域：拖动边或角上的圆点可缩放，在框内拖动可整体移动，在画面空白处拖动可重新画一个框。给玩家周围留一些余量。合适后点"锁定区域"；"编辑区域"可重新解锁。锁定后区域固定，滚动页面不会改变它。</string>
+    <string name="cage_zoom">摄像头缩放</string>
+    <string name="end_wide">◀ 更广（看到更多）</string>
+    <string name="end_tele">更近 ▶</string>
 </resources>

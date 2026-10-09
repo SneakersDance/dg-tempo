@@ -492,6 +492,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         svc.setMode(2);
         showTab(2);
         if (svc.cage != null) svc.cage.attachPreview(cagePreview.getSurfaceProvider());
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> { if (svc != null && svc.cageMode()) buildControls(); }, 1500);   // zoom range known
     }
 
     private void refreshCageButtons() {
@@ -507,6 +508,11 @@ public final class MainActivity extends AppCompatActivity implements BeatService
 
     /** CHALK CAGE tab controls. */
     private void buildCageControls(Settings s) {
+        // zoom: the camera's own range (ultra-wide phones go below 1x so the whole room fits)
+        int zmin = 5, zmax = 80;
+        if (svc.cage != null && svc.cage.running) { zmin = Math.round(svc.cage.zoomMin * 10); zmax = Math.round(svc.cage.zoomMax * 10); }
+        addSeek(llCage, R.string.cage_zoom, 0, R.string.end_wide, R.string.end_tele, zmin, Math.max(zmin + 1, zmax),
+                Math.max(zmin, Math.min(zmax, s.cageZoomX10)), v -> String.format("%.1f×", v / 10.0), v -> svc.setCageZoom(v));
         addSeek(llCage, R.string.cage_level, 0, R.string.end_gentle, R.string.end_hard, 0, 200, Math.max(0, s.cageShockLevel),
                 v -> v == 0 ? "MAX" : String.valueOf(v), v -> { s.cageShockLevel = v == 0 ? -1 : v; changed(); }, C_POWER_COYOTE);
         addSeek(llCage, R.string.cage_shock_s, 0, R.string.end_short, R.string.end_long, 1, 120, s.cageShockS, v -> v + " s", v -> { s.cageShockS = v; changed(); }, C_POWER_COYOTE);

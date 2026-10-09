@@ -245,4 +245,7 @@
     <string name="end_small">◀ 小さい / 遠い</string>
     <string name="end_big">大きい / 近い ▶</string>
     <string name="cage_howto">枠の調整：辺や角の丸いハンドルをドラッグするとサイズ変更、枠の中をドラッグすると移動、画面の空いた所をドラッグすると新しい枠を描画。プレイヤーの周りに余裕を持たせてください。良ければ「枠をロック」。「枠を編集」で再び解除。ロック中は固定され、ページをスクロールしても変わりません。</string>
+    <string name="cage_zoom">カメラズーム</string>
+    <string name="end_wide">◀ 広く（部屋全体）</string>
+    <string name="end_tele">寄る ▶</string>
 </resources>

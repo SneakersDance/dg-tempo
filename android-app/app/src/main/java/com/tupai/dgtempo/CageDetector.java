@@ -44,6 +44,9 @@ public final class CageDetector {
     public volatile int maskW = 0, maskH = 0;
     private long lastAt = 0;
     private volatile Preview.SurfaceProvider pendingSurface;
+    private androidx.camera.core.Camera camera;
+    public volatile float zoomMin = 1f, zoomMax = 1f, zoom = 1f;
+    private float wantedZoom = 1f;
 
     public CageDetector(Context ctx, LifecycleOwner owner) { this.ctx = ctx; this.owner = owner; }
 
@@ -78,8 +81,11 @@ public final class CageDetector {
         analysis.setAnalyzer(exec, this::analyze);
         CameraSelector sel = front ? CameraSelector.DEFAULT_FRONT_CAMERA : CameraSelector.DEFAULT_BACK_CAMERA;
         try {
-            provider.bindToLifecycle(owner, sel, preview, analysis);
+            camera = provider.bindToLifecycle(owner, sel, preview, analysis);
             running = true;
+            androidx.camera.core.ZoomState z = camera.getCameraInfo().getZoomState().getValue();
+            if (z != null) { zoomMin = z.getMinZoomRatio(); zoomMax = z.getMaxZoomRatio(); }
+            setZoom(wantedZoom);
         } catch (Exception e) {
             android.util.Log.e("CageDetector", "bind", e);
             running = false;
@@ -91,6 +97,16 @@ public final class CageDetector {
         pendingSurface = sp;
         Preview p = preview;
         if (p != null) androidx.core.content.ContextCompat.getMainExecutor(ctx).execute(() -> p.setSurfaceProvider(sp));
+    }
+
+    /** Zoom ratio; below 1.0 means the ultra-wide lens on phones that have one. Clamped to what the camera offers. */
+    public void setZoom(float ratio) {
+        wantedZoom = ratio;
+        androidx.camera.core.Camera cam = camera;
+        if (cam == null) return;
+        float r = Math.max(zoomMin, Math.min(zoomMax, ratio));
+        zoom = r;
+        androidx.core.content.ContextCompat.getMainExecutor(ctx).execute(() -> cam.getCameraControl().setZoomRatio(r));
     }
 
     public void setFront(boolean f) {

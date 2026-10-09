@@ -109,6 +109,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         startForegroundCompat(projection != null);          // re-declare types incl. camera
         cage.box = new android.graphics.RectF(settings.cageL, settings.cageT, settings.cageR, settings.cageB);
         cage.listener = (area, share, cx, cy) -> { cageArea = area; cageOutsideShare = share; cageCx = cx; cageCy = cy; };
+        cage.setZoom(settings.cageZoomX10 / 10f);
         if (!cage.running) cage.start(settings.cageFront);
         if (tts == null) tts = new android.speech.tts.TextToSpeech(this, st -> { ttsReady = st == android.speech.tts.TextToSpeech.SUCCESS; if (ttsReady) try { tts.setLanguage(getResources().getConfiguration().getLocales().get(0)); } catch (Exception ignored) {} });
         if (tone == null) try { tone = new android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 90); } catch (Exception ignored) {}
@@ -127,6 +128,8 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         settings.save(this);
         if (cage != null) cage.box = new android.graphics.RectF(l, t, r, b);
     }
+
+    public void setCageZoom(int x10) { settings.cageZoomX10 = x10; settings.save(this); if (cage != null) cage.setZoom(x10 / 10f); }
 
     public void setCageFront(boolean f) { settings.cageFront = f; settings.save(this); if (cage != null) cage.setFront(f); }
 

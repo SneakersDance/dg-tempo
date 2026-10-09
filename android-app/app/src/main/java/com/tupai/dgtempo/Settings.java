@@ -76,7 +76,8 @@ public final class Settings {
     public boolean cageLocked = false, cageFront = false, cagePaused = false, cageVoice = true, cageNotDetOut = true;
     public int cageShockLevel = -1;                        // -1 = Coyote MAX (channel A max), else absolute 0-200
     public int cageShockS = 30, cageWarnS = 3, cageShockMode = CageLogic.SHOCK_FULL, cageVib = CageLogic.VIB_INSIDE;
-    public int cageOutsidePct = 20, cageMinAreaPct = 2;                       // % of "full movement" that counts as moving                            // gyro mode Opossum: 0 follow tilt/movement, 1 always on, 2 always off
+    public int cageOutsidePct = 20, cageMinAreaPct = 2;
+    public int cageZoomX10 = 10;                            // camera zoom ratio x10 (10 = 1.0x; <10 = ultra-wide if available)                       // % of "full movement" that counts as moving                            // gyro mode Opossum: 0 follow tilt/movement, 1 always on, 2 always off
     public int tiltRel(String kind) { return "coyote".equals(kind) ? coyoteTiltRel : vibTiltRel; }
     public int moveRel(String kind) { return "coyote".equals(kind) ? coyoteMoveRel : vibMoveRel; }
 
@@ -152,6 +153,7 @@ public final class Settings {
         s.cageShockLevel = p.getInt("cageShockLevel", -1); s.cageShockS = p.getInt("cageShockS", 30); s.cageWarnS = p.getInt("cageWarnS", 3);
         s.cageShockMode = p.getInt("cageShockMode", CageLogic.SHOCK_FULL); s.cageVib = p.getInt("cageVib", CageLogic.VIB_INSIDE);
         s.cageOutsidePct = p.getInt("cageOutsidePct", 20); s.cageMinAreaPct = p.getInt("cageMinAreaPct", 2);
+        s.cageZoomX10 = p.getInt("cageZoomX10", 10);
         s.vibLink = p.getBoolean("vibLink", true);
 
         s.vibFollowTempo = p.getBoolean("vibFollowTempo", s.vibFollowTempo);
@@ -244,7 +246,7 @@ public final class Settings {
                 .putFloat("cageL", cageL).putFloat("cageT", cageT).putFloat("cageR", cageR).putFloat("cageB", cageB)
                 .putBoolean("cageLocked", cageLocked).putBoolean("cageFront", cageFront).putBoolean("cageVoice", cageVoice).putBoolean("cageNotDetOut", cageNotDetOut)
                 .putInt("cageShockLevel", cageShockLevel).putInt("cageShockS", cageShockS).putInt("cageWarnS", cageWarnS)
-                .putInt("cageShockMode", cageShockMode).putInt("cageVib", cageVib).putInt("cageOutsidePct", cageOutsidePct).putInt("cageMinAreaPct", cageMinAreaPct)
+                .putInt("cageShockMode", cageShockMode).putInt("cageVib", cageVib).putInt("cageOutsidePct", cageOutsidePct).putInt("cageMinAreaPct", cageMinAreaPct).putInt("cageZoomX10", cageZoomX10)
                 .putBoolean("vibFollowTempo", vibFollowTempo)
                 .putBoolean("autoStrength", autoStrength)
                 .putFloat("bpmLo", (float) bpmLo).putFloat("bpmHi", (float) bpmHi)
