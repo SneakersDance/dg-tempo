@@ -99,7 +99,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
     public CageDetector cage;
     public final CageLogic cageLogic = new CageLogic();
     public volatile CageLogic.Out cageOut = new CageLogic.Out();
-    public volatile double cageArea = 0, cageOutsideShare = 1; public volatile float cageCx = -1, cageCy = -1;
+    public volatile double cageArea = 0, cageOutsideShare = 1, cageMotion = 0; public volatile float cageCx = -1, cageCy = -1;
     private android.media.MediaPlayer voice;             // bundled announcement clips (no TTS engine needed)
     private android.media.ToneGenerator tone;
 
@@ -108,7 +108,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         if (checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) { log("cage: camera permission not granted"); return; }
         startForegroundCompat(projection != null);          // re-declare types incl. camera
         cage.box = new android.graphics.RectF(settings.cageL, settings.cageT, settings.cageR, settings.cageB);
-        cage.listener = (area, share, cx, cy) -> { cageArea = area; cageOutsideShare = share; cageCx = cx; cageCy = cy; };
+        cage.listener = (area, share, cx, cy, motion) -> { cageArea = area; cageOutsideShare = share; cageCx = cx; cageCy = cy; cageMotion = motion; };
         cage.setZoom(settings.cageZoomX10 / 10f);
         cage.debugMask = settings.cageDebug;
         if (!cage.running) cage.start(settings.cageFront);
@@ -162,19 +162,25 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         c.warnS = settings.cageWarnS; c.shockS = settings.cageShockS; c.shockMode = settings.cageShockMode; c.vibMode = settings.cageVib;
         c.outsideShare = settings.cageOutsidePct / 100.0; c.minArea = settings.cageMinAreaPct / 100.0;
         c.notDetectedIsOutside = settings.cageNotDetOut; c.paused = settings.cagePaused; c.locked = settings.cageLocked;
+        c.dance = settings.cageDance; c.danceGraceS = settings.cageDanceGraceS; c.danceMoveMin = settings.cageDanceMovePct / 100.0;
         return c;
     }
 
     private void cageTick(double now) {
         boolean camOk = cage != null && cage.running;
-        CageLogic.Out o = cageLogic.step(now, cageConfig(), armed && camOk, camOk ? cageArea : 0, cageOutsideShare);
+        CageLogic.Out o = cageLogic.step(now, cageConfig(), armed && camOk, camOk ? cageArea : 0, cageOutsideShare, cageMotion);
         if (o.announce != null) { log("cage: " + o.announce); say(o.announce); }
         cageOut = o;
     }
 
     /** Strength a device gets in cage mode (Coyote: configured shock level; Opossum: its channel max). */
     private int cageStrength(String kind, Settings.ChannelCfg c) {
-        if ("coyote".equals(kind)) return Math.max(0, Math.min(c.max, settings.cageShockLevel < 0 ? c.max : settings.cageShockLevel));
+        if ("coyote".equals(kind)) {
+            CageLogic.Out o = cageOut;
+            int lvl = settings.cageShockLevel;
+            if (o.danceShock && !o.shock) lvl = settings.cageDanceLevel < 0 ? settings.cageShockLevel : settings.cageDanceLevel;
+            return Math.max(0, Math.min(c.max, lvl < 0 ? c.max : lvl));
+        }
         return settings.vibFollowTempo ? c.max : c.manual;
     }
 
@@ -956,6 +962,8 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         if (settings.cagePaused) return "paused";
         if (!settings.cageLocked) return "draw box";
         if (o.state == CageLogic.SHOCK) return String.format("⚡%.0fs", o.shockLeft);
+        if (o.danceShock) return "⚡dance!";
+        if (settings.cageDance && o.stillS > 0) return String.format("still %.0fs", o.stillS);
         if (o.state == CageLogic.WARNING) return String.format("⚠%.0fs", o.warnLeft);
         return o.detected ? (o.inside ? "inside" : "outside") : "no one";
     }
@@ -1208,7 +1216,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         double now = System.nanoTime() / 1e9;
         if (now < testBurstUntil) return true;                 // test pulse: every connected device fires
         if (gyroMode()) return drive(kind) >= 0.05;            // gyro: tilt/movement decide, music ignored
-        if (cageMode()) return "coyote".equals(kind) ? cageOut.shock : cageOut.vib;
+        if (cageMode()) return "coyote".equals(kind) ? (cageOut.shock || cageOut.danceShock) : cageOut.vib;
         if ("coyote".equals(kind) && now < maxShockUntil) return true;      // movement-delay max shock
         if ("coyote".equals(kind) && coyoteHeld()) return false;             // movement holds the Coyote off
         if ("coyote".equals(kind) && now < coyoteForceUntil) return true;   // timer pulse train in progress

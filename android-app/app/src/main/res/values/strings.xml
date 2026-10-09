@@ -252,4 +252,13 @@
     <string name="cage_debug">Debug: show the detected body</string>
     <string name="x_cage_debug">Paints what the detector thinks is a person in translucent green on the preview, so you can check it sees the player in each posture and is not confusing furniture or shadows for a body.</string>
     <string name="cage_st_back">✓ returned, punishment continues</string>
+    <string name="cage_dance_title">Dance mode</string>
+    <string name="cage_dance">Shock when not dancing (standing still)</string>
+    <string name="x_cage_dance">Movement is measured from the camera: how much the player\'s silhouette changes between frames. Hold still longer than the grace time and the Coyote shocks until you move again. Works in any posture; the box rule still applies at the same time.</string>
+    <string name="cage_dance_grace">Still for this long before the shock</string>
+    <string name="cage_dance_move">Movement needed to count as dancing</string>
+    <string name="cage_dance_level">Dance shock level</string>
+    <string name="cage_same_level">same as above</string>
+    <string name="cage_st_dance_shock">⚡ NOT DANCING — move!</string>
+    <string name="cage_st_still">💃 still %1$.0f / %2$d s</string>
 </resources>

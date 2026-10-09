@@ -251,4 +251,13 @@
     <string name="cage_debug">调试：显示识别出的身体</string>
     <string name="x_cage_debug">在画面上用半透明绿色画出检测器认为是人的区域，便于确认各种姿势下都能看到玩家，且没有把家具或阴影当成人体。</string>
     <string name="cage_st_back">✓ 已回到框内，惩罚继续</string>
+    <string name="cage_dance_title">跳舞模式</string>
+    <string name="cage_dance">不跳舞（静止）就电击</string>
+    <string name="x_cage_dance">运动量由摄像头判断：玩家轮廓在帧与帧之间的变化程度。静止超过宽限时间，郊狼就电击，直到你再次动起来。任何姿势都适用；区域规则同时生效。</string>
+    <string name="cage_dance_grace">静止多久后电击</string>
+    <string name="cage_dance_move">算作跳舞所需的运动量</string>
+    <string name="cage_dance_level">跳舞模式电击强度</string>
+    <string name="cage_same_level">同上</string>
+    <string name="cage_st_dance_shock">⚡ 没在跳舞 — 动起来！</string>
+    <string name="cage_st_still">💃 静止 %1$.0f / %2$d 秒</string>
 </resources>

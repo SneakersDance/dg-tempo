@@ -439,6 +439,25 @@ public class BeatTest {
         assertEquals(CageLogic.INSIDE, o.state);
     }
 
+    @Test public void danceModeShocksStillness() {
+        CageLogic g = new CageLogic();
+        CageLogic.Config c = new CageLogic.Config();
+        c.locked = true; c.dance = true; c.danceGraceS = 3; c.danceMoveMin = 0.15;
+        double t = 0; CageLogic.Out o = null; String ann = null;
+        for (int i = 0; i < 20; i++) { o = g.step(t += 0.1, c, true, 0.2, 0.0, 0.4); }       // dancing
+        assertFalse(o.danceShock); assertEquals(0.0, o.stillS, 1e-9);
+        for (int i = 0; i < 25; i++) { o = g.step(t += 0.1, c, true, 0.2, 0.0, 0.02); }      // frozen 2.5 s: not yet
+        assertFalse(o.danceShock); assertTrue(o.stillS > 2);
+        for (int i = 0; i < 10; i++) { o = g.step(t += 0.1, c, true, 0.2, 0.0, 0.02); if (o.announce != null) ann = o.announce; }
+        assertTrue("still past the grace -> shock", o.danceShock); assertEquals("move", ann);
+        for (int i = 0; i < 5; i++) { o = g.step(t += 0.1, c, true, 0.2, 0.0, 0.5); }        // moves again
+        assertFalse("movement ends the dance shock", o.danceShock);
+        // standing still OUTSIDE the box is the box rule's business, not dance mode's
+        g.reset();
+        for (int i = 0; i < 60; i++) { o = g.step(t += 0.1, c, true, 0.2, 0.9, 0.0); }
+        assertFalse(o.danceShock);
+    }
+
     @Test public void testBurstAndInactive() {
         TempoTracker tr = new TempoTracker();
         // test burst ends at 10.2 and is 100 ms long -> it fills the frame starting at 10.1, not 10.0

@@ -522,6 +522,15 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         addSeek(llCage, R.string.cage_warn_s, 0, R.string.end_sooner, R.string.end_rarer, 0, 30, s.cageWarnS, v -> v + " s", v -> { s.cageWarnS = v; changed(); });
         addChoice(llCage, R.string.cage_shock_mode, new int[]{R.string.cage_mode_full, R.string.cage_mode_early, R.string.cage_mode_until}, s.cageShockMode, v -> { s.cageShockMode = v; changed(); });
         addChoice(llCage, R.string.cage_vib, new int[]{R.string.cage_vib_off, R.string.cage_vib_always, R.string.cage_vib_inside, R.string.cage_vib_outside}, s.cageVib, v -> { s.cageVib = v; changed(); });
+        subTitle(llCage, R.string.cage_dance_title);
+        addSwitch(llCage, R.string.cage_dance, R.string.x_cage_dance, s.cageDance, v -> { s.cageDance = v; changed(); buildControls(); });
+        if (s.cageDance) {
+            addSeek(llCage, R.string.cage_dance_grace, 0, R.string.end_sooner, R.string.end_rarer, 1, 30, s.cageDanceGraceS, v -> v + " s", v -> { s.cageDanceGraceS = v; changed(); });
+            addSeek(llCage, R.string.cage_dance_move, 0, R.string.end_still, R.string.end_vigorous, 3, 60, s.cageDanceMovePct, v -> v + " %", v -> { s.cageDanceMovePct = v; changed(); });
+            addSeek(llCage, R.string.cage_dance_level, 0, R.string.end_gentle, R.string.end_hard, 0, 200, Math.max(0, s.cageDanceLevel),
+                    v -> v == 0 ? getString(R.string.cage_same_level) : String.valueOf(v), v -> { s.cageDanceLevel = v == 0 ? -1 : v; changed(); }, C_POWER_COYOTE);
+        }
+        subTitle(llCage, R.string.step4);
         addSwitch(llCage, R.string.cage_voice, 0, s.cageVoice, v -> { s.cageVoice = v; changed(); });
         addSwitch(llCage, R.string.cage_debug, R.string.x_cage_debug, s.cageDebug, v -> { s.cageDebug = v; changed(); });
         addSwitch(llCage, R.string.cage_notdet, 0, s.cageNotDetOut, v -> { s.cageNotDetOut = v; changed(); });
@@ -561,7 +570,9 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             col = o.returnedDuringShock ? C_GO : C_POWER_COYOTE;
         }
         else if (o.state == CageLogic.WARNING) { txt = getString(R.string.cage_st_warn, o.warnLeft); col = 0xFFFFB300; }
+        else if (o.danceShock) { txt = getString(R.string.cage_st_dance_shock); col = C_POWER_COYOTE; }
         else if (!o.detected) { txt = getString(R.string.cage_st_none); col = C_MUTED; }
+        else if (s.cageDance && o.stillS > 0.5) { txt = getString(R.string.cage_st_still, o.stillS, s.cageDanceGraceS); col = 0xFFFFB300; }
         else { txt = getString(o.inside ? R.string.cage_st_inside : R.string.cage_st_outside); col = o.inside ? C_GO : C_DANGER; }
         tvCageStatus.setText(txt);
         tvCageStatus.setTextColor(col);

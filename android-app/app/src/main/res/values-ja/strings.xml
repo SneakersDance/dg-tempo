@@ -251,4 +251,13 @@
     <string name="cage_debug">デバッグ：検出した体を表示</string>
     <string name="x_cage_debug">検出器が人と判断した領域を半透明の緑でプレビューに描きます。各姿勢でプレイヤーが見えているか、家具や影を人と誤認していないかを確認できます。</string>
     <string name="cage_st_back">✓ 戻りました、罰は継続</string>
+    <string name="cage_dance_title">ダンスモード</string>
+    <string name="cage_dance">踊っていない（静止）と刺激</string>
+    <string name="x_cage_dance">動きはカメラで判定：プレイヤーのシルエットがフレーム間でどれだけ変わるか。猶予時間より長く止まると、再び動くまで Coyote が刺激。どの姿勢でも有効で、枠のルールも同時に働きます。</string>
+    <string name="cage_dance_grace">刺激までの静止時間</string>
+    <string name="cage_dance_move">踊っているとみなす動きの量</string>
+    <string name="cage_dance_level">ダンスモードの刺激の強さ</string>
+    <string name="cage_same_level">上と同じ</string>
+    <string name="cage_st_dance_shock">⚡ 踊っていない — 動いて！</string>
+    <string name="cage_st_still">💃 静止 %1$.0f / %2$d 秒</string>
 </resources>
