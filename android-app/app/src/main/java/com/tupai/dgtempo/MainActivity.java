@@ -153,6 +153,9 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         fullTL = findViewById(R.id.fullTL); fullBL = findViewById(R.id.fullBL); fullBR = findViewById(R.id.fullBR);
         findViewById(R.id.btnCageFull).setOnClickListener(v -> enterFullCage());
         findViewById(R.id.btnFullExit).setOnClickListener(v -> exitFullCage());
+        findViewById(R.id.btnFullLock).setOnClickListener(v -> { btnCageLock.performClick(); showFullBar(); });
+        findViewById(R.id.btnFullPause).setOnClickListener(v -> { btnCagePause.performClick(); showFullBar(); });
+        fullOverlay.onTap = this::showFullBar;
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override public void handleOnBackPressed() {
                 if (inFullCage) exitFullCage();
@@ -521,9 +524,26 @@ public final class MainActivity extends AppCompatActivity implements BeatService
 
     // ---- full-screen camera view ----------------------------------------------------------------------
 
+    private final android.os.Handler fullBarTimer = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable hideFullBar = () -> findViewById(R.id.fullBar).setVisibility(View.GONE);
+
+    /** Show the full-screen control bar for a few seconds (tap the screen to bring it back). */
+    private void showFullBar() {
+        if (!inFullCage) return;
+        View bar = findViewById(R.id.fullBar);
+        bar.setVisibility(bar.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+        findViewById(R.id.fullTapHint).setVisibility(View.GONE);
+        fullBarTimer.removeCallbacks(hideFullBar);
+        if (bar.getVisibility() == View.VISIBLE) fullBarTimer.postDelayed(hideFullBar, 5000);
+    }
+
     private void enterFullCage() {
         if (svc == null || svc.cage == null || inFullCage) return;
         inFullCage = true;
+        findViewById(R.id.fullBar).setVisibility(View.GONE);
+        View hint = findViewById(R.id.fullTapHint);
+        hint.setVisibility(View.VISIBLE);
+        fullBarTimer.postDelayed(() -> hint.setVisibility(View.GONE), 4000);
         mainRoot.setVisibility(View.GONE);
         fullCage.setVisibility(View.VISIBLE);
         androidx.core.view.WindowInsetsControllerCompat ic = androidx.core.view.WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
@@ -550,6 +570,8 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         btnCageLock.setText(s.cageLocked ? R.string.cage_unlock : R.string.cage_lock);
         btnCagePause.setText(s.cagePaused ? R.string.cage_resume : R.string.cage_pause);
         btnCagePause.setTextColor(s.cagePaused ? C_DANGER : C_TEXT);
+        ((Button) findViewById(R.id.btnFullLock)).setText(s.cageLocked ? R.string.cage_unlock : R.string.cage_lock);
+        ((Button) findViewById(R.id.btnFullPause)).setText(s.cagePaused ? R.string.cage_resume : R.string.cage_pause);
         for (CageOverlayView ov : new CageOverlayView[]{cageOverlay, fullOverlay}) {
             ov.locked = s.cageLocked;
             ov.box = new android.graphics.RectF(s.cageL, s.cageT, s.cageR, s.cageB);

@@ -266,4 +266,5 @@
     <string name="x_move_delay_show">オン：ステータスと小窓に経過時間と今回のランダム上限を表示（例 ⏳ 12/23s）。跳ぶ側はそれに合わせて動けます。オフ：経過時間のみ表示し、上限はコントローラーの秘密のまま。</string>
     <string name="cage_full">カメラを全画面表示</string>
     <string name="cage_exit_full">全画面を終了</string>
+    <string name="cage_tap_hint">画面をタップで操作ボタン · ロック解除中はドラッグで枠を描き直し</string>
 </resources>

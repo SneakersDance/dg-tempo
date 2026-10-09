@@ -267,4 +267,5 @@
     <string name="x_move_delay_show">On: the status and the mini window show the current random limit next to the elapsed time, e.g. ⏳ 12/23s, so the jumper can play to it. Off: only the elapsed time is shown and the limit stays the controller\'s secret.</string>
     <string name="cage_full">FULL SCREEN CAMERA</string>
     <string name="cage_exit_full">EXIT FULL SCREEN</string>
+    <string name="cage_tap_hint">Tap the screen for controls · drag to redraw the box while unlocked</string>
 </resources>

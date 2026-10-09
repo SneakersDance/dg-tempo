@@ -266,4 +266,5 @@
     <string name="x_move_delay_show">开：状态栏和小窗在已跳时间旁显示本次随机上限，例如 ⏳ 12/23s，跳的人可以照着来。关：只显示已跳时间，上限由控制者保密。</string>
     <string name="cage_full">全屏摄像头</string>
     <string name="cage_exit_full">退出全屏</string>
+    <string name="cage_tap_hint">点击屏幕显示控制按钮 · 解锁后拖动可重画区域</string>
 </resources>

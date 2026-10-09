@@ -26,6 +26,8 @@ public final class CageOverlayView extends View {
     public android.graphics.Bitmap mask;                  // debug: translucent person mask
     private final Paint pMask = new Paint(Paint.FILTER_BITMAP_FLAG);
     public Listener listener;
+    public Runnable onTap;                                   // a tap (not a drag) anywhere, locked or not
+    private float tapX, tapY; private long tapAt;
     private float sx, sy; private boolean dragging;
     private final Paint pBox = new Paint(Paint.ANTI_ALIAS_FLAG), pFill = new Paint(), pDot = new Paint(Paint.ANTI_ALIAS_FLAG), pText = new Paint(Paint.ANTI_ALIAS_FLAG);
 
@@ -45,7 +47,11 @@ public final class CageOverlayView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent e) {
-        if (locked) return false;
+        if (e.getActionMasked() == MotionEvent.ACTION_DOWN) { tapX = e.getX(); tapY = e.getY(); tapAt = System.currentTimeMillis(); }
+        if (e.getActionMasked() == MotionEvent.ACTION_UP && onTap != null
+                && Math.hypot(e.getX() - tapX, e.getY() - tapY) < 24 * getResources().getDisplayMetrics().density
+                && System.currentTimeMillis() - tapAt < 400) { onTap.run(); if (locked) return true; }
+        if (locked) return true;                          // consume so the tap above can be detected
         float x = e.getX() / getWidth(), y = e.getY() / getHeight();
         float grab = 28f * getResources().getDisplayMetrics().density;        // finger-sized handle zone
         float gx = grab / getWidth(), gy = grab / getHeight();

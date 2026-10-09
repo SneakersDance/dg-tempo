@@ -20,8 +20,16 @@
     <TextView android:id="@+id/fullBR" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="bottom|end"
         android:layout_margin="14dp" android:padding="8dp" android:background="#AA000000" android:gravity="end"
         android:fontFamily="monospace" android:textSize="14sp" android:textColor="#E8EEF8"/>
-    <Button android:id="@+id/btnFullExit" style="@style/BtnGhost" android:layout_width="wrap_content" android:layout_height="40dp"
-        android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="14dp" android:textSize="12sp" android:text="@string/cage_exit_full"/>
+    <!-- control bar: hidden until the screen is tapped; sits above the bottom HUD rows -->
+    <LinearLayout android:id="@+id/fullBar" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="120dp" android:orientation="horizontal"
+        android:padding="6dp" android:background="#CC0A0C12" android:visibility="gone">
+        <Button android:id="@+id/btnFullLock" style="@style/BtnAccent" android:layout_width="wrap_content" android:layout_height="40dp" android:textSize="12sp" android:text="@string/cage_lock"/>
+        <Button android:id="@+id/btnFullPause" style="@style/BtnGhost" android:layout_width="wrap_content" android:layout_height="40dp" android:layout_marginStart="6dp" android:textSize="12sp" android:text="@string/cage_pause"/>
+        <Button android:id="@+id/btnFullExit" style="@style/BtnGhost" android:layout_width="wrap_content" android:layout_height="40dp" android:layout_marginStart="6dp" android:textSize="12sp" android:text="@string/cage_exit_full"/>
+    </LinearLayout>
+    <TextView android:id="@+id/fullTapHint" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center"
+        android:padding="10dp" android:background="#AA000000" android:textColor="#E8EEF8" android:textSize="13sp" android:text="@string/cage_tap_hint"/>
 </FrameLayout>
 
 <LinearLayout android:id="@+id/mainRoot"
