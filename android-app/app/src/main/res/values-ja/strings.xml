@@ -267,4 +267,11 @@
     <string name="cage_full">カメラを全画面表示</string>
     <string name="cage_exit_full">全画面を終了</string>
     <string name="cage_tap_hint">画面をタップで操作ボタン · ロック解除中はドラッグで枠を描き直し</string>
+    <string name="btn_arm_short">開始</string>
+    <string name="ov_dancing">ダンス中</string>
+    <string name="ov_keep_dancing">⚠ 踊り続けて  %1$.0f/%2$.0f 秒</string>
+    <string name="ov_not_dancing">⚡ 踊っていない — 動いて！</string>
+    <string name="ov_returned">✓ 戻りました · 刺激は継続 %1$.0f 秒</string>
+    <string name="ov_moving">● 動いている %1$.0f%%</string>
+    <string name="ov_still">○ 静止 %1$.0f%%</string>
 </resources>

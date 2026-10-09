@@ -105,6 +105,13 @@ public final class CageOverlayView extends View {
 
     private static float clamp(float v) { return Math.max(0f, Math.min(1f, v)); }
 
+    /** Shrink the paint's text size until `text` fits in maxWidth (never above `maxSize`). */
+    private static void fit(Paint p, String text, float maxWidth, float maxSize) {
+        float size = maxSize;
+        p.setTextSize(size);
+        while (size > 10f && p.measureText(text) > maxWidth) { size -= 2f; p.setTextSize(size); }
+    }
+
     @Override
     protected void onDraw(Canvas c) {
         int w = getWidth(), h = getHeight();
@@ -137,22 +144,26 @@ public final class CageOverlayView extends View {
             Paint pc = new Paint(Paint.ANTI_ALIAS_FLAG);
             pc.setTextAlign(Paint.Align.CENTER);
             pc.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            float bannerW = w * 0.84f, bx0 = (w - bannerW) / 2f, bx1 = bx0 + bannerW;
             if (danceShock) {
+                String txt = getContext().getString(R.string.ov_not_dancing);
                 pc.setColor(0xDDB3001E);
-                c.drawRoundRect(w * 0.18f, h * 0.10f, w * 0.82f, h * 0.24f, 20, 20, pc);
-                pc.setColor(0xFFFFFFFF); pc.setTextSize(h * 0.06f);
-                c.drawText("⚡ NOT DANCING — MOVE!", w / 2f, h * 0.19f, pc);
+                c.drawRoundRect(bx0, h * 0.10f, bx1, h * 0.24f, 20, 20, pc);
+                pc.setColor(0xFFFFFFFF); fit(pc, txt, bannerW - 32, h * 0.06f);
+                c.drawText(txt, w / 2f, h * 0.19f, pc);
             } else if (moving) {
+                String txt = getContext().getString(R.string.ov_dancing);
                 pc.setTextSize(h * 0.13f);
                 c.drawText(((System.currentTimeMillis() / 400) % 2 == 0) ? "💃" : "🕺", w / 2f, h * 0.22f, pc);
-                pc.setColor(0xFF4DFF88); pc.setTextSize(h * 0.045f); pc.setShadowLayer(6f, 0, 0, 0xFF000000);
-                c.drawText("DANCING", w / 2f, h * 0.27f, pc);
+                pc.setColor(0xFF4DFF88); pc.setShadowLayer(6f, 0, 0, 0xFF000000); fit(pc, txt, bannerW, h * 0.045f);
+                c.drawText(txt, w / 2f, h * 0.27f, pc);
                 postInvalidateDelayed(200);
             } else if (danceMode) {
+                String txt = getContext().getString(R.string.ov_keep_dancing, stillS, graceS);
                 pc.setColor(0xDD7A4F00);
-                c.drawRoundRect(w * 0.18f, h * 0.10f, w * 0.82f, h * 0.24f, 20, 20, pc);
-                pc.setColor(0xFFFFE082); pc.setTextSize(h * 0.055f);
-                c.drawText(String.format("⚠ KEEP DANCING  %.0f/%.0fs", stillS, graceS), w / 2f, h * 0.19f, pc);
+                c.drawRoundRect(bx0, h * 0.10f, bx1, h * 0.24f, 20, 20, pc);
+                pc.setColor(0xFFFFE082); fit(pc, txt, bannerW - 32, h * 0.055f);
+                c.drawText(txt, w / 2f, h * 0.19f, pc);
                 postInvalidateDelayed(200);
             }
             // movement meter top-right: bar with the dancing threshold, badge MOVING / STILL
@@ -168,7 +179,9 @@ public final class CageOverlayView extends View {
             c.drawRect(tx - 2, by - 4, tx + 2, by + bh + 4, pb);
             pText.setTextSize(26f);
             pText.setColor(moving ? 0xFF4DFF88 : 0xFFFFB300);
-            c.drawText((moving ? "● MOVING " : "○ STILL ") + String.format("%.0f%%", motion * 100), bx, by + bh + 26, pText);
+            String badge = getContext().getString(moving ? R.string.ov_moving : R.string.ov_still, motion * 100);
+            fit(pText, badge, bw + 8, 26f);
+            c.drawText(badge, bx, by + bh + 26, pText);
             pText.setTextSize(34f); pText.setColor(0xFFFFFFFF);
         }
         if (state == CageLogic.SHOCK && inside && detected) {
@@ -177,8 +190,10 @@ public final class CageOverlayView extends View {
             ban.setColor(0xDD1B5E20);
             c.drawRoundRect(14, h - 86, w - 14, h - 14, 18, 18, ban);
             pText.setColor(0xFF4DFF88);
-            c.drawText("✓ RETURNED · shock continues " + String.format("%.0fs", shockLeft), 30, h - 38, pText);
-            pText.setColor(0xFFFFFFFF);
+            String rt = getContext().getString(R.string.ov_returned, shockLeft);
+            fit(pText, rt, w - 60, 34f);
+            c.drawText(rt, 30, h - 38, pText);
+            pText.setTextSize(34f); pText.setColor(0xFFFFFFFF);
             postInvalidateDelayed(200);
         }
     }

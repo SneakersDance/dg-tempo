@@ -268,4 +268,11 @@
     <string name="cage_full">FULL SCREEN CAMERA</string>
     <string name="cage_exit_full">EXIT FULL SCREEN</string>
     <string name="cage_tap_hint">Tap the screen for controls · drag to redraw the box while unlocked</string>
+    <string name="btn_arm_short">ARM</string>
+    <string name="ov_dancing">DANCING</string>
+    <string name="ov_keep_dancing">⚠ KEEP DANCING  %1$.0f/%2$.0fs</string>
+    <string name="ov_not_dancing">⚡ NOT DANCING — MOVE!</string>
+    <string name="ov_returned">✓ RETURNED · shock continues %1$.0fs</string>
+    <string name="ov_moving">● MOVING %1$.0f%%</string>
+    <string name="ov_still">○ STILL %1$.0f%%</string>
 </resources>

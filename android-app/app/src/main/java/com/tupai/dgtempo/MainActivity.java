@@ -569,7 +569,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     private void refreshFullArm() {
         if (svc == null) return;
         Button b = findViewById(R.id.btnFullArm);
-        b.setText(svc.armed ? R.string.btn_stop : R.string.btn_arm);
+        b.setText(svc.armed ? R.string.btn_stop : R.string.btn_arm_short);
         b.setBackgroundResource(svc.armed ? R.drawable.bg_btn_danger : R.drawable.bg_btn_go);
         b.setTextColor(C_BG);
     }
