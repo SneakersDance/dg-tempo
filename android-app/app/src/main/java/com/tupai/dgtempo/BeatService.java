@@ -218,6 +218,12 @@ public final class BeatService extends Service implements BleDevice.Listener, an
     public volatile double maxShockUntil = 0;          // forced max shock window end
     private double lastMoveAt = -1, lastDelayTick = 0;
     public volatile String delayNote = "";
+    private double delayLimit = 0;                    // limit of the current hold (fixed, or drawn per hold when random)
+
+    private double drawDelayLimit() {
+        int max = Math.max(1, settings.moveDelayMaxS);
+        return settings.moveDelayRandom ? 1 + rng.nextInt(max) : max;
+    }
 
     public boolean needSensors() { return gyroMode() || settings.moveDelayOn || settings.dipMode != 0; }
 
@@ -271,7 +277,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         if (gyroMode() || !settings.moveDelayOn || !armed) return false;
         double now = System.nanoTime() / 1e9;
         if (now < maxShockUntil) return false;
-        return holdS > 0 && holdS < settings.moveDelayMaxS;
+        return holdS > 0 && holdS < Math.max(1, delayLimit);
     }
 
     private void moveDelayTick(double now) {
@@ -286,8 +292,9 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         if (!armed) { holdS = 0; delayNote = ""; return; }
         boolean recent = lastMoveAt > 0 && now - lastMoveAt < 1.0;      // 1 s grace: a short pause does not reset
         if (recent) {
+            if (holdS == 0) delayLimit = drawDelayLimit();                // a new hold: new (possibly random) limit
             holdS += dt;
-            if (holdS >= settings.moveDelayMaxS) {
+            if (holdS >= delayLimit) {
                 if (settings.moveDelayFinal) {
                     maxShockUntil = now + settings.moveDelayShockS;
                     log("movement delay: " + settings.moveDelayMaxS + " s reached -> MAX shock for " + settings.moveDelayShockS + " s");
@@ -298,7 +305,8 @@ public final class BeatService extends Service implements BleDevice.Listener, an
                 delayNote = "";
                 return;
             }
-            delayNote = String.format("⏳ %.0f/%ds", holdS, settings.moveDelayMaxS);
+            delayNote = settings.moveDelayRandom ? String.format("⏳ %.0fs", holdS)        // random: the limit stays hidden
+                                                 : String.format("⏳ %.0f/%ds", holdS, settings.moveDelayMaxS);
         } else {
             if (holdS > 0) log("movement stopped: Coyote released");
             holdS = 0; delayNote = "";

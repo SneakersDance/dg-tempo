@@ -260,4 +260,6 @@
     <string name="cage_same_level">上と同じ</string>
     <string name="cage_st_dance_shock">⚡ 踊っていない — 動いて！</string>
     <string name="cage_st_still">💃 静止 %1$.0f / %2$d 秒</string>
+    <string name="move_delay_random">上限をランダムに（1 秒〜上の値）</string>
+    <string name="x_move_delay_random">新しい保留が始まるたびに、上限は 1 秒〜上の値の間でランダムに決まり、表示されません。跳ぶ側はどれだけ動いたかしか見えず、残り時間は分かりません。オフ＝上限は常に上の値で、カウントダウンに表示されます。</string>
 </resources>

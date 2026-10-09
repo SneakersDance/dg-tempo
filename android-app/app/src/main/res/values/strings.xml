@@ -261,4 +261,6 @@
     <string name="cage_same_level">same as above</string>
     <string name="cage_st_dance_shock">⚡ NOT DANCING — move!</string>
     <string name="cage_st_still">💃 still %1$.0f / %2$d s</string>
+    <string name="move_delay_random">Random limit (1 s up to the value above)</string>
+    <string name="x_move_delay_random">Every time a new hold starts, the limit is drawn at random between 1 second and the value above, and it is not shown: the jumper sees only how long they have been moving, never how long is left. Off: the limit is always exactly the value above and the countdown shows it.</string>
 </resources>

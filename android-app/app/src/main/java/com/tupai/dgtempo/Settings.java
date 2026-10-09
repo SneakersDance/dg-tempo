@@ -67,6 +67,7 @@ public final class Settings {
     public boolean moveDelayFinal = true;
     public int moveDelayShockS = 3;
     public int moveDelayNeedPct = 25;
+    public boolean moveDelayRandom = false;                 // each hold gets a random limit in 1..moveDelayMaxS (kept hidden)
     // music mode: phone "going down" (a dip / bounce) as downbeat. 0 off, 1 votes for the downbeat, 2 fires devices
     public int dipMode = 0;
     public int dipThrX10 = 15;                              // m/s^2 x10 downward that counts as a dip
@@ -148,6 +149,7 @@ public final class Settings {
         s.moveDelayOn = p.getBoolean("moveDelayOn", false); s.moveDelayMaxS = p.getInt("moveDelayMaxS", 30);
         s.moveDelayFinal = p.getBoolean("moveDelayFinal", true); s.moveDelayShockS = p.getInt("moveDelayShockS", 3);
         s.moveDelayNeedPct = p.getInt("moveDelayNeedPct", 25);
+        s.moveDelayRandom = p.getBoolean("moveDelayRandom", false);
         s.dipMode = p.getInt("dipMode", 0); s.dipThrX10 = p.getInt("dipThrX10", 15);
         s.dipCoyote = p.getBoolean("dipCoyote", true); s.dipOpossum = p.getBoolean("dipOpossum", false);
         s.cageL = p.getFloat("cageL", 0.2f); s.cageT = p.getFloat("cageT", 0.1f); s.cageR = p.getFloat("cageR", 0.8f); s.cageB = p.getFloat("cageB", 0.9f);
@@ -247,7 +249,7 @@ public final class Settings {
                 .putInt("coyoteTiltRel", coyoteTiltRel).putInt("coyoteMoveRel", coyoteMoveRel)
                 .putInt("vibTiltRel", vibTiltRel).putInt("vibMoveRel", vibMoveRel).putInt("vibGyroConst", vibGyroConst)
                 .putBoolean("moveDelayOn", moveDelayOn).putInt("moveDelayMaxS", moveDelayMaxS)
-                .putBoolean("moveDelayFinal", moveDelayFinal).putInt("moveDelayShockS", moveDelayShockS).putInt("moveDelayNeedPct", moveDelayNeedPct)
+                .putBoolean("moveDelayFinal", moveDelayFinal).putInt("moveDelayShockS", moveDelayShockS).putInt("moveDelayNeedPct", moveDelayNeedPct).putBoolean("moveDelayRandom", moveDelayRandom)
                 .putInt("dipMode", dipMode).putInt("dipThrX10", dipThrX10).putBoolean("dipCoyote", dipCoyote).putBoolean("dipOpossum", dipOpossum)
                 .putFloat("cageL", cageL).putFloat("cageT", cageT).putFloat("cageR", cageR).putFloat("cageB", cageB)
                 .putBoolean("cageLocked", cageLocked).putBoolean("cageFront", cageFront).putBoolean("cageVoice", cageVoice).putBoolean("cageNotDetOut", cageNotDetOut)
