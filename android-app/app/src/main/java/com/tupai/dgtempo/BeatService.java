@@ -294,6 +294,18 @@ public final class BeatService extends Service implements BleDevice.Listener, an
     }
 
     /** Is the Coyote currently held off by movement? (music mode only) */
+    /** Live readout for the music-tab Coyote section: sensors, movement vs threshold, hold clock. */
+    public String moveDelayReadout() {
+        boolean run = motionSensors != null && motionSensors.running;
+        if (!settings.moveDelayOn) return "";
+        if (!run) return "sensors OFF";
+        double limitShown = settings.moveDelayRandom && !settings.moveDelayShowLimit ? -1 : Math.max(1, delayLimit);
+        return String.format("sensors on · movement %.0f%% (need %d%%) · %s · hold %.1f%s s%s",
+                moveF * 100, settings.moveDelayNeedPct, moveF >= settings.moveDelayNeedPct / 100.0 ? "MOVING" : "still",
+                holdS, limitShown < 0 ? "" : String.format("/%.0f", limitShown),
+                armed ? (coyoteHeld() ? " · Coyote HELD" : "") : " · arm to start");
+    }
+
     public boolean coyoteHeld() {
         if (gyroMode() || !settings.moveDelayOn || !armed) return false;
         double now = System.nanoTime() / 1e9;
@@ -313,7 +325,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         if (!armed) { holdS = 0; delayNote = ""; return; }
         boolean recent = lastMoveAt > 0 && now - lastMoveAt < 1.0;      // 1 s grace: a short pause does not reset
         if (recent) {
-            if (holdS == 0) delayLimit = drawDelayLimit();                // a new hold: new (possibly random) limit
+            if (holdS == 0) { delayLimit = drawDelayLimit(); log(String.format("movement hold started (limit %.0f s%s)", delayLimit, settings.moveDelayRandom ? ", random" : "")); }
             holdS += dt;
             if (holdS >= delayLimit) {
                 if (settings.moveDelayFinal) {

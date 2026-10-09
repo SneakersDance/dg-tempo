@@ -54,7 +54,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     private View pageMusic, pageMotion, pageCage;
     private Button tabMusic, tabMotion, tabCage, btnCageLock, btnCagePause;
     private LinearLayout llCage;
-    private TextView tvCageStatus;
+    private TextView tvCageStatus, tvMoveDelay;
     private androidx.camera.view.PreviewView cagePreview;
     private CageOverlayView cageOverlay, fullOverlay;
     private View fullCage;
@@ -740,7 +740,12 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             addSwitch(llCoyote, R.string.dip_opossum, 0, s.dipOpossum, v -> { s.dipOpossum = v; changed(); });
         }
         addSwitch(llCoyote, R.string.move_delay, R.string.x_move_delay, s.moveDelayOn, v -> { svc.setMoveDelay(v); buildControls(); });
+        tvMoveDelay = null;
         if (s.moveDelayOn) {
+            tvMoveDelay = new TextView(this);
+            tvMoveDelay.setTextColor(C_GO); tvMoveDelay.setTextSize(12); tvMoveDelay.setTypeface(android.graphics.Typeface.MONOSPACE);
+            tvMoveDelay.setPadding(0, dp(4), 0, dp(4));
+            llCoyote.addView(tvMoveDelay);
             addSeek(llCoyote, R.string.move_delay_max, 0, R.string.end_sooner, R.string.end_rarer, 5, 300, s.moveDelayMaxS, v -> v + " s", v -> { s.moveDelayMaxS = v; changed(); });
             addSwitch(llCoyote, R.string.move_delay_random, R.string.x_move_delay_random, s.moveDelayRandom, v -> { s.moveDelayRandom = v; changed(); buildControls(); });
             if (s.moveDelayRandom)
@@ -1353,6 +1358,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
                 + (svc.motionRunning ? String.format("\n▦ motion %.1f (floor %.1f)  onsets %d  downbeat votes %d", svc.motion.level, svc.motion.floorLevel, svc.motion.onsets, tr.evidenceHits) : ""));
         // locked: orange number. Still deciding: grey "~" number with how periodic the beats are. Nothing: dash.
         double now = java.lang.System.nanoTime() / 1e9;
+        if (tvMoveDelay != null) tvMoveDelay.setText(svc.moveDelayReadout());
         if (svc.cageMode()) {
             updateCageStatus();
             tvBpm.setText("▣ " + svc.cageNote());
