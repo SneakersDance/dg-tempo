@@ -22,6 +22,8 @@ public final class CageOverlayView extends View {
     public double shockLeft = 0;
     public double motion = 0, motionMin = 0.15;           // camera-measured movement and the "dancing" threshold
     public boolean showMotion = false;
+    public boolean danceMode = false, danceShock = false;  // dance rule on / currently shocking for stillness
+    public double stillS = 0, graceS = 3;
     public float cx = -1, cy = -1;
     public android.graphics.Bitmap mask;                  // debug: translucent person mask
     private final Paint pMask = new Paint(Paint.FILTER_BITMAP_FLAG);
@@ -130,8 +132,30 @@ public final class CageOverlayView extends View {
         String t = !locked ? "DRAW THE CAGE" : state == CageLogic.SHOCK ? String.format("⚡ SHOCK %.0fs", shockLeft) : state == CageLogic.WARNING ? "⚠ " + where : where;
         c.drawText(t, 20, 46, pText);
         if (showMotion && detected) {
-            // movement meter top-right: bar with the dancing threshold, badge MOVING / STILL
             boolean moving = motion >= motionMin;
+            // big dancer / keep-dancing cue, top centre: obvious from across the room
+            Paint pc = new Paint(Paint.ANTI_ALIAS_FLAG);
+            pc.setTextAlign(Paint.Align.CENTER);
+            pc.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            if (danceShock) {
+                pc.setColor(0xDDB3001E);
+                c.drawRoundRect(w * 0.18f, h * 0.10f, w * 0.82f, h * 0.24f, 20, 20, pc);
+                pc.setColor(0xFFFFFFFF); pc.setTextSize(h * 0.06f);
+                c.drawText("⚡ NOT DANCING — MOVE!", w / 2f, h * 0.19f, pc);
+            } else if (moving) {
+                pc.setTextSize(h * 0.13f);
+                c.drawText(((System.currentTimeMillis() / 400) % 2 == 0) ? "💃" : "🕺", w / 2f, h * 0.22f, pc);
+                pc.setColor(0xFF4DFF88); pc.setTextSize(h * 0.045f); pc.setShadowLayer(6f, 0, 0, 0xFF000000);
+                c.drawText("DANCING", w / 2f, h * 0.27f, pc);
+                postInvalidateDelayed(200);
+            } else if (danceMode) {
+                pc.setColor(0xDD7A4F00);
+                c.drawRoundRect(w * 0.18f, h * 0.10f, w * 0.82f, h * 0.24f, 20, 20, pc);
+                pc.setColor(0xFFFFE082); pc.setTextSize(h * 0.055f);
+                c.drawText(String.format("⚠ KEEP DANCING  %.0f/%.0fs", stillS, graceS), w / 2f, h * 0.19f, pc);
+                postInvalidateDelayed(200);
+            }
+            // movement meter top-right: bar with the dancing threshold, badge MOVING / STILL
             float bw = w * 0.32f, bh = 18f, bx = w - 20 - bw, by = 24;
             Paint pb = new Paint(Paint.ANTI_ALIAS_FLAG);
             pb.setColor(0xAA000000); c.drawRoundRect(bx - 8, by - 8, bx + bw + 8, by + bh + 36, 10, 10, pb);

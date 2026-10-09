@@ -652,6 +652,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             ov.mask = s.cageDebug && svc.cage != null ? svc.cage.maskBitmap : null;
             ov.showMotion = cam && s.cageLocked;
             ov.motion = svc.cageMotion; ov.motionMin = s.cageDanceMovePct / 100.0;
+            ov.danceMode = s.cageDance; ov.danceShock = o.danceShock; ov.stillS = o.stillS; ov.graceS = s.cageDanceGraceS;
             ov.invalidate();
         }
         if (inFullCage) {
