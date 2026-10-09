@@ -143,7 +143,7 @@
     <string name="x_bpm_range">该设备只在锁定节奏处于范围内时输出。可让郊狼在慢歌时保持安静，或让负鼠只在快歌时工作。两端拉到极限 = 任意节奏。</string>
     <string name="x_timer">替代逐拍输出：峰值模式每个时间窗欠一次输出，在节奏最高点释放（最多累计 3 次；3 次时以最大强度输出）。随机模式在你设定的区间内以不可预测的间隔输出。开启定时后它是郊狼唯一的触发方式。 两种定时模式都只在音乐真正播放时输出：持续的声音且已锁定节拍。</string>
     <string name="x_vib_burst">每次震动持续多久。马达需要约 150 ms 才能转起来，太短几乎没感觉；250–400 ms 是每拍一次清晰的震动。</string>
-    <string name="x_vib_any">开：每个检测到的鼓点立刻震动，不需要锁定节拍，音乐一响很快就有反应。关：等待节奏锁定，并使用下方的灵敏度 / 频率 / 范围。</string>
+    <string name="x_vib_any">开：每个检测到的鼓点立刻震动，不需要锁定节拍，音乐一响很快就有反应。关：等待节奏锁定，并使用下方的灵敏度 / 频率 / 范围。 在手机内部音频模式下，"任何音乐"指任何正在播放的媒体（包括无声片段）：媒体不停，负鼠就不停。</string>
     <string name="x_motion">以 80×80 读取共享画面，把帧间变化当作运动。舞蹈动作和镜头切换会触发所选设备，即便 BPM 读数跟不上快节奏的舞蹈。本 App 自己的窗口会被忽略。</string>
     <string name="x_mic_fallback">系统停止录屏时改用麦克风。关 = 直接停止监听，除非你自己点"麦克风"，否则环境噪音不会触发设备。</string>
     <string name="x_tempo_points">强度在这两个节奏之间缩放：慢 BPM 对应基础 / 最小值，快 BPM 对应最大值。按你常放音乐的节奏范围设置。</string>
@@ -274,4 +274,6 @@
     <string name="ov_returned">✓ 已回到框内 · 电击继续 %1$.0f 秒</string>
     <string name="ov_moving">● 运动中 %1$.0f%%</string>
     <string name="ov_still">○ 静止 %1$.0f%%</string>
+    <string name="timer_pause_move">运动时暂停定时</string>
+    <string name="x_timer_pause_move">开：当"运动可延迟电击"正按住郊狼时，定时器也停止计时，跳动同样能为定时争取时间。关：定时器在按住期间照常计时，按住一结束就输出。</string>
 </resources>

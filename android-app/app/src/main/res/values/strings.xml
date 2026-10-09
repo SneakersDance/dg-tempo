@@ -143,7 +143,7 @@
     <string name="x_bpm_range">This device only fires when the locked tempo is inside the range. Use it to keep the Coyote quiet on slow songs, or the Opossum only on fast ones. Both ends at the extremes = any tempo.</string>
     <string name="x_timer">Instead of every beat: Peak mode owes one pulse per window and releases it at the tempo\'s high point (up to 3 owed; 3 = fired at MAX). Random mode fires at unpredictable intervals within your range. Timer modes are the only trigger while on. Both timer modes fire only while music is actually playing: sustained sound and a locked beat.</string>
     <string name="x_vib_burst">How long each vibration lasts. Motors need ~150 ms to spin up, so very short values are barely felt; 250–400 ms is a clear buzz per beat.</string>
-    <string name="x_vib_any">On: every detected kick vibrates immediately, no beat lock needed, so it reacts within a moment of music starting. Off: waits for a locked tempo and uses the sensitivity / rate / range below.</string>
+    <string name="x_vib_any">On: every detected kick vibrates immediately, no beat lock needed, so it reacts within a moment of music starting. Off: waits for a locked tempo and uses the sensitivity / rate / range below. With phone audio, "any music" means any media app playing, silent passages included: the Opossum keeps vibrating until the media stops.</string>
     <string name="x_motion">Reads the shared screen at 80×80 and treats frame-to-frame change as movement. Dance hits and cuts fire the chosen devices even when the BPM reading lags a fast dance. This app\'s own window is ignored.</string>
     <string name="x_mic_fallback">If the screen capture is stopped by the system, switch to the microphone. Off = stop listening instead, so room noise never fires the devices unless you tap MICROPHONE yourself.</string>
     <string name="x_tempo_points">The two tempos between which strength scales: at the slow BPM you get the base / min value, at the fast BPM the max. Set them to the tempo range of the music you play.</string>
@@ -275,4 +275,6 @@
     <string name="ov_returned">✓ RETURNED · shock continues %1$.0fs</string>
     <string name="ov_moving">● MOVING %1$.0f%%</string>
     <string name="ov_still">○ STILL %1$.0f%%</string>
+    <string name="timer_pause_move">Movement pauses the timer</string>
+    <string name="x_timer_pause_move">On: while "Movement delays the shock" is holding the Coyote off, the timer stands still too, so jumping buys time against the timer as well. Off: the timer keeps counting during a hold and its pulse comes as soon as the hold ends.</string>
 </resources>

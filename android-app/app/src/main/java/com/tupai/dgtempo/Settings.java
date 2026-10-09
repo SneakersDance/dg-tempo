@@ -107,6 +107,7 @@ public final class Settings {
     public int coyoteMaxWaitS = 5;      // timer window X seconds
     public int coyoteTimerMode = 1;     // 0 off, 1 every X s at the BPM peak (accumulates up to 3), 2 random interval
     public int coyoteRandMinS = 10, coyoteRandMaxS = 60;
+    public boolean timerPauseOnMove = true;                 // movement hold also freezes the Coyote timer
     public boolean vibBothMotors = true; // Opossum: drive motor B
     public boolean vibAnyMusic = true;  // Opossum: vibrate on every detected kick, no beat lock needed (default)
     public int coyoteBpmMin = 60, coyoteBpmMax = 220;   // Coyote fires only while the locked tempo is inside this range
@@ -194,6 +195,7 @@ public final class Settings {
         s.coyoteTimerMode = p.getInt("coyoteTimerMode", s.coyoteTimerMode);
         s.coyoteRandMinS = p.getInt("coyoteRandMinS", 10);
         s.coyoteRandMaxS = p.getInt("coyoteRandMaxS", 60);
+        s.timerPauseOnMove = p.getBoolean("timerPauseOnMove", true);
         s.coyoteBpmMin = p.getInt("coyoteBpmMin", 60); s.coyoteBpmMax = p.getInt("coyoteBpmMax", 220);
         s.vibBpmMin = p.getInt("vibBpmMin", 60); s.vibBpmMax = p.getInt("vibBpmMax", 220);
         return s;
@@ -270,7 +272,7 @@ public final class Settings {
                 .putBoolean("vibAnyMusic", vibAnyMusic).putBoolean("vibBothMotors", vibBothMotors).putBoolean("pip", pip).putBoolean("micFallback", micFallback)
                 .putBoolean("screenMotion", screenMotion).putInt("motionSens", motionSens)
                 .putBoolean("motionCoyote", motionCoyote).putBoolean("motionOpossum", motionOpossum).putInt("coyoteMaxWaitS", coyoteMaxWaitS).putInt("coyoteTimerMode", coyoteTimerMode)
-                .putInt("coyoteRandMinS", coyoteRandMinS).putInt("coyoteRandMaxS", coyoteRandMaxS)
+                .putInt("coyoteRandMinS", coyoteRandMinS).putInt("coyoteRandMaxS", coyoteRandMaxS).putBoolean("timerPauseOnMove", timerPauseOnMove)
                 .putInt("coyoteBpmMin", coyoteBpmMin).putInt("coyoteBpmMax", coyoteBpmMax)
                 .putInt("vibBpmMin", vibBpmMin).putInt("vibBpmMax", vibBpmMax)
                 .apply();

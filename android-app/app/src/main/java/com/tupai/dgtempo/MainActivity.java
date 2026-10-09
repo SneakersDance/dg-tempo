@@ -779,6 +779,8 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         llCoyote.addView(tvTimer);
         hint(llCoyote, R.string.x_timer);
         llCoyote.addView(spTimer);
+        if (s.coyoteTimerMode != 0)
+            addSwitch(llCoyote, R.string.timer_pause_move, R.string.x_timer_pause_move, s.timerPauseOnMove, v -> { s.timerPauseOnMove = v; changed(); });
         if (s.coyoteTimerMode == 1)
             addSeek(llCoyote, R.string.coy_max_wait, 0, R.string.end_sooner, R.string.end_rarer, 5, 300, s.coyoteMaxWaitS, v -> v + " s", v -> { s.coyoteMaxWaitS = v; changed(); });
         if (s.coyoteTimerMode == 2) {

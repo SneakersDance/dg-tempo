@@ -344,9 +344,9 @@ public final class BeatService extends Service implements BleDevice.Listener, an
                 delayNote = "";
                 return;
             }
-            delayNote = settings.moveDelayRandom && !settings.moveDelayShowLimit
-                    ? String.format("⏳ %.0fs", holdS)                                   // random + hidden: elapsed only
-                    : String.format("⏳ %.0f/%.0fs", holdS, delayLimit);                 // fixed, or random shown
+            delayNote = (settings.moveDelayRandom && !settings.moveDelayShowLimit
+                    ? String.format("⏸⏳ %.0fs", holdS)                                  // random + hidden: elapsed only
+                    : String.format("⏸⏳ %.0f/%.0fs", holdS, delayLimit));               // ⏸ = Coyote paused by movement
         } else {
             if (holdS > 0) log("movement stopped: Coyote released");
             holdS = 0; delayNote = "";
@@ -470,7 +470,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         BleDevice dc = devices.get("coyote");
         boolean ready = settings.coyoteTimerMode != 0 && armed && settings.coyoteEnabled && dc != null && dc.connected;
         if (!ready) { winStart = 0; winMaxBpm = 0; owed = 0; nextRandomAt = 0; timerNote = ""; return; }
-        boolean sound = musicStable(now);                   // timers run only on real music
+        boolean sound = timerGate(now);                     // timers run only while music / media plays
         double dt = lastTimerTick == 0 ? 0 : Math.min(0.5, now - lastTimerTick);
         lastTimerTick = now;
         if (!sound) {
@@ -479,6 +479,14 @@ public final class BeatService extends Service implements BleDevice.Listener, an
             if (winStart > 0) winStart += dt;
             owed = 0; winMaxBpm = 0;
             timerNote = "waiting for music";
+            return;
+        }
+        if (settings.timerPauseOnMove && coyoteHeld()) {
+            // movement hold: the timer stands still until the player stops (nothing can fire meanwhile)
+            if (nextRandomAt > 0) nextRandomAt += dt;
+            if (winStart > 0) winStart += dt;
+            if (debtSince > 0) debtSince += dt;
+            timerNote = "⏸ held";
             return;
         }
         if (settings.coyoteTimerMode == 2) {
@@ -537,6 +545,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         settings = Settings.load(this);
         applySensitivity();
         main.post(this::ensureSensors);
+        main.post(this::startMediaWatch);
         if (settings.mode == 2) main.post(this::startCage);
         NotificationManager nm = getSystemService(NotificationManager.class);
         nm.createNotificationChannel(new NotificationChannel(CHANNEL, "DG Tempo", NotificationManager.IMPORTANCE_LOW));
@@ -1149,7 +1158,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
                     } else if (coy && !gyroMode() && now < maxShockUntil) {
                         // movement-delay max shock: pattern loops at max for the configured seconds
                         use = new java.util.ArrayList<>();
-                        if (chOn) use.add(new double[]{maxShockUntil - settings.moveDelayShockS, maxShockUntil});
+                        if (chOn && active) use.add(new double[]{maxShockUntil - settings.moveDelayShockS, maxShockUntil});
                         cont = true;
                     } else if (gyroMode()) {
                         // gyro: the pattern loops while the device is driven; strength carries tilt/movement
@@ -1163,12 +1172,18 @@ public final class BeatService extends Service implements BleDevice.Listener, an
                         if (testBurstUntil > tick) use.add(new double[]{testBurstUntil - blen, testBurstUntil});
                     } else if (coy && tick < coyoteForceUntil) {
                         use = new java.util.ArrayList<>();
-                        for (int k = 0; k < coyoteForceCount; k++) {
+                        if (active) for (int k = 0; k < coyoteForceCount; k++) {
                             double st = coyoteForceFrom + k * (blen + 0.25);
                             if (st + blen > tick && st < tick + Protocol.FRAME_S) use.add(new double[]{st, st + blen});
                         }
+                    } else if (!coy && settings.vibAnyMusic && "phone".equals(audioSource)) {
+                        // any-music + phone audio: vibrate continuously while a media app is playing (silent passages included)
+                        use = new java.util.ArrayList<>();
+                        if (chOn && active && now >= testBurstUntil) use.add(new double[]{armedAt, Double.POSITIVE_INFINITY});
+                        if (testBurstUntil > tick) use.add(new double[]{testBurstUntil - blen, testBurstUntil});
+                        cont = true;
                     } else if (!coy && settings.vibAnyMusic) {
-                        // any-music mode: one vibration burst per detected kick, starting when it was heard
+                        // any-music mode (mic): one vibration burst per detected kick, starting when it was heard
                         use = new java.util.ArrayList<>();
                         if (active) synchronized (recentOnsets) {
                             for (double ot : recentOnsets)
@@ -1284,7 +1299,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         if (musicOn && motionActive(kind, now)) return true;   // screen movement fires this device (while music plays)
         if (musicOn && dipFires(kind) && lastDipAt > 0 && now - lastDipAt < settings.burstMs(kind) / 1000.0 + 0.2) return true;   // a dip fires it
         if (!musicOn) return false;                            // needs >= 1 s of sound to start; stops at once when it ends
-        if ("opossum".equals(kind) && settings.vibAnyMusic) return musicPresent(now);
+        if ("opossum".equals(kind) && settings.vibAnyMusic) return "phone".equals(audioSource) || musicPresent(now);   // phone audio: any playing media
         if (!tracker.locked()) return false;
         int lvl = settings.sens(kind);
         return tracker.confidence >= Settings.confMin(lvl) && tracker.hits >= Settings.lockHits(lvl)
@@ -1308,8 +1323,39 @@ public final class BeatService extends Service implements BleDevice.Listener, an
     private double lockedSince = -1;
     private static final double LOCK_STABLE_S = 2.0;
 
+    // ---- phone-audio mode: is any media app actually playing? (Android playback sessions, not the sound level)
+    public volatile boolean mediaPlaying = false;
+    private android.media.AudioManager.AudioPlaybackCallback playbackCb;
+
+    private boolean isMedia(android.media.AudioPlaybackConfiguration c) {
+        int u = c.getAudioAttributes().getUsage();
+        return u == android.media.AudioAttributes.USAGE_MEDIA || u == android.media.AudioAttributes.USAGE_GAME
+                || u == android.media.AudioAttributes.USAGE_UNKNOWN;          // our own voice clips use NAVIGATION_GUIDANCE
+    }
+
+    private void updateMedia(java.util.List<android.media.AudioPlaybackConfiguration> cfgs) {
+        boolean any = false;
+        for (android.media.AudioPlaybackConfiguration c : cfgs) if (isMedia(c)) { any = true; break; }
+        if (any != mediaPlaying) { mediaPlaying = any; log(any ? "media: playing" : "media: stopped"); }
+    }
+
+    private void startMediaWatch() {
+        AudioManager am = getSystemService(AudioManager.class);
+        if (playbackCb == null) {
+            playbackCb = new AudioManager.AudioPlaybackCallback() {
+                @Override public void onPlaybackConfigChanged(java.util.List<android.media.AudioPlaybackConfiguration> configs) { updateMedia(configs); }
+            };
+            am.registerAudioPlaybackCallback(playbackCb, main);
+        }
+        updateMedia(am.getActivePlaybackConfigurations());
+    }
+
+    /** Gate for timers / movement game: mic = sustained sound + stable lock; phone audio = media session playing. */
+    public boolean timerGate(double now) { return "phone".equals(audioSource) ? musicOn : musicStable(now); }
+
     private void soundGateTick(double now) {
-        if (detector.soundPresent()) { if (soundSince < 0) soundSince = now; }
+        boolean present = "phone".equals(audioSource) ? mediaPlaying : detector.soundPresent();   // phone audio: a playing session counts even if silent
+        if (present) { if (soundSince < 0) soundSince = now; }
         else soundSince = -1;
         musicOn = soundSince >= 0 && now - soundSince >= SOUND_SUSTAIN_S;
         if (tracker.locked()) { if (lockedSince < 0) lockedSince = now; } else lockedSince = -1;
