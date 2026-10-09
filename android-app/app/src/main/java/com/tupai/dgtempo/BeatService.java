@@ -300,6 +300,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         if (!settings.moveDelayOn) return "";
         if (!run) return "sensors OFF";
         double limitShown = settings.moveDelayRandom && !settings.moveDelayShowLimit ? -1 : Math.max(1, delayLimit);
+        if (!musicOn) return String.format("sensors on · movement %.0f%% · waiting for music (the game runs only while music plays)", moveF * 100);
         return String.format("sensors on · movement %.0f%% (need %d%%) · %s · hold %.1f%s s%s",
                 moveF * 100, settings.moveDelayNeedPct, moveF >= settings.moveDelayNeedPct / 100.0 ? "MOVING" : "still",
                 holdS, limitShown < 0 ? "" : String.format("/%.0f", limitShown),
@@ -321,6 +322,11 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         moveF = mf;
         boolean moving = mf >= settings.moveDelayNeedPct / 100.0;
         if (moving) lastMoveAt = now;
+        if (!musicOn) {                                   // music mode rule: no music -> nothing, not even this game
+            if (now < maxShockUntil) { maxShockUntil = 0; log("movement delay: music stopped -> MAX shock cut"); }
+            holdS = 0; lastMoveAt = -1; delayNote = settings.moveDelayOn && armed ? "waiting for music" : "";
+            return;
+        }
         if (now < maxShockUntil) { delayNote = String.format("⚡MAX %.0fs", maxShockUntil - now); return; }
         if (!armed) { holdS = 0; delayNote = ""; return; }
         boolean recent = lastMoveAt > 0 && now - lastMoveAt < 1.0;      // 1 s grace: a short pause does not reset
@@ -1175,12 +1181,12 @@ public final class BeatService extends Service implements BleDevice.Listener, an
                                 settings.latencyMs / 1000.0, blen, rate >= 1, testBurstUntil, Settings.subdiv(rate));
                     }
                     // screen movement: one burst per motion onset, on the devices that opted in
-                    if (settings.motionFires(d.kind) && motionRunning && armed) synchronized (recentMotion) {
+                    if (settings.motionFires(d.kind) && motionRunning && armed && musicOn) synchronized (recentMotion) {
                         for (double mt : recentMotion)
                             if (mt + blen > tick && mt < tick + Protocol.FRAME_S) use.add(new double[]{mt, mt + blen});
                     }
                     // phone dips: one burst per dip, on the devices that opted in
-                    if (dipFires(d.kind) && armed) synchronized (recentDips) {
+                    if (dipFires(d.kind) && armed && musicOn) synchronized (recentDips) {
                         for (double dt2 : recentDips)
                             if (dt2 + blen > tick && dt2 < tick + Protocol.FRAME_S) use.add(new double[]{dt2, dt2 + blen});
                     }
@@ -1271,12 +1277,12 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         if (now < testBurstUntil) return true;                 // test pulse: every connected device fires
         if (gyroMode()) return drive(kind) >= 0.05;            // gyro: tilt/movement decide, music ignored
         if (cageMode()) return "coyote".equals(kind) ? (cageOut.shock || cageOut.danceShock) : cageOut.vib;
-        if ("coyote".equals(kind) && now < maxShockUntil) return true;      // movement-delay max shock
+        if ("coyote".equals(kind) && now < maxShockUntil && musicOn) return true;      // movement-delay max shock (music playing)
         if ("coyote".equals(kind) && coyoteHeld()) return false;             // movement holds the Coyote off
         if ("coyote".equals(kind) && now < coyoteForceUntil) return true;   // timer pulse train in progress
         if ("coyote".equals(kind) && settings.coyoteTimerMode != 0) return false;   // timer mode: ONLY the timer fires the Coyote
-        if (motionActive(kind, now)) return true;              // screen movement fires this device
-        if (dipFires(kind) && lastDipAt > 0 && now - lastDipAt < settings.burstMs(kind) / 1000.0 + 0.2) return true;   // a dip fires it
+        if (musicOn && motionActive(kind, now)) return true;   // screen movement fires this device (while music plays)
+        if (musicOn && dipFires(kind) && lastDipAt > 0 && now - lastDipAt < settings.burstMs(kind) / 1000.0 + 0.2) return true;   // a dip fires it
         if (!musicOn) return false;                            // needs >= 1 s of sound to start; stops at once when it ends
         if ("opossum".equals(kind) && settings.vibAnyMusic) return musicPresent(now);
         if (!tracker.locked()) return false;
