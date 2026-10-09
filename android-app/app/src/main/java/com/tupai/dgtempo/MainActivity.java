@@ -154,6 +154,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         findViewById(R.id.btnCageFull).setOnClickListener(v -> enterFullCage());
         findViewById(R.id.btnFullExit).setOnClickListener(v -> exitFullCage());
         findViewById(R.id.btnFullLock).setOnClickListener(v -> { btnCageLock.performClick(); showFullBar(); });
+        findViewById(R.id.btnFullArm).setOnClickListener(v -> { btnArm.performClick(); showFullBar(); });
         findViewById(R.id.btnFullPause).setOnClickListener(v -> { btnCagePause.performClick(); showFullBar(); });
         fullOverlay.onTap = this::showFullBar;
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
@@ -564,6 +565,15 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         if (svc != null && svc.cage != null) svc.cage.attachPreview(cagePreview.getSurfaceProvider());
     }
 
+    /** ARM/STOP in the full-screen bar mirrors the header button (same colours). */
+    private void refreshFullArm() {
+        if (svc == null) return;
+        Button b = findViewById(R.id.btnFullArm);
+        b.setText(svc.armed ? R.string.btn_stop : R.string.btn_arm);
+        b.setBackgroundResource(svc.armed ? R.drawable.bg_btn_danger : R.drawable.bg_btn_go);
+        b.setTextColor(C_BG);
+    }
+
     private void refreshCageButtons() {
         if (svc == null) return;
         Settings s = svc.settings;
@@ -571,6 +581,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         btnCagePause.setText(s.cagePaused ? R.string.cage_resume : R.string.cage_pause);
         btnCagePause.setTextColor(s.cagePaused ? C_DANGER : C_TEXT);
         ((Button) findViewById(R.id.btnFullLock)).setText(s.cageLocked ? R.string.cage_unlock : R.string.cage_lock);
+        refreshFullArm();
         ((Button) findViewById(R.id.btnFullPause)).setText(s.cagePaused ? R.string.cage_resume : R.string.cage_pause);
         for (CageOverlayView ov : new CageOverlayView[]{cageOverlay, fullOverlay}) {
             ov.locked = s.cageLocked;
@@ -1376,6 +1387,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
                 C_OPOSSUM, oOn && svc.settings.opossumEnabled);
         btnArm.setText(svc.armed ? R.string.btn_stop : R.string.btn_arm);
         btnArm.setBackgroundResource(svc.armed ? R.drawable.bg_btn_danger : R.drawable.bg_btn_go);
+        if (inFullCage) refreshFullArm();
         btnArm.setTextColor(C_BG);
         btnMute.setText(svc.muted ? R.string.btn_unmute : R.string.btn_mute);
         btnMute.setTextColor(svc.muted ? C_DANGER : C_TEXT);
