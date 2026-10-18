@@ -41,6 +41,8 @@ public abstract class BleDevice {
     public volatile int strength = -1;       // last channel-A strength we commanded (-1 = force a write)
     public volatile int strengthB = -1;      // last channel-B strength we commanded
     public volatile long frames = 0, dropped = 0;
+    /** Link lost (or never up) and Android is waiting in the background for the device to advertise again. */
+    public volatile boolean waiting = false;
 
     protected BleDevice(String kind, String label, BluetoothDevice device, Listener listener) {
         this.kind = kind; this.label = label; this.device = device; this.listener = listener;
@@ -62,12 +64,31 @@ public abstract class BleDevice {
     private int retries = 0;
     private volatile boolean userDisconnect = false;
 
-    public void connect(Context ctx, Settings s) {
+    public void connect(Context ctx, Settings s) { connect(ctx, s, false); }
+
+    /** auto = true: no timeout, Android connects whenever the device shows up (remembered device, power cycle). */
+    public void connect(Context ctx, Settings s, boolean auto) {
         this.ctx = ctx;
         settings = s;
         userDisconnect = false;
-        listener.onLog(label + ": connecting " + device.getAddress());
-        gatt = device.connectGatt(ctx, false, callback, BluetoothDevice.TRANSPORT_LE);
+        waiting = auto;
+        listener.onLog(label + (auto ? ": waiting for " : ": connecting ") + device.getAddress()
+                + (device.getBondState() == BluetoothDevice.BOND_BONDED ? " (paired)" : ""));
+        gatt = device.connectGatt(ctx, auto, callback, BluetoothDevice.TRANSPORT_LE);
+    }
+
+    public boolean bonded() { return device.getBondState() == BluetoothDevice.BOND_BONDED; }
+
+    /** Ask Android to pair (Just Works). A paired device keeps our identity key and still recognises this
+     *  phone after its Bluetooth address rotates - without that, DG-Lab boxes only accept the last address
+     *  they saw and must be reset before every new session. */
+    private void bondIfWanted() {
+        if (settings == null || !settings.bleBond) return;
+        int st = device.getBondState();
+        if (st != BluetoothDevice.BOND_NONE) return;
+        boolean ok = false;
+        try { ok = device.createBond(); } catch (Exception ignored) {}
+        listener.onLog(label + (ok ? ": pairing with the phone ..." : ": pairing request rejected"));
     }
 
     static String gattStatus(int st) {
@@ -86,8 +107,16 @@ public abstract class BleDevice {
 
     public void disconnect() {
         userDisconnect = true;
+        waiting = false;
         BluetoothGatt g = gatt;
         if (g == null) return;
+        if (!connected) {                                  // pending / background connect: just drop it
+            gatt = null;
+            try { g.disconnect(); } catch (Exception ignored) {}
+            try { g.close(); } catch (Exception ignored) {}
+            listener.onDisconnected(this);
+            return;
+        }
         if (connected) {
             try { sendFrame(0, 0, true, new int[]{10, 10, 10, 10}, new int[4], new int[]{10, 10, 10, 10}, new int[4], settings); } catch (Exception ignored) {}
         }
@@ -146,6 +175,14 @@ public abstract class BleDevice {
                 try { g.close(); } catch (Exception ignored) {}
                 gatt = null; wChar = null;
                 listener.onLog(label + ": disconnected (" + gattStatus(status) + ")");
+                if (!userDisconnect && (was || waiting) && ctx != null) {
+                    // link dropped (device switched off, out of range): keep the device and wait for it in the background
+                    listener.onDisconnected(BleDevice.this);
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        if (!userDisconnect && gatt == null) connect(ctx, settings, true);
+                    }, 500);
+                    return;
+                }
                 if (!was && !userDisconnect && retries < 3) {
                     retries++;
                     listener.onLog(label + ": retrying connect " + retries + "/3 ...");
@@ -217,7 +254,9 @@ public abstract class BleDevice {
 
         private void finishConnect() {
             retries = 0;
+            waiting = false;
             connected = true;
+            bondIfWanted();
             strength = -1;
             afterConnect(settings);
             listener.onLog(label + ": connected, battery " + (battery < 0 ? "?" : battery + "%")

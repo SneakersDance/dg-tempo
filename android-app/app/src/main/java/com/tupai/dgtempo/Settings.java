@@ -101,6 +101,13 @@ public final class Settings {
     public int vibPulseRate = 1;
     public boolean pip = true;
     public boolean micFallback = false;
+    public String coyoteAddr = "", coyoteName = "", opossumAddr = "", opossumName = "";   // last connected devices
+    public boolean bleBond = true;              // pair with the devices so they recognise this phone after a power cycle
+    public String addr(String kind) { return "coyote".equals(kind) ? coyoteAddr : opossumAddr; }
+    public String devName(String kind) { return "coyote".equals(kind) ? coyoteName : opossumName; }
+    public void remember(String kind, String addr, String name) {
+        if ("coyote".equals(kind)) { coyoteAddr = addr; coyoteName = name; } else { opossumAddr = addr; opossumName = name; }
+    }
     public boolean screenMotion = false;        // phone-audio mode: also detect screen movement
     public int motionSens = 5;                  // 1 strict .. 10 eager
     public boolean motionCoyote = false, motionOpossum = true;   // which devices fire on screen movement
@@ -187,6 +194,9 @@ public final class Settings {
         s.vibBothMotors = p.getBoolean("vibBothMotors", true);
         s.pip = p.getBoolean("pip", true);
         s.micFallback = p.getBoolean("micFallback", false);
+        s.coyoteAddr = p.getString("coyoteAddr", ""); s.coyoteName = p.getString("coyoteName", "");
+        s.opossumAddr = p.getString("opossumAddr", ""); s.opossumName = p.getString("opossumName", "");
+        s.bleBond = p.getBoolean("bleBond", true);
         s.screenMotion = p.getBoolean("screenMotion", false);
         s.motionSens = p.getInt("motionSens", 5);
         s.motionCoyote = p.getBoolean("motionCoyote", false);
@@ -270,6 +280,7 @@ public final class Settings {
                 .putInt("coyoteSens", coyoteSens).putInt("vibSens", vibSens)
                 .putInt("coyotePulseRate", coyotePulseRate).putInt("vibPulseRate", vibPulseRate)
                 .putBoolean("vibAnyMusic", vibAnyMusic).putBoolean("vibBothMotors", vibBothMotors).putBoolean("pip", pip).putBoolean("micFallback", micFallback)
+                .putString("coyoteAddr", coyoteAddr).putString("coyoteName", coyoteName).putString("opossumAddr", opossumAddr).putString("opossumName", opossumName).putBoolean("bleBond", bleBond)
                 .putBoolean("screenMotion", screenMotion).putInt("motionSens", motionSens)
                 .putBoolean("motionCoyote", motionCoyote).putBoolean("motionOpossum", motionOpossum).putInt("coyoteMaxWaitS", coyoteMaxWaitS).putInt("coyoteTimerMode", coyoteTimerMode)
                 .putInt("coyoteRandMinS", coyoteRandMinS).putInt("coyoteRandMaxS", coyoteRandMaxS).putBoolean("timerPauseOnMove", timerPauseOnMove)

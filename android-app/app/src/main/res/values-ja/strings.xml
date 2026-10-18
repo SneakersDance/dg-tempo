@@ -276,4 +276,10 @@
     <string name="ov_still">○ 静止 %1$.0f%%</string>
     <string name="timer_pause_move">動いている間はタイマーを一時停止</string>
     <string name="x_timer_pause_move">オン：「動きで電気刺激を遅らせる」が Coyote を止めている間はタイマーも止まり、跳ぶことでタイマーに対しても時間を稼げます。オフ：保留中もタイマーは進み、保留が終わるとすぐ出力します。</string>
+    <string name="remembered">記憶済み</string>
+    <string name="waiting_dev">電源が入るのを待っています…</string>
+    <string name="paired">ペアリング済み</string>
+    <string name="btn_forget">削除</string>
+    <string name="ble_bond">デバイスとペアリング（このスマホを記憶）</string>
+    <string name="x_ble_bond">オン：接続後、Android 経由で Coyote / Opossum とペアリングします。ペアリング済みの本体は電源を入れ直してもこのスマホを認識し、次回アプリ起動時に自動で再接続します。オフ：Android の Bluetooth アドレスは数分ごとに変わり、DG-Lab 本体は最後に見たアドレスしか受け付けないため、毎回セッション前に本体の Bluetooth リセット（Coyote：両ダイヤルを 6 秒押し下げ、Opossum：電源ボタン 5 回）が必要になります。</string>
 </resources>

@@ -14,6 +14,7 @@ import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
@@ -546,6 +547,8 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         applySensitivity();
         main.post(this::ensureSensors);
         main.post(this::startMediaWatch);
+        android.content.IntentFilter bf = new android.content.IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(bondRx, bf, Context.RECEIVER_EXPORTED); else registerReceiver(bondRx, bf);
         if (settings.mode == 2) main.post(this::startCage);
         NotificationManager nm = getSystemService(NotificationManager.class);
         nm.createNotificationChannel(new NotificationChannel(CHANNEL, "DG Tempo", NotificationManager.IMPORTANCE_LOW));
@@ -572,7 +575,9 @@ public final class BeatService extends Service implements BleDevice.Listener, an
             startForegroundCompat(projection != null);
             acquireWakeLock();
             if (!audioRunning && !"phone".equals(audioSource) && projection == null && sched == null) startMic();
+            boolean first = sched == null;
             startScheduler();
+            if (first) main.postDelayed(() -> restoreRemembered(true), 800);   // last session's devices: wait for them in the background
         }
         return START_NOT_STICKY;
     }
@@ -590,6 +595,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
 
     @Override
     public void onDestroy() {
+        try { unregisterReceiver(bondRx); } catch (Exception ignored) {}
         quitInternal();
         lifecycle.setCurrentState(androidx.lifecycle.Lifecycle.State.DESTROYED);
         if (voice != null) { try { voice.release(); } catch (Exception ignored) {} voice = null; }
@@ -1514,7 +1520,9 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         }
     };
 
-    public void connect(String address) {
+    public void connect(String address) { connect(address, false); }
+
+    public void connect(String address, boolean auto) {
         Found f = found.get(address);
         if (f == null) return;
         stopScan();                                   // connecting during a scan is the #1 cause of GATT 133
@@ -1523,9 +1531,63 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         BleDevice d = "coyote".equals(f.kind) ? new CoyoteDevice(f.device, this) : new OpossumDevice(f.device, this);
         d.name = f.name;
         devices.put(f.kind, d);
-        main.postDelayed(() -> d.connect(this, settings), 300);
+        main.postDelayed(() -> d.connect(this, settings, auto), 300);
         postDevices();
     }
+
+    /** Put the last connected Coyote / Opossum in the list (no scan needed) and wait for them in the background. */
+    public void restoreRemembered(boolean autoConnect) {
+        if (Build.VERSION.SDK_INT >= 31
+                && checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) return;
+        BluetoothManager bm = getSystemService(BluetoothManager.class);
+        BluetoothAdapter ad = bm == null ? null : bm.getAdapter();
+        if (ad == null || !ad.isEnabled()) return;
+        for (String kind : new String[]{"coyote", "opossum"}) {
+            String addr = settings.addr(kind);
+            if (addr.isEmpty() || devices.containsKey(kind)) continue;
+            try {
+                BluetoothDevice dev = ad.getRemoteDevice(addr);
+                if (!found.containsKey(addr)) found.put(addr, new Found(dev, settings.devName(kind), kind, 0));
+                if (autoConnect) connect(addr, true);
+            } catch (Exception e) { log("remembered " + kind + ": " + e.getMessage()); }
+        }
+        postDevices();
+    }
+
+    /** Drop a remembered device: forget its address and remove the Android pairing. */
+    public void forget(String kind) {
+        BleDevice d = devices.get(kind);
+        if (d != null) d.disconnect();
+        String addr = settings.addr(kind);
+        if (!addr.isEmpty()) {
+            Found f = found.get(addr);
+            if (f != null && f.rssi == 0) found.remove(addr);
+            try {
+                BluetoothDevice dev = getSystemService(BluetoothManager.class).getAdapter().getRemoteDevice(addr);
+                if (dev.getBondState() != BluetoothDevice.BOND_NONE) {
+                    Object r = BluetoothDevice.class.getMethod("removeBond").invoke(dev);
+                    log(kind + ": pairing removed" + (Boolean.TRUE.equals(r) ? "" : " (if it is still listed under Android Bluetooth settings, forget it there)"));
+                }
+            } catch (Exception e) { log(kind + ": could not remove the pairing here - forget it under Android Bluetooth settings"); }
+        }
+        settings.remember(kind, "", "");
+        settings.save(this);
+        log(kind + ": forgotten");
+        postDevices();
+    }
+
+    private final android.content.BroadcastReceiver bondRx = new android.content.BroadcastReceiver() {
+        @Override public void onReceive(Context c, Intent i) {
+            BluetoothDevice dev = i.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            int st = i.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, -1);
+            if (dev == null) return;
+            for (BleDevice d : devices.values()) if (d.address().equals(dev.getAddress())) {
+                if (st == BluetoothDevice.BOND_BONDED) log(d.label + ": paired - it will recognise this phone after a power cycle");
+                else if (st == BluetoothDevice.BOND_NONE) log(d.label + ": not paired (the box declined or the dialog was dismissed) - it may need its Bluetooth reset before the next session");
+                postDevices();
+            }
+        }
+    };
 
     public void disconnect(String kind) {
         BleDevice d = devices.get(kind);
@@ -1537,6 +1599,10 @@ public final class BeatService extends Service implements BleDevice.Listener, an
     @Override
     public void onConnected(BleDevice d) {
         armed = false;
+        if (!d.address().equals(settings.addr(d.kind)) || !d.name.equals(settings.devName(d.kind))) {
+            settings.remember(d.kind, d.address(), d.name);
+            settings.save(this);
+        }
         log(">> " + d.label + " ready. Press ARM.");
         postDevices();
         main.post(this::updateNotification);
@@ -1546,8 +1612,8 @@ public final class BeatService extends Service implements BleDevice.Listener, an
     public void onDisconnected(BleDevice d) {
         boolean wasArmed = armed;
         armed = false;
-        if (devices.get(d.kind) == d) devices.remove(d.kind);
-        if (wasArmed) log("!! output stopped: " + d.label + " link lost");
+        if (devices.get(d.kind) == d && !d.waiting) devices.remove(d.kind);
+        if (wasArmed) log("!! output stopped: " + d.label + " link lost" + (d.waiting ? " - waiting for it to come back" : ""));
         postDevices();
         main.post(this::updateNotification);
     }

@@ -277,4 +277,10 @@
     <string name="ov_still">○ STILL %1$.0f%%</string>
     <string name="timer_pause_move">Movement pauses the timer</string>
     <string name="x_timer_pause_move">On: while "Movement delays the shock" is holding the Coyote off, the timer stands still too, so jumping buys time against the timer as well. Off: the timer keeps counting during a hold and its pulse comes as soon as the hold ends.</string>
+    <string name="remembered">remembered</string>
+    <string name="waiting_dev">waiting for it to turn on…</string>
+    <string name="paired">paired</string>
+    <string name="btn_forget">FORGET</string>
+    <string name="ble_bond">Pair with the devices (remember this phone)</string>
+    <string name="x_ble_bond">On: after connecting, the app pairs with the Coyote / Opossum through Android. A paired box keeps recognising this phone after it is switched off and on, and the app reconnects to it on its own at the next start. Off: Android\'s Bluetooth address changes every few minutes, and a DG-Lab box only accepts the last address it saw, so it needs its Bluetooth reset (Coyote: both dials down for 6 s; Opossum: power button 5 times) before every new session.</string>
 </resources>

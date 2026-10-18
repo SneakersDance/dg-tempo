@@ -276,4 +276,10 @@
     <string name="ov_still">○ 静止 %1$.0f%%</string>
     <string name="timer_pause_move">运动时暂停定时</string>
     <string name="x_timer_pause_move">开：当"运动可延迟电击"正按住郊狼时，定时器也停止计时，跳动同样能为定时争取时间。关：定时器在按住期间照常计时，按住一结束就输出。</string>
+    <string name="remembered">已记住</string>
+    <string name="waiting_dev">等待设备开机…</string>
+    <string name="paired">已配对</string>
+    <string name="btn_forget">忘记</string>
+    <string name="ble_bond">与设备配对（记住这部手机）</string>
+    <string name="x_ble_bond">开：连接后，应用通过安卓系统与郊狼 / 负鼠配对。配对过的设备关机再开机后仍能认出这部手机，下次启动应用会自动重连。关：安卓的蓝牙地址每隔几分钟就会变化，而 DG-Lab 设备只接受它上次见过的地址，所以每次新会话前都要重置设备蓝牙（郊狼：两个旋钮同时按下 6 秒；负鼠：连按电源键 5 次）。</string>
 </resources>

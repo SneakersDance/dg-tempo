@@ -697,6 +697,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         buildMotionControls(s);
         buildCageControls(s);
         addSwitch(llAudio, R.string.mic_fallback, R.string.x_mic_fallback, s.micFallback, v -> { s.micFallback = v; changed(); });
+        addSwitch(llAudio, R.string.ble_bond, R.string.x_ble_bond, s.bleBond, v -> { s.bleBond = v; changed(); });
         addSwitch(llAudio, R.string.motion_switch, R.string.x_motion, s.screenMotion, v -> { svc.setScreenMotion(v); buildControls(); });
         if (s.screenMotion) {
             addSeek(llAudio, R.string.motion_sens, 0, R.string.end_strict, R.string.end_eager, 1, 10, s.motionSens, v -> v + " / 10", v -> { s.motionSens = v; changed(); });
@@ -1304,17 +1305,24 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             row.setPadding(0, 8, 0, 8);
             TextView tv = new TextView(this);
             tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+            boolean remembered = f.device.getAddress().equals(svc.settings.addr(f.kind));
             String state = !isThis ? "" : d.connected
-                    ? "  ✓ " + getString(R.string.connected) + (d.battery >= 0 ? " " + d.battery + "%" : "")
-                    : "  " + getString(R.string.connecting);
+                    ? "  ✓ " + getString(R.string.connected) + (d.battery >= 0 ? " " + d.battery + "%" : "") + (d.bonded() ? " · " + getString(R.string.paired) : "")
+                    : d.waiting ? "  " + getString(R.string.waiting_dev) : "  " + getString(R.string.connecting);
             tv.setText(getString("coyote".equals(f.kind) ? R.string.dev_coyote : R.string.dev_opossum)
-                    + "\n" + f.name + (f.rssi != 0 ? "  " + f.rssi + " dBm" : "") + state);
+                    + "\n" + f.name + (f.rssi != 0 ? "  " + f.rssi + " dBm" : remembered ? "  · " + getString(R.string.remembered) : "") + state);
             tv.setTextColor(isThis && d.connected ? C_GO : C_TEXT);
             Button b = ghostButton(isThis ? R.string.btn_disconnect : R.string.btn_connect);
             b.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
             b.setOnClickListener(v -> { if (isThis) svc.disconnect(f.kind); else svc.connect(f.device.getAddress()); });
             row.addView(tv);
             row.addView(b);
+            if (remembered && !(isThis && d.connected)) {
+                Button fb = ghostButton(R.string.btn_forget);
+                fb.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                fb.setOnClickListener(v -> svc.forget(f.kind));
+                row.addView(fb);
+            }
             llDevices.addView(row);
             if (isThis && d.connected) {
                 Switch sw = new Switch(this);
