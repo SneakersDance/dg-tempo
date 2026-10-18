@@ -519,7 +519,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         if (owed <= 0 || !sound || now < coyoteForceUntil) return;
         // "visible highest point": the tempo is at the window's high (within 1 BPM). If no such moment shows up
         // for a whole extra window, fire anyway so "every X seconds" still roughly holds.
-        boolean atPeak = locked && winMaxBpm > 0 && bpm >= winMaxBpm - 1.0;
+        boolean atPeak = !locked || (winMaxBpm > 0 && bpm >= winMaxBpm - 1.0);   // no beat lock: nothing to wait for, fire on schedule
         boolean overdue = now - debtSince >= x;
         if (!atPeak && !overdue) return;              // waiting for the high point: debt keeps accumulating
         String why = (atPeak ? "at peak " + Math.round(winMaxBpm) + " BPM" : "no peak seen, overdue") + ", " + owed + " owed";
@@ -1042,13 +1042,13 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         if (deviceActive(kind)) return "▶";
         if (gyroMode()) return String.format("%.0f%%", drive(kind) * 100);
         if (cageMode()) return cageNote();
-        if ("coyote".equals(kind) && !delayNote.isEmpty()) return delayNote;
+        if ("coyote".equals(kind) && !delayNote.isEmpty() && musicOn) return delayNote;
+        if (muted) return "muted";
+        if (!musicOn) return "quiet";
         if ("coyote".equals(kind) && settings.coyoteTimerMode == 2 && nextRandomAt > 0)
             return String.format("⏱%.0fs", Math.max(0, nextRandomAt - System.nanoTime() / 1e9));
         if ("coyote".equals(kind) && settings.coyoteTimerMode == 1)
             return "⏱" + owed + "/3";
-        if (muted) return "muted";
-        if (!musicOn) return "quiet";
         if ("opossum".equals(kind) && settings.vibAnyMusic) return "sound";
         if (tracker.locked() && !settings.bpmAllowed(kind, tracker.bpm())) return settings.bpmMin(kind) + "-" + settings.bpmMax(kind);
         return "lock";
@@ -1350,8 +1350,9 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         updateMedia(am.getActivePlaybackConfigurations());
     }
 
-    /** Gate for timers / movement game: mic = sustained sound + stable lock; phone audio = media session playing. */
-    public boolean timerGate(double now) { return "phone".equals(audioSource) ? musicOn : musicStable(now); }
+    /** Gate for the timers: sustained sound (mic) or a playing media session (phone audio). A beat lock is NOT
+     *  required - a loud room through the mic rarely locks, and the timer is exactly the trigger for that case. */
+    public boolean timerGate(double now) { return musicOn; }
 
     private void soundGateTick(double now) {
         boolean present = "phone".equals(audioSource) ? mediaPlaying : detector.soundPresent();   // phone audio: a playing session counts even if silent

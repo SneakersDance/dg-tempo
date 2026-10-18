@@ -1014,6 +1014,8 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         Settings s = svc.settings;
         if ("opossum".equals(kind) && s.vibAnyMusic)
             return tag + ":" + (svc.deviceActive(kind) ? "▶" : "·") + " " + getString(R.string.any_sound);
+        if ("coyote".equals(kind) && s.coyoteTimerMode != 0)                       // timer drives the Coyote: show the timer, not the beat lock
+            return tag + ":" + (svc.deviceActive(kind) ? "▶" : "·") + " ⏱ " + (svc.timerNote.isEmpty() ? getString(R.string.coy_timer) : svc.timerNote);
         String range = s.bpmMin(kind) <= 60 && s.bpmMax(kind) >= 220 ? getString(R.string.bpm_any)
                 : (s.bpmMin(kind) <= 60 ? "≤" + s.bpmMax(kind) : s.bpmMax(kind) >= 220 ? "≥" + s.bpmMin(kind)
                 : s.bpmMin(kind) + "-" + s.bpmMax(kind)) + " BPM";
