@@ -86,6 +86,7 @@ public final class Settings {
     public String cageVideoUri = "";
     public String cageVideoLocal = "";          // the chosen video copied into the app (survives moved / revoked originals)
     public int cageFollowDeg = 35, cageFollowGraceS = 2;
+    public float cageVideoW = 0.45f, cageVideoX = 0.53f, cageVideoY = 0.08f;   // full-screen video pane: width + position as screen fractions
     public int cageDanceGraceS = 3, cageDanceMovePct = 15, cageDanceLevel = -1;   // -1 = same as the cage shock level                            // camera zoom ratio x10 (10 = 1.0x; <10 = ultra-wide if available)                       // % of "full movement" that counts as moving                            // gyro mode Opossum: 0 follow tilt/movement, 1 always on, 2 always off
     public int tiltRel(String kind) { return "coyote".equals(kind) ? coyoteTiltRel : vibTiltRel; }
     public int moveRel(String kind) { return "coyote".equals(kind) ? coyoteMoveRel : vibMoveRel; }
@@ -178,6 +179,7 @@ public final class Settings {
         s.cageDanceMovePct = p.getInt("cageDanceMovePct", 15); s.cageDanceLevel = p.getInt("cageDanceLevel", -1);
         s.cageFollow = p.getBoolean("cageFollow", false); s.cageFollowMirror = p.getBoolean("cageFollowMirror", true);
         s.cageVideoUri = p.getString("cageVideoUri", ""); s.cageVideoLocal = p.getString("cageVideoLocal", ""); s.cageFollowDeg = p.getInt("cageFollowDeg", 35); s.cageFollowGraceS = p.getInt("cageFollowGraceS", 2);
+        s.cageVideoW = p.getFloat("cageVideoW", 0.45f); s.cageVideoX = p.getFloat("cageVideoX", 0.53f); s.cageVideoY = p.getFloat("cageVideoY", 0.08f);
         s.vibLink = p.getBoolean("vibLink", true);
 
         s.vibFollowTempo = p.getBoolean("vibFollowTempo", s.vibFollowTempo);
@@ -276,7 +278,7 @@ public final class Settings {
                 .putInt("cageShockLevel", cageShockLevel).putInt("cageShockS", cageShockS).putInt("cageWarnS", cageWarnS)
                 .putInt("cageShockMode", cageShockMode).putInt("cageVib", cageVib).putInt("cageOutsidePct", cageOutsidePct).putInt("cageMinAreaPct", cageMinAreaPct).putInt("cageZoomX10", cageZoomX10).putBoolean("cageDebug", cageDebug)
                 .putBoolean("cageDance", cageDance).putInt("cageDanceGraceS", cageDanceGraceS).putInt("cageDanceMovePct", cageDanceMovePct).putInt("cageDanceLevel", cageDanceLevel)
-                .putBoolean("cageFollow", cageFollow).putBoolean("cageFollowMirror", cageFollowMirror).putString("cageVideoUri", cageVideoUri).putString("cageVideoLocal", cageVideoLocal).putInt("cageFollowDeg", cageFollowDeg).putInt("cageFollowGraceS", cageFollowGraceS)
+                .putBoolean("cageFollow", cageFollow).putBoolean("cageFollowMirror", cageFollowMirror).putString("cageVideoUri", cageVideoUri).putString("cageVideoLocal", cageVideoLocal).putInt("cageFollowDeg", cageFollowDeg).putInt("cageFollowGraceS", cageFollowGraceS).putFloat("cageVideoW", cageVideoW).putFloat("cageVideoX", cageVideoX).putFloat("cageVideoY", cageVideoY)
                 .putBoolean("vibFollowTempo", vibFollowTempo)
                 .putBoolean("autoStrength", autoStrength)
                 .putFloat("bpmLo", (float) bpmLo).putFloat("bpmHi", (float) bpmHi)

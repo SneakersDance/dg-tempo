@@ -63,7 +63,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     private TextView fullTL, fullBL, fullBR;
     private boolean inFullCage = false;
     private static final int REQ_CAMERA = 3, REQ_VIDEO = 4;
-    private android.widget.VideoView cageVideo;                 // one player, re-parented between the card and full screen
+    private TexturePlayer cageVideo;                            // one player, re-parented between the card and full screen
     private android.widget.FrameLayout cageVideoBox, fullVideoBox;
     private boolean videoUserPaused = false;
     private boolean fullVideoShown = false;                     // full screen: the video starts as a translucent box, tap to reveal
@@ -161,9 +161,9 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         findViewById(R.id.btnCageFull).setOnClickListener(v -> enterFullCage());
         cageVideoBox = findViewById(R.id.cageVideoBox);
         fullVideoBox = findViewById(R.id.fullVideoBox);
-        cageVideo = new android.widget.VideoView(this);
-        cageVideo.setOnPreparedListener(mp -> { mp.setLooping(true); if (svc != null && svc.armed && !videoUserPaused) cageVideo.start(); });
-        cageVideo.setOnErrorListener((mp, what, extra) -> { onLog("video: playback error " + what + "/" + extra); return true; });
+        cageVideo = new TexturePlayer(this);
+        cageVideo.onPrepared = () -> { if (svc != null && svc.armed && !videoUserPaused) cageVideo.start(); applyFullVideo(); };
+        cageVideo.onError = (mp, what, extra) -> { onLog("video: playback error " + what + "/" + extra); return true; };
         View.OnClickListener toggle = v -> {
             if (cageVideo.isPlaying()) { cageVideo.pause(); videoUserPaused = true; } else { cageVideo.start(); videoUserPaused = false; }
             if (inFullCage) showFullBar();
@@ -175,7 +175,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         fullVideoHint.setPadding(dp(8), dp(8), dp(8), dp(8));
         android.widget.FrameLayout.LayoutParams hl = new android.widget.FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         fullVideoBox.addView(fullVideoHint, hl);
-        fullVideoBox.setOnClickListener(v -> { fullVideoShown = !fullVideoShown; applyFullVideo(); showFullBar(); });
+        setupVideoPaneGestures();
         moveVideoTo(cageVideoBox);
         findViewById(R.id.btnFullExit).setOnClickListener(v -> exitFullCage());
         findViewById(R.id.btnFullLock).setOnClickListener(v -> { btnCageLock.performClick(); showFullBar(); });
@@ -578,17 +578,74 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         box.addView(cageVideo, lp);
     }
 
-    /** Full screen: hidden = the player shrinks to 2x2 px behind a translucent box (playback and audio go on), shown = full box. */
+    /**
+     * Full screen video pane: starts as a translucent box (tap to reveal / hide the picture; sound and timing go on),
+     * pinch to resize, drag to move. Size and position are remembered.
+     */
     private void applyFullVideo() {
         if (!inFullCage || cageVideo.getParent() != fullVideoBox) return;
-        android.widget.FrameLayout.LayoutParams lp = fullVideoShown
-                ? new android.widget.FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-                : new android.widget.FrameLayout.LayoutParams(2, 2);
-        lp.gravity = fullVideoShown ? Gravity.CENTER : Gravity.TOP | Gravity.START;
-        cageVideo.setLayoutParams(lp);
-        fullVideoBox.setBackgroundColor(fullVideoShown ? 0xCC000000 : 0x55000000);
+        Settings s = svc.settings;
+        int sw = fullCage.getWidth() > 0 ? fullCage.getWidth() : getResources().getDisplayMetrics().widthPixels;
+        int sh = fullCage.getHeight() > 0 ? fullCage.getHeight() : getResources().getDisplayMetrics().heightPixels;
+        float aspect = cageVideo.aspect() > 0 ? cageVideo.aspect() : 0.75f;
+        int w = Math.round(sw * Math.max(0.2f, Math.min(1f, s.cageVideoW)));
+        int h = Math.round(w / aspect);
+        if (h > sh * 0.95f) { h = Math.round(sh * 0.95f); w = Math.round(h * aspect); }
+        ViewGroup.LayoutParams blp = fullVideoBox.getLayoutParams();
+        blp.width = w; blp.height = h;
+        fullVideoBox.setLayoutParams(blp);
+        fullVideoBox.setX(Math.max(0, Math.min(sw - w, s.cageVideoX * sw)));
+        fullVideoBox.setY(Math.max(0, Math.min(sh - h, s.cageVideoY * sh)));
+        cageVideo.setVisibility(fullVideoShown ? View.VISIBLE : View.GONE);
+        fullVideoBox.setBackgroundColor(fullVideoShown ? 0xFF000000 : 0x55000000);
         fullVideoHint.setVisibility(fullVideoShown ? View.GONE : View.VISIBLE);
     }
+
+    private void setupVideoPaneGestures() {
+        android.view.ScaleGestureDetector sgd = new android.view.ScaleGestureDetector(this, new android.view.ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            @Override public boolean onScale(android.view.ScaleGestureDetector d) {
+                if (svc == null) return true;
+                svc.settings.cageVideoW = Math.max(0.2f, Math.min(1f, svc.settings.cageVideoW * d.getScaleFactor()));
+                scaledThisTouch = true;
+                applyFullVideo();
+                return true;
+            }
+        });
+        final float slop = android.view.ViewConfiguration.get(this).getScaledTouchSlop();
+        fullVideoBox.setOnTouchListener((v, e) -> {
+            sgd.onTouchEvent(e);
+            switch (e.getActionMasked()) {
+                case android.view.MotionEvent.ACTION_DOWN:
+                    downRawX = e.getRawX(); downRawY = e.getRawY(); boxX0 = v.getX(); boxY0 = v.getY(); movedThisTouch = false; scaledThisTouch = false;
+                    break;
+                case android.view.MotionEvent.ACTION_MOVE:
+                    if (!sgd.isInProgress() && e.getPointerCount() == 1) {
+                        float dx = e.getRawX() - downRawX, dy = e.getRawY() - downRawY;
+                        if (Math.hypot(dx, dy) > slop) movedThisTouch = true;
+                        if (movedThisTouch) {
+                            int sw = fullCage.getWidth(), sh = fullCage.getHeight();
+                            v.setX(Math.max(0, Math.min(sw - v.getWidth(), boxX0 + dx)));
+                            v.setY(Math.max(0, Math.min(sh - v.getHeight(), boxY0 + dy)));
+                        }
+                    }
+                    break;
+                case android.view.MotionEvent.ACTION_UP:
+                case android.view.MotionEvent.ACTION_CANCEL:
+                    if (svc != null && fullCage.getWidth() > 0) {
+                        svc.settings.cageVideoX = v.getX() / fullCage.getWidth();
+                        svc.settings.cageVideoY = v.getY() / fullCage.getHeight();
+                        if (movedThisTouch || scaledThisTouch) changed();
+                    }
+                    if (!movedThisTouch && !scaledThisTouch && e.getActionMasked() == android.view.MotionEvent.ACTION_UP) {
+                        fullVideoShown = !fullVideoShown; applyFullVideo(); showFullBar();
+                    }
+                    break;
+            }
+            return true;
+        });
+    }
+    private float downRawX, downRawY, boxX0, boxY0;
+    private boolean movedThisTouch, scaledThisTouch;
 
     private boolean hasVideo() { return svc != null && svc.settings.cageFollow && !svc.settings.cageVideoUri.isEmpty(); }
     private String videoLoaded = "";
@@ -610,7 +667,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         android.net.Uri src = videoSource();
         if (src.toString().equals(videoLoaded)) return;                 // already playing this source: do not restart it
         videoLoaded = src.toString();
-        try { cageVideo.setVideoURI(src); } catch (Exception e) { onLog("video: " + e.getMessage()); }
+        try { cageVideo.setSource(src); } catch (Exception e) { onLog("video: " + e.getMessage()); }
     }
 
     /** Plays the picked clip in a dialog so the player can check it is the right one before it is stored and analysed. */
@@ -652,7 +709,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     private void enterFullCage() {
         if (svc == null || svc.cage == null || inFullCage) return;
         inFullCage = true;
-        if (hasVideo()) { cageVideoBox.setVisibility(View.GONE); fullVideoBox.setVisibility(View.VISIBLE); moveVideoTo(fullVideoBox); fullVideoShown = false; applyFullVideo(); }
+        if (hasVideo()) { cageVideoBox.setVisibility(View.GONE); fullVideoBox.setVisibility(View.VISIBLE); moveVideoTo(fullVideoBox); fullVideoShown = false; fullVideoBox.post(this::applyFullVideo); }
         findViewById(R.id.fullBar).setVisibility(View.GONE);
         View hint = findViewById(R.id.fullTapHint);
         hint.setVisibility(View.VISIBLE);
@@ -672,7 +729,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         inFullCage = false;
         fullCage.setVisibility(View.GONE);
         mainRoot.setVisibility(View.VISIBLE);
-        if (hasVideo()) { fullVideoBox.setVisibility(View.GONE); cageVideoBox.setVisibility(View.VISIBLE); moveVideoTo(cageVideoBox); }
+        if (hasVideo()) { fullVideoBox.setVisibility(View.GONE); cageVideoBox.setVisibility(View.VISIBLE); moveVideoTo(cageVideoBox); cageVideo.setVisibility(View.VISIBLE); }
         androidx.core.view.WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
                 .show(androidx.core.view.WindowInsetsCompat.Type.systemBars());
         if (svc != null && svc.cage != null) svc.cage.attachPreview(cagePreview.getSurfaceProvider());
@@ -813,10 +870,6 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             ov.showMotion = cam && s.cageLocked;
             ov.motion = svc.cageMotion; ov.motionMin = s.cageDanceMovePct / 100.0;
             ov.danceMode = s.cageDance; ov.danceShock = o.danceShock; ov.stillS = o.stillS; ov.graceS = s.cageDanceGraceS;
-            boolean showPose = s.cageFollow && hasVideo();
-            ov.refPose = showPose ? svc.refPose : null; ov.livePose = showPose ? svc.livePose : null;
-            ov.refAspect = svc.refAspect; ov.liveAspect = svc.liveAspect; ov.segErr = svc.segErr;
-            ov.segTol = s.cageFollowDeg; ov.mirror = s.cageFollowMirror; ov.front = s.cageFront;
             ov.invalidate();
         }
         if (inFullCage) {
