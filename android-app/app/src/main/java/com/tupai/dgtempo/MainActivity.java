@@ -463,8 +463,9 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             android.net.Uri u = data.getData();
             try { getContentResolver().takePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION); } catch (Exception ignored) {}
             svc.settings.cageVideoUri = u.toString();
+            svc.settings.cageVideoLocal = "";
             svc.settingsChanged();
-            svc.loadVideoPoses(true);
+            svc.loadVideoPoses(false);                      // same file again = stored copy + saved poses, no re-analysis
             loadVideo();
             buildControls();
             return;
@@ -595,6 +596,14 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     }
 
     private boolean hasVideo() { return svc != null && svc.settings.cageFollow && !svc.settings.cageVideoUri.isEmpty(); }
+    private String videoLoaded = "";
+
+    /** Prefer the copy inside the app; the picker URI only until the copy exists. */
+    private android.net.Uri videoSource() {
+        String local = svc.settings.cageVideoLocal;
+        if (!local.isEmpty() && new java.io.File(local).exists()) return android.net.Uri.fromFile(new java.io.File(local));
+        return android.net.Uri.parse(svc.settings.cageVideoUri);
+    }
 
     /** Show / hide the video boxes and (re)load the chosen clip. */
     private void loadVideo() {
@@ -602,8 +611,11 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         cageVideoBox.setVisibility(show && !inFullCage ? View.VISIBLE : View.GONE);
         fullVideoBox.setVisibility(show && inFullCage ? View.VISIBLE : View.GONE);
         if (svc != null) svc.videoPos = () -> show && cageVideo.isPlaying() ? cageVideo.getCurrentPosition() : -1;
-        if (!show) { try { cageVideo.stopPlayback(); } catch (Exception ignored) {} return; }
-        try { cageVideo.setVideoURI(android.net.Uri.parse(svc.settings.cageVideoUri)); } catch (Exception e) { onLog("video: " + e.getMessage()); }
+        if (!show) { videoLoaded = ""; try { cageVideo.stopPlayback(); } catch (Exception ignored) {} return; }
+        android.net.Uri src = videoSource();
+        if (src.toString().equals(videoLoaded)) return;                 // already playing this source: do not restart it
+        videoLoaded = src.toString();
+        try { cageVideo.setVideoURI(src); } catch (Exception e) { onLog("video: " + e.getMessage()); }
     }
 
     private void pickVideo() {
@@ -1394,6 +1406,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     @Override
     public void onDevices() {
         if (svc == null) return;
+        if (hasVideo()) loadVideo();                                    // picks up the in-app copy once it exists
         tvSource.setText("phone".equals(svc.audioSource) ? R.string.src_now_phone
                 : "mic".equals(svc.audioSource) ? R.string.src_now_mic : R.string.src_now_none);
         keepScreenOnWhilePhoneAudio();

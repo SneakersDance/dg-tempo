@@ -219,28 +219,74 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         return poseRef.bestError(lf, pos, 500, settings.cageFollowMirror);
     }
 
-    private File poseCacheFile(String uri) {
-        File dir = new File(getCacheDir(), "pose"); dir.mkdirs();
-        return new File(dir, "v" + Integer.toHexString(uri.hashCode()) + ".bin");
+    /** Stable identity of the picked file: name + size + modified time (the same clip picked again is a cache hit). */
+    private String videoKey(android.net.Uri u) {
+        String name = u.getLastPathSegment(); long size = -1, mod = -1;
+        try (android.database.Cursor c = getContentResolver().query(u, null, null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+                int i = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME); if (i >= 0) name = c.getString(i);
+                i = c.getColumnIndex(android.provider.OpenableColumns.SIZE); if (i >= 0) size = c.getLong(i);
+                i = c.getColumnIndex(android.provider.DocumentsContract.Document.COLUMN_LAST_MODIFIED); if (i >= 0) mod = c.getLong(i);
+            }
+        } catch (Exception ignored) {}
+        return "v" + Integer.toHexString((name + "|" + size + "|" + mod).hashCode());
     }
 
-    /** Load the chosen video's choreography from the cache, or analyse the video once (worker thread). */
+    private File videoDir() { File d = new File(getFilesDir(), "video"); d.mkdirs(); return d; }
+
+    /**
+     * Make the chosen video ours: copy it into the app once (keyed by name/size/date), load its choreography from the
+     * file next to it, or analyse it once and save. Everything runs on a worker thread; nothing leaves the phone.
+     */
     public void loadVideoPoses(boolean force) {
         String uri = settings.cageVideoUri;
         if (uri.isEmpty()) { poseRef = null; poseRefUri = ""; poseStatus = ""; return; }
-        if (!force && uri.equals(poseRefUri) && poseRef != null) return;
+        if (!force && uri.equals(poseRefUri) && (poseRef != null || poseAnalysisPct >= 0 && poseAnalysisPct < 100)) return;
         if (analyser != null) analyser.cancelled = true;
         poseRef = null; poseRefUri = uri;
-        File f = poseCacheFile(uri);
-        if (!force && f.exists()) {
-            try { poseRef = PoseTrack.load(f); poseAnalysisPct = 100; poseStatus = "ready"; log(String.format("follow: choreography loaded (%d poses, %d judged)", poseRef.size(), poseRef.judged())); return; }
-            catch (Exception e) { log("follow: cache unreadable, re-analysing"); }
-        }
+        poseAnalysisPct = 0; poseStatus = "preparing";
+        new Thread(() -> {
+            try {
+                android.net.Uri u = android.net.Uri.parse(uri);
+                File dir = videoDir();
+                String key = videoKey(u);
+                File local = new File(dir, key + ".mp4"), poses = new File(dir, key + ".pose");
+                if (!local.exists() || local.length() == 0) {
+                    log("follow: copying the video into the app ...");
+                    File tmp = new File(dir, key + ".part");
+                    try (java.io.InputStream in = getContentResolver().openInputStream(u); java.io.OutputStream out = new java.io.FileOutputStream(tmp)) {
+                        if (in == null) throw new java.io.IOException("cannot open the video");
+                        byte[] buf = new byte[1 << 16]; int n; while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                    }
+                    if (!tmp.renameTo(local)) throw new java.io.IOException("cannot store the copy");
+                    log(String.format("follow: video stored (%d MB)", local.length() >> 20));
+                }
+                File[] old = dir.listFiles();
+                if (old != null) for (File f : old) if (!f.getName().startsWith(key)) f.delete();   // keep one video + its poses
+                if (!local.getAbsolutePath().equals(settings.cageVideoLocal)) { settings.cageVideoLocal = local.getAbsolutePath(); settings.save(this); }
+                UiListener l0 = ui; if (l0 != null) main.post(l0::onDevices);
+                if (!force && poses.exists()) {
+                    try {
+                        PoseTrack t = PoseTrack.load(poses);
+                        poseRef = t; poseAnalysisPct = 100; poseStatus = "ready";
+                        log(String.format("follow: choreography loaded (%d poses, %d judged)", t.size(), t.judged()));
+                        return;
+                    } catch (Exception e) { log("follow: saved poses unreadable, re-analysing"); }
+                }
+                analyseVideo(android.net.Uri.fromFile(local), poses);
+            } catch (Exception e) {
+                poseAnalysisPct = -1; poseStatus = "error: " + e.getMessage();
+                log("follow: FAILED - " + e.getMessage());
+            }
+        }, "video-prep").start();
+    }
+
+    private void analyseVideo(android.net.Uri src, File poses) {
         poseAnalysisPct = 0; poseStatus = "analysing";
         log("follow: analysing the video (runs once, nothing leaves the phone) ...");
         PoseAnalyzer a = new PoseAnalyzer();
         analyser = a;
-        a.run(this, android.net.Uri.parse(uri), new PoseAnalyzer.Progress() {
+        a.run(this, src, new PoseAnalyzer.Progress() {
             int lastLogged = -10;
             @Override public void onProgress(int pct, int frames, int judged) {
                 poseAnalysisPct = pct;
@@ -249,7 +295,7 @@ public final class BeatService extends Service implements BleDevice.Listener, an
             @Override public void onDone(PoseTrack t, String err) {
                 if (a.cancelled) return;
                 if (t == null) { poseAnalysisPct = -1; poseStatus = "error: " + err; log("follow: FAILED - " + err); return; }
-                try { t.save(f); } catch (Exception e) { log("follow: could not cache: " + e.getMessage()); }
+                try { t.save(poses); } catch (Exception e) { log("follow: could not save the poses: " + e.getMessage()); }
                 poseRef = t; poseAnalysisPct = 100; poseStatus = "ready";
                 log(String.format("follow: ready - %d poses over %d s, %d with a visible dancer", t.size(), t.durationMs / 1000, t.judged()));
                 UiListener l = ui; if (l != null) main.post(l::onDevices);
