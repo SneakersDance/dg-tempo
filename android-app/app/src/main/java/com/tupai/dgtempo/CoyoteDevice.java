@@ -30,7 +30,13 @@ public final class CoyoteDevice extends BleDevice {
     protected void onNotify(byte[] data) {
         int[] p = Protocol.parseB1(data);
         if (p == null) return;
-        if (p[0] != 0 && p[0] == pendingSeq) pendingSeq = -1;
+        if (p[0] != 0 && p[0] == pendingSeq) {
+            pendingSeq = -1;
+            // the box's own word on what it is running: differs from what we asked = clamped by a cap or refused
+            if (p[1] != strength || p[2] != strengthB)
+                listener.onLog("Coyote REPORTS A=" + p[1] + " B=" + p[2] + " (asked A=" + strength + " B=" + strengthB + ", caps A=" + capWrittenA + " B=" + capWrittenB + ")");
+            else listener.onLog("Coyote confirms A=" + p[1] + " B=" + p[2]);
+        }
         if (p[0] == 0 && (p[1] != actualA || p[2] != actualB)) listener.onLog("Coyote wheel: A=" + p[1] + " B=" + p[2]);
         actualA = p[1]; actualB = p[2];
     }

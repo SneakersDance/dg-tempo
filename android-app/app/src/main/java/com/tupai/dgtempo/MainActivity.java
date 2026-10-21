@@ -1510,8 +1510,11 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         String state = getString(!anyConn ? R.string.state_no_device : svc.armed ? R.string.state_armed : R.string.state_stopped)
                 + (svc.muted ? " · " + getString(R.string.state_muted) : "");
         StringBuilder devs = new StringBuilder();
-        for (BleDevice d : svc.devices.values()) if (d.connected)
-            devs.append(d.label.charAt(0)).append(':').append(Math.max(0, d.strength)).append('(').append(d.actualA).append(") ");
+        for (BleDevice d : svc.devices.values()) if (d.connected) {
+            devs.append(d.label.charAt(0)).append(':').append(Math.max(0, d.strength)).append('(').append(d.actualA).append(')');
+            if ("coyote".equals(d.kind) && svc.settings.channelB) devs.append('/').append(Math.max(0, d.strengthB)).append('(').append(d.actualB).append(')');
+            devs.append(' ');
+        }
         String bar = tr.barKnown() ? getString(R.string.bar_n, tr.downbeatPhase() + 1) : getString(R.string.bar_unknown);
         tvStatus.setText(getString(R.string.status_fmt, state, devs, bar, svc.bursts)
                 + (svc.audioRunning ? "" : "  " + getString(R.string.state_mic_off))
