@@ -285,7 +285,7 @@
     <string name="x_ble_bond">On: after connecting, the app pairs with the Coyote / Opossum through Android. A paired box keeps recognising this phone after it is switched off and on, and the app reconnects to it on its own at the next start. Off: Android\'s Bluetooth address changes every few minutes, and a DG-Lab box only accepts the last address it saw, so it needs its Bluetooth reset (Coyote: both dials down for 6 s; Opossum: power button 5 times) before every new session.</string>
     <string name="cage_follow_title">Follow a video</string>
     <string name="cage_follow">Shock when the pose does not match the video</string>
-    <string name="x_cage_follow">Pick a dance video from this phone. It plays next to the camera; the app compares your body pose with the dancer\'s pose at the same moment (eight limb angles, so body size and distance do not matter). Off-pose longer than the grace time and the Coyote shocks until you match again. The video is analysed once on the phone and cached; nothing is uploaded. Streaming apps and DRM videos cannot be picked, only files on the phone.</string>
+    <string name="x_cage_follow">Pick a dance video from this phone. It plays next to the camera; the app compares your body pose with the dancer\'s pose at the same moment (eight limb angles, so body size and distance do not matter). Off-pose longer than the grace time and the Coyote shocks until you match again. The video is analysed once on the phone and cached; nothing is uploaded. The dancer\'s expected pose is drawn over your body on the camera: green limbs match, red limbs are off. Streaming apps and DRM videos cannot be picked, only files on the phone.</string>
     <string name="cage_pick_video">PICK A VIDEO</string>
     <string name="cage_video_tap">Tap the video to pause / resume. It plays while armed and loops.</string>
     <string name="cage_follow_strict">Pose tolerance</string>
@@ -301,4 +301,5 @@
     <string name="cage_follow_match">match %d%%</string>
     <string name="cage_follow_nojudge">no pose to compare (video paused or body not visible)</string>
     <string name="cage_st_follow_shock">⚡ FOLLOW THE VIDEO!</string>
+    <string name="cage_video_show">▶ tap for the video</string>
 </resources>

@@ -63,16 +63,22 @@ public class PoseMatchTest {
     @Test public void trackFindsBestFrameInWindowAndRoundTrips() throws Exception {
         PoseTrack t = new PoseTrack();
         t.durationMs = 3000;
-        for (int ms = 0; ms <= 3000; ms += 125) t.add(ms, PoseMatch.features(ms >= 1000 && ms < 2000 ? LEFT_UP : ARMS_DOWN, 1f));
+        for (int ms = 0; ms <= 3000; ms += 125) t.add(ms, PoseMatch.features(ms >= 1000 && ms < 2000 ? LEFT_UP : ARMS_DOWN, 1f), ms % 250 == 0 ? LEFT_UP : null);
         float[] live = PoseMatch.features(LEFT_UP, 1f);
         assertEquals(0, t.bestError(live, 1500, 500, false), 1e-4);     // inside the left-up second
         assertTrue(t.bestError(live, 2600, 500, false) > 30);            // well after it: no match in the window
         assertEquals(0, t.bestError(live, 2300, 500, false), 1e-4);     // 0.4 s late still counts (last left-up frame at 1875 ms)
         assertTrue(Double.isNaN(t.bestError(live, 9000, 500, false)));
+        assertEquals(0, t.nearest(-50)); assertEquals(8, t.nearest(1000)); assertEquals(9, t.nearest(1130)); assertEquals(24, t.nearest(9000));
+        float[] se = PoseMatch.segmentErrors(PoseMatch.features(LEFT_UP, 1f), PoseMatch.features(RIGHT_UP, 1f), true);
+        for (float v : se) assertEquals(0, v, 0.5);                      // mirrored: every limb matches
+        se = PoseMatch.segmentErrors(PoseMatch.features(LEFT_UP, 1f), PoseMatch.features(ARMS_DOWN, 1f), false);
+        assertTrue(se[0] > 100 && se[1] > 100 && se[2] < 1 && se[4] < 1);   // only the left arm is off
         File f = File.createTempFile("pose", ".bin"); f.deleteOnExit();
         t.save(f);
         PoseTrack u = PoseTrack.load(f);
         assertEquals(t.size(), u.size()); assertEquals(t.durationMs, u.durationMs); assertEquals(t.judged(), u.judged());
+        assertNotNull(u.lms.get(0)); assertNull(u.lms.get(1)); assertEquals(LEFT_UP[PoseMatch.L_WRIST * 3 + 1], u.lms.get(0)[PoseMatch.L_WRIST * 3 + 1], 1e-6);
         assertEquals(0, u.bestError(live, 1500, 500, false), 1e-4);
     }
 

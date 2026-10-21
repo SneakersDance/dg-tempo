@@ -61,9 +61,11 @@ public final class PoseAnalyzer {
                         Bitmap bm = r.getFrameAtIndex((int) i);
                         if (bm == null) continue;
                         long at = Math.round(i * 1000.0 / fps);
-                        float[] f = analyse(det, bm);
+                        if (t.size() == 0) t.aspect = bm.getWidth() / (float) bm.getHeight();
+                        float[] lm = analyse(det, bm);
+                        float[] f = PoseMatch.features(lm, t.aspect);
                         if (PoseMatch.validCount(f) >= 4) judged++;
-                        t.add(at, f);
+                        t.add(at, f, lm);
                         int pct = (int) (i * 100 / frames);
                         if (pct != lastPct) { lastPct = pct; cb.onProgress(pct, t.size(), judged); }
                     }
@@ -74,9 +76,11 @@ public final class PoseAnalyzer {
                                 ? r.getScaledFrameAtTime(at * 1000, MediaMetadataRetriever.OPTION_CLOSEST, 480, 480)
                                 : r.getFrameAtTime(at * 1000, MediaMetadataRetriever.OPTION_CLOSEST);
                         if (bm == null) continue;
-                        float[] f = analyse(det, bm);
+                        if (t.size() == 0) t.aspect = bm.getWidth() / (float) bm.getHeight();
+                        float[] lm = analyse(det, bm);
+                        float[] f = PoseMatch.features(lm, t.aspect);
                         if (PoseMatch.validCount(f) >= 4) judged++;
-                        t.add(at, f);
+                        t.add(at, f, lm);
                         int pct = (int) (at * 100 / durMs);
                         if (pct != lastPct) { lastPct = pct; cb.onProgress(pct, t.size(), judged); }
                     }
@@ -101,8 +105,7 @@ public final class PoseAnalyzer {
         }
         try {
             Pose pose = Tasks.await(det.process(InputImage.fromBitmap(use, 0)));
-            float[] lm = landmarks(pose, use.getWidth(), use.getHeight());
-            return PoseMatch.features(lm, use.getWidth() / (float) use.getHeight());
+            return landmarks(pose, use.getWidth(), use.getHeight());        // normalised: the same for any scale
         } finally {
             if (use != bm) use.recycle();
             bm.recycle();

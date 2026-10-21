@@ -57,6 +57,23 @@ public final class PoseMatch {
         return n >= 4 ? sum / n : Double.NaN;
     }
 
+    /** Per-segment angular error in degrees (NaN where either side is unsure); index = live segment. */
+    public static float[] segmentErrors(float[] a, float[] b, boolean mirror) {
+        float[] out = new float[N_FEAT];
+        java.util.Arrays.fill(out, Float.NaN);
+        if (a == null || b == null) return out;
+        for (int i = 0; i < N_FEAT; i++) {
+            int j = mirror ? (i + 4) % N_FEAT : i;
+            float fa = a[i], fb = b[j];
+            if (Float.isNaN(fa) || Float.isNaN(fb)) continue;
+            if (mirror) fb = -fb;
+            double d = Math.abs(fa - fb) % 360;
+            if (d > 180) d = 360 - d;
+            out[i] = (float) d;
+        }
+        return out;
+    }
+
     /** 0..100 "how well it matches" for display. */
     public static int matchPct(double errDeg) {
         if (Double.isNaN(errDeg)) return -1;

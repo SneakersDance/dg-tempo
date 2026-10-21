@@ -197,17 +197,26 @@ public final class BeatService extends Service implements BleDevice.Listener, an
     public volatile int poseAnalysisPct = -1;             // -1 idle, 0..99 running, 100 done
     public volatile String poseStatus = "";
     public volatile double followErr = Double.NaN;        // smoothed live error (degrees)
+    public volatile float[] refPose, livePose;            // skeletons for the overlay (video frame at the playback position / camera)
+    public volatile float refAspect = 1f, liveAspect = 1f;
+    public volatile float[] segErr;                       // per-limb error against the best nearby video frame (degrees)
     public volatile java.util.function.LongSupplier videoPos;   // set by the activity: playback ms, -1 when not playing
     private PoseAnalyzer analyser;
     private String poseRefUri = "";
 
     private double liveFollowError(double now) {
-        if (!settings.cageFollow || poseRef == null || cage == null) return Double.NaN;
+        if (!settings.cageFollow || poseRef == null || cage == null) { refPose = null; livePose = null; segErr = null; return Double.NaN; }
         java.util.function.LongSupplier vp = videoPos;
         long pos = vp == null ? -1 : vp.getAsLong();
         float[] lm = cage.pose;
-        if (pos < 0 || lm == null || now - cage.poseAt / 1e9 > 0.6) return Double.NaN;
-        return poseRef.bestError(PoseMatch.features(lm, cage.poseAspect), pos, 500, settings.cageFollowMirror);
+        int ri = pos < 0 ? -1 : poseRef.nearest(pos);
+        refPose = ri < 0 ? null : poseRef.lms.get(ri); refAspect = poseRef.aspect;
+        boolean liveOk = lm != null && now - cage.poseAt / 1e9 <= 0.6;
+        livePose = liveOk ? lm : null; liveAspect = cage.poseAspect;
+        if (pos < 0 || !liveOk) { segErr = null; return Double.NaN; }
+        float[] lf = PoseMatch.features(lm, cage.poseAspect);
+        segErr = ri < 0 ? null : PoseMatch.segmentErrors(lf, poseRef.feats.get(ri), settings.cageFollowMirror);
+        return poseRef.bestError(lf, pos, 500, settings.cageFollowMirror);
     }
 
     private File poseCacheFile(String uri) {
