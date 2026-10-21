@@ -462,12 +462,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             if (result != Activity.RESULT_OK || data == null || data.getData() == null || svc == null) return;
             android.net.Uri u = data.getData();
             try { getContentResolver().takePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION); } catch (Exception ignored) {}
-            svc.settings.cageVideoUri = u.toString();
-            svc.settings.cageVideoLocal = "";
-            svc.settingsChanged();
-            svc.loadVideoPoses(false);                      // same file again = stored copy + saved poses, no re-analysis
-            loadVideo();
-            buildControls();
+            previewVideo(u);                                // watch it first; nothing is stored or analysed until "use"
             return;
         }
         if (req != REQ_PROJECTION) return;
@@ -616,6 +611,36 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         if (src.toString().equals(videoLoaded)) return;                 // already playing this source: do not restart it
         videoLoaded = src.toString();
         try { cageVideo.setVideoURI(src); } catch (Exception e) { onLog("video: " + e.getMessage()); }
+    }
+
+    /** Plays the picked clip in a dialog so the player can check it is the right one before it is stored and analysed. */
+    private void previewVideo(android.net.Uri u) {
+        android.widget.VideoView vv = new android.widget.VideoView(this);
+        android.widget.FrameLayout box = new android.widget.FrameLayout(this);
+        box.setBackgroundColor(0xFF000000);
+        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(320));
+        lp.gravity = Gravity.CENTER;
+        box.addView(vv, lp);
+        vv.setOnPreparedListener(mp -> { mp.setLooping(true); vv.start(); });
+        vv.setOnErrorListener((mp, what, extra) -> { onLog("video preview: cannot play (" + what + "/" + extra + ")"); return true; });
+        box.setOnClickListener(v -> { if (vv.isPlaying()) vv.pause(); else vv.start(); });
+        try { vv.setVideoURI(u); } catch (Exception e) { onLog("video preview: " + e.getMessage()); }
+        android.app.AlertDialog dlg = new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.cage_video_preview)
+                .setView(box)
+                .setPositiveButton(R.string.cage_video_use, (d, w) -> {
+                    svc.settings.cageVideoUri = u.toString();
+                    svc.settings.cageVideoLocal = "";
+                    svc.settingsChanged();
+                    svc.loadVideoPoses(false);              // same file again = stored copy + saved poses, no re-analysis
+                    loadVideo();
+                    buildControls();
+                })
+                .setNeutralButton(R.string.cage_video_another, (d, w) -> pickVideo())
+                .setNegativeButton(android.R.string.cancel, null)
+                .create();
+        dlg.setOnDismissListener(d -> { try { vv.stopPlayback(); } catch (Exception ignored) {} });
+        dlg.show();
     }
 
     private void pickVideo() {

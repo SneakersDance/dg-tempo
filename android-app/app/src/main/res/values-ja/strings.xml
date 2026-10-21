@@ -301,4 +301,7 @@
     <string name="cage_follow_nojudge">比較できるポーズがありません（動画が停止中か体が見えない）</string>
     <string name="cage_st_follow_shock">⚡ 動画に合わせて！</string>
     <string name="cage_video_show">▶ タップで手本動画</string>
+    <string name="cage_video_preview">この動画でいいですか？タップで一時停止。</string>
+    <string name="cage_video_use">この動画を使う</string>
+    <string name="cage_video_another">別の動画を選ぶ</string>
 </resources>

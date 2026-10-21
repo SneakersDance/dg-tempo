@@ -302,4 +302,7 @@
     <string name="cage_follow_nojudge">no pose to compare (video paused or body not visible)</string>
     <string name="cage_st_follow_shock">⚡ FOLLOW THE VIDEO!</string>
     <string name="cage_video_show">▶ tap for the video</string>
+    <string name="cage_video_preview">Is this the video? Tap to pause.</string>
+    <string name="cage_video_use">USE THIS VIDEO</string>
+    <string name="cage_video_another">PICK ANOTHER</string>
 </resources>

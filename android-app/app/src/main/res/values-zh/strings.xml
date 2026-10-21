@@ -301,4 +301,7 @@
     <string name="cage_follow_nojudge">无法比较姿势（视频已暂停或身体不可见）</string>
     <string name="cage_st_follow_shock">⚡ 跟上视频！</string>
     <string name="cage_video_show">▶ 点按显示参考视频</string>
+    <string name="cage_video_preview">就是这段视频吗？点按可暂停。</string>
+    <string name="cage_video_use">使用这段视频</string>
+    <string name="cage_video_another">换一个</string>
 </resources>
