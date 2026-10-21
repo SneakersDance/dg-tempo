@@ -11,6 +11,8 @@
     android:background="#000000" android:visibility="gone" android:keepScreenOn="true">
     <androidx.camera.view.PreviewView android:id="@+id/fullPreview" android:layout_width="match_parent" android:layout_height="match_parent"/>
     <com.tupai.dgtempo.CageOverlayView android:id="@+id/fullOverlay" android:layout_width="match_parent" android:layout_height="match_parent"/>
+    <FrameLayout android:id="@+id/fullVideoBox" android:layout_width="180dp" android:layout_height="240dp" android:layout_gravity="top|end"
+        android:layout_marginTop="56dp" android:layout_marginEnd="8dp" android:background="#CC000000" android:visibility="gone"/>
     <TextView android:id="@+id/fullTL" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="top|start"
         android:layout_margin="14dp" android:layout_marginTop="56dp" android:padding="8dp" android:background="#AA000000"
         android:fontFamily="monospace" android:textSize="15sp" android:textStyle="bold" android:textColor="#FFFFFF"/>
@@ -111,10 +113,13 @@
                     <TextView style="@style/Hint" android:text="@string/cage_hint"/>
                     <TextView android:id="@+id/tvCageStatus" android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:textSize="22sp" android:textStyle="bold" android:fontFamily="monospace" android:textColor="@color/muted" android:layout_marginTop="8dp" android:text="—"/>
-                    <FrameLayout android:id="@+id/cageFrame" android:layout_width="match_parent" android:layout_height="300dp" android:layout_marginTop="8dp" android:background="#000000">
-                        <androidx.camera.view.PreviewView android:id="@+id/cagePreview" android:layout_width="match_parent" android:layout_height="match_parent"/>
-                        <com.tupai.dgtempo.CageOverlayView android:id="@+id/cageOverlay" android:layout_width="match_parent" android:layout_height="match_parent"/>
-                    </FrameLayout>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="300dp" android:layout_marginTop="8dp" android:orientation="horizontal">
+                        <FrameLayout android:id="@+id/cageFrame" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:background="#000000">
+                            <androidx.camera.view.PreviewView android:id="@+id/cagePreview" android:layout_width="match_parent" android:layout_height="match_parent"/>
+                            <com.tupai.dgtempo.CageOverlayView android:id="@+id/cageOverlay" android:layout_width="match_parent" android:layout_height="match_parent"/>
+                        </FrameLayout>
+                        <FrameLayout android:id="@+id/cageVideoBox" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:layout_marginStart="4dp" android:background="#000000" android:visibility="gone"/>
+                    </LinearLayout>
                     <TextView style="@style/Hint" android:textColor="@color/text" android:text="@string/cage_howto"/>
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="8dp">
                         <Button android:id="@+id/btnCageLock" style="@style/BtnAccent" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/cage_lock"/>

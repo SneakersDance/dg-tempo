@@ -15,6 +15,7 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
@@ -61,7 +62,11 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     private androidx.camera.view.PreviewView fullPreview;
     private TextView fullTL, fullBL, fullBR;
     private boolean inFullCage = false;
-    private static final int REQ_CAMERA = 3;
+    private static final int REQ_CAMERA = 3, REQ_VIDEO = 4;
+    private android.widget.VideoView cageVideo;                 // one player, re-parented between the card and full screen
+    private android.widget.FrameLayout cageVideoBox, fullVideoBox;
+    private boolean videoUserPaused = false;
+    private TextView tvFollowStatus;
     private MotionReadoutView motionReadout;
 
     private final ServiceConnection conn = new ServiceConnection() {
@@ -152,6 +157,17 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         fullOverlay.listener = cageOverlay.listener;
         fullTL = findViewById(R.id.fullTL); fullBL = findViewById(R.id.fullBL); fullBR = findViewById(R.id.fullBR);
         findViewById(R.id.btnCageFull).setOnClickListener(v -> enterFullCage());
+        cageVideoBox = findViewById(R.id.cageVideoBox);
+        fullVideoBox = findViewById(R.id.fullVideoBox);
+        cageVideo = new android.widget.VideoView(this);
+        cageVideo.setOnPreparedListener(mp -> { mp.setLooping(true); if (svc != null && svc.armed && !videoUserPaused) cageVideo.start(); });
+        cageVideo.setOnErrorListener((mp, what, extra) -> { onLog("video: playback error " + what + "/" + extra); return true; });
+        View.OnClickListener toggle = v -> {
+            if (cageVideo.isPlaying()) { cageVideo.pause(); videoUserPaused = true; } else { cageVideo.start(); videoUserPaused = false; }
+            if (inFullCage) showFullBar();
+        };
+        cageVideoBox.setOnClickListener(toggle); fullVideoBox.setOnClickListener(toggle);
+        moveVideoTo(cageVideoBox);
         findViewById(R.id.btnFullExit).setOnClickListener(v -> exitFullCage());
         findViewById(R.id.btnFullLock).setOnClickListener(v -> { btnCageLock.performClick(); showFullBar(); });
         findViewById(R.id.btnFullArm).setOnClickListener(v -> { btnArm.performClick(); showFullBar(); });
@@ -433,6 +449,17 @@ public final class MainActivity extends AppCompatActivity implements BeatService
     @SuppressWarnings("deprecation")
     protected void onActivityResult(int req, int result, Intent data) {
         super.onActivityResult(req, result, data);
+        if (req == REQ_VIDEO) {
+            if (result != Activity.RESULT_OK || data == null || data.getData() == null || svc == null) return;
+            android.net.Uri u = data.getData();
+            try { getContentResolver().takePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION); } catch (Exception ignored) {}
+            svc.settings.cageVideoUri = u.toString();
+            svc.settingsChanged();
+            svc.loadVideoPoses(true);
+            loadVideo();
+            buildControls();
+            return;
+        }
         if (req != REQ_PROJECTION) return;
         if (result != Activity.RESULT_OK || data == null) { onLog(getString(R.string.phone_audio_denied)); return; }
         Intent i = new Intent(this, BeatService.class).setAction(BeatService.ACTION_PHONE_AUDIO)
@@ -538,9 +565,36 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         if (bar.getVisibility() == View.VISIBLE) fullBarTimer.postDelayed(hideFullBar, 5000);
     }
 
+    private void moveVideoTo(android.widget.FrameLayout box) {
+        if (cageVideo.getParent() == box) return;
+        if (cageVideo.getParent() != null) ((ViewGroup) cageVideo.getParent()).removeView(cageVideo);
+        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        lp.gravity = Gravity.CENTER;
+        box.addView(cageVideo, lp);
+    }
+
+    private boolean hasVideo() { return svc != null && svc.settings.cageFollow && !svc.settings.cageVideoUri.isEmpty(); }
+
+    /** Show / hide the video boxes and (re)load the chosen clip. */
+    private void loadVideo() {
+        boolean show = hasVideo();
+        cageVideoBox.setVisibility(show && !inFullCage ? View.VISIBLE : View.GONE);
+        fullVideoBox.setVisibility(show && inFullCage ? View.VISIBLE : View.GONE);
+        if (svc != null) svc.videoPos = () -> show && cageVideo.isPlaying() ? cageVideo.getCurrentPosition() : -1;
+        if (!show) { try { cageVideo.stopPlayback(); } catch (Exception ignored) {} return; }
+        try { cageVideo.setVideoURI(android.net.Uri.parse(svc.settings.cageVideoUri)); } catch (Exception e) { onLog("video: " + e.getMessage()); }
+    }
+
+    private void pickVideo() {
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("video/*")
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        try { startActivityForResult(i, REQ_VIDEO); } catch (Exception e) { onLog("no file picker available: " + e.getMessage()); }
+    }
+
     private void enterFullCage() {
         if (svc == null || svc.cage == null || inFullCage) return;
         inFullCage = true;
+        if (hasVideo()) { cageVideoBox.setVisibility(View.GONE); fullVideoBox.setVisibility(View.VISIBLE); moveVideoTo(fullVideoBox); }
         findViewById(R.id.fullBar).setVisibility(View.GONE);
         View hint = findViewById(R.id.fullTapHint);
         hint.setVisibility(View.VISIBLE);
@@ -560,6 +614,7 @@ public final class MainActivity extends AppCompatActivity implements BeatService
         inFullCage = false;
         fullCage.setVisibility(View.GONE);
         mainRoot.setVisibility(View.VISIBLE);
+        if (hasVideo()) { fullVideoBox.setVisibility(View.GONE); cageVideoBox.setVisibility(View.VISIBLE); moveVideoTo(cageVideoBox); }
         androidx.core.view.WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
                 .show(androidx.core.view.WindowInsetsCompat.Type.systemBars());
         if (svc != null && svc.cage != null) svc.cage.attachPreview(cagePreview.getSurfaceProvider());
@@ -611,6 +666,23 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             addSeek(llCage, R.string.cage_dance_level, 0, R.string.end_gentle, R.string.end_hard, 0, 200, Math.max(0, s.cageDanceLevel),
                     v -> v == 0 ? getString(R.string.cage_same_level) : String.valueOf(v), v -> { s.cageDanceLevel = v == 0 ? -1 : v; changed(); }, C_POWER_COYOTE);
         }
+        subTitle(llCage, R.string.cage_follow_title);
+        addSwitch(llCage, R.string.cage_follow, R.string.x_cage_follow, s.cageFollow, v -> { s.cageFollow = v; changed(); if (v) svc.loadVideoPoses(false); loadVideo(); buildControls(); });
+        if (s.cageFollow) {
+            Button pick = ghostButton(R.string.cage_pick_video);
+            pick.setOnClickListener(v -> pickVideo());
+            llCage.addView(pick);
+            tvFollowStatus = new TextView(this);
+            tvFollowStatus.setTextColor(C_MUTED); tvFollowStatus.setTextSize(13); tvFollowStatus.setPadding(0, dp(4), 0, dp(4));
+            llCage.addView(tvFollowStatus);
+            hint(llCage, R.string.cage_video_tap);
+            addSeek(llCage, R.string.cage_follow_strict, R.string.x_cage_follow_strict, R.string.end_strict, R.string.end_loose, 10, 70, s.cageFollowDeg, v -> v + "°", v -> { s.cageFollowDeg = v; changed(); });
+            addSeek(llCage, R.string.cage_follow_grace, 0, R.string.end_sooner, R.string.end_rarer, 1, 15, s.cageFollowGraceS, v -> v + " s", v -> { s.cageFollowGraceS = v; changed(); });
+            addSwitch(llCage, R.string.cage_follow_mirror, R.string.x_cage_follow_mirror, s.cageFollowMirror, v -> { s.cageFollowMirror = v; changed(); });
+            if (!s.cageDance)
+                addSeek(llCage, R.string.cage_dance_level, 0, R.string.end_gentle, R.string.end_hard, 0, 200, Math.max(0, s.cageDanceLevel),
+                        v -> v == 0 ? getString(R.string.cage_same_level) : String.valueOf(v), v -> { s.cageDanceLevel = v == 0 ? -1 : v; changed(); }, C_POWER_COYOTE);
+        }
         subTitle(llCage, R.string.step4);
         addSwitch(llCage, R.string.cage_voice, 0, s.cageVoice, v -> { s.cageVoice = v; changed(); });
         addSwitch(llCage, R.string.cage_debug, R.string.x_cage_debug, s.cageDebug, v -> { s.cageDebug = v; changed(); });
@@ -651,12 +723,31 @@ public final class MainActivity extends AppCompatActivity implements BeatService
             col = o.returnedDuringShock ? C_GO : C_POWER_COYOTE;
         }
         else if (o.state == CageLogic.WARNING) { txt = getString(R.string.cage_st_warn, o.warnLeft); col = 0xFFFFB300; }
+        else if (o.followShock) { txt = getString(R.string.cage_st_follow_shock); col = C_POWER_COYOTE; }
         else if (o.danceShock) { txt = getString(R.string.cage_st_dance_shock); col = C_POWER_COYOTE; }
         else if (!o.detected) { txt = getString(R.string.cage_st_none); col = C_MUTED; }
         else if (s.cageDance && o.stillS > 0.5) { txt = getString(R.string.cage_st_still, o.stillS, s.cageDanceGraceS); col = 0xFFFFB300; }
         else { txt = getString(o.inside ? R.string.cage_st_inside : R.string.cage_st_outside); col = o.inside ? C_GO : C_DANGER; }
+        int match = PoseMatch.matchPct(svc.followErr);
+        if (s.cageFollow && match >= 0 && o.state != CageLogic.SHOCK && o.state != CageLogic.WARNING) txt += "   " + getString(R.string.cage_follow_match, match);
         tvCageStatus.setText(txt);
         tvCageStatus.setTextColor(col);
+        if (s.cageFollow) {
+            // video follows ARM: plays while armed (unless the player paused it by tapping), pauses when stopped
+            if (hasVideo()) {
+                if (svc.armed && !videoUserPaused && !cageVideo.isPlaying()) cageVideo.start();
+                if (!svc.armed && cageVideo.isPlaying()) cageVideo.pause();
+            }
+            if (tvFollowStatus != null) {
+                String fs = s.cageVideoUri.isEmpty() ? getString(R.string.cage_follow_none)
+                        : svc.poseAnalysisPct >= 0 && svc.poseAnalysisPct < 100 ? getString(R.string.cage_follow_analysing, svc.poseAnalysisPct)
+                        : svc.poseRef != null ? getString(R.string.cage_follow_ready, svc.poseRef.judged(), svc.poseRef.durationMs / 1000)
+                        : svc.poseStatus.startsWith("error") ? getString(R.string.cage_follow_failed, svc.poseStatus.substring(6).trim()) : "…";
+                if (match >= 0) fs += "   " + getString(R.string.cage_follow_match, match);
+                else if (svc.poseRef != null && svc.armed) fs += "   " + getString(R.string.cage_follow_nojudge);
+                tvFollowStatus.setText(fs);
+            }
+        }
         for (CageOverlayView ov : new CageOverlayView[]{cageOverlay, fullOverlay}) {
             ov.state = o.state; ov.detected = o.detected; ov.inside = o.inside; ov.shockLeft = o.shockLeft;
             ov.cx = svc.cageCx; ov.cy = svc.cageCy;
@@ -679,7 +770,9 @@ public final class MainActivity extends AppCompatActivity implements BeatService
                     s.cageDance ? String.format("   dance ≥%d%% / %ds", s.cageDanceMovePct, s.cageDanceGraceS) : ""));
             String timers = o.state == CageLogic.SHOCK ? String.format("⚡ %.0f s", o.shockLeft)
                     : o.state == CageLogic.WARNING ? String.format("⚠ %.0f s", o.warnLeft)
+                    : s.cageFollow && o.offS > 0.3 ? String.format("🎯 %.0f / %d s", o.offS, s.cageFollowGraceS)
                     : s.cageDance && o.stillS > 0.5 ? String.format("💃 %.0f / %d s", o.stillS, s.cageDanceGraceS) : "";
+            if (s.cageFollow && match >= 0) timers = (timers.isEmpty() ? "" : timers + "  ") + getString(R.string.cage_follow_match, match);
             fullBR.setText((timers.isEmpty() ? "" : timers + "\n") + (s.cagePaused ? "PAUSED\n" : "") + (s.cageLocked ? "locked" : "editing")
                     + (svc.armed ? " · armed" : " · not armed") + String.format("\nzoom %.1f×", s.cageZoomX10 / 10.0));
         }

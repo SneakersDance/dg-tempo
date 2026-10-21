@@ -15,6 +15,7 @@ import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
+import java.io.File;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
@@ -112,7 +113,9 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         cage.listener = (area, share, cx, cy, motion) -> { cageArea = area; cageOutsideShare = share; cageCx = cx; cageCy = cy; cageMotion = motion; };
         cage.setZoom(settings.cageZoomX10 / 10f);
         cage.debugMask = settings.cageDebug;
+        cage.poseOn = settings.cageFollow;
         if (!cage.running) cage.start(settings.cageFront);
+        if (settings.cageFollow) loadVideoPoses(false);
         if (tone == null) try { tone = new android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 90); } catch (Exception ignored) {}
         cageLogic.reset();
         log("Chalk Cage: camera on (" + (settings.cageFront ? "front" : "back") + ")");
@@ -185,12 +188,72 @@ public final class BeatService extends Service implements BleDevice.Listener, an
         c.outsideShare = settings.cageOutsidePct / 100.0; c.minArea = settings.cageMinAreaPct / 100.0;
         c.notDetectedIsOutside = settings.cageNotDetOut; c.paused = settings.cagePaused; c.locked = settings.cageLocked;
         c.dance = settings.cageDance; c.danceGraceS = settings.cageDanceGraceS; c.danceMoveMin = settings.cageDanceMovePct / 100.0;
+        c.follow = settings.cageFollow && poseRef != null; c.followGraceS = settings.cageFollowGraceS; c.followMaxErr = settings.cageFollowDeg;
         return c;
+    }
+
+    // ---- follow-the-video: reference choreography + live comparison
+    public volatile PoseTrack poseRef;
+    public volatile int poseAnalysisPct = -1;             // -1 idle, 0..99 running, 100 done
+    public volatile String poseStatus = "";
+    public volatile double followErr = Double.NaN;        // smoothed live error (degrees)
+    public volatile java.util.function.LongSupplier videoPos;   // set by the activity: playback ms, -1 when not playing
+    private PoseAnalyzer analyser;
+    private String poseRefUri = "";
+
+    private double liveFollowError(double now) {
+        if (!settings.cageFollow || poseRef == null || cage == null) return Double.NaN;
+        java.util.function.LongSupplier vp = videoPos;
+        long pos = vp == null ? -1 : vp.getAsLong();
+        float[] lm = cage.pose;
+        if (pos < 0 || lm == null || now - cage.poseAt / 1e9 > 0.6) return Double.NaN;
+        return poseRef.bestError(PoseMatch.features(lm, cage.poseAspect), pos, 500, settings.cageFollowMirror);
+    }
+
+    private File poseCacheFile(String uri) {
+        File dir = new File(getCacheDir(), "pose"); dir.mkdirs();
+        return new File(dir, "v" + Integer.toHexString(uri.hashCode()) + ".bin");
+    }
+
+    /** Load the chosen video's choreography from the cache, or analyse the video once (worker thread). */
+    public void loadVideoPoses(boolean force) {
+        String uri = settings.cageVideoUri;
+        if (uri.isEmpty()) { poseRef = null; poseRefUri = ""; poseStatus = ""; return; }
+        if (!force && uri.equals(poseRefUri) && poseRef != null) return;
+        if (analyser != null) analyser.cancelled = true;
+        poseRef = null; poseRefUri = uri;
+        File f = poseCacheFile(uri);
+        if (!force && f.exists()) {
+            try { poseRef = PoseTrack.load(f); poseAnalysisPct = 100; poseStatus = "ready"; log(String.format("follow: choreography loaded (%d poses, %d judged)", poseRef.size(), poseRef.judged())); return; }
+            catch (Exception e) { log("follow: cache unreadable, re-analysing"); }
+        }
+        poseAnalysisPct = 0; poseStatus = "analysing";
+        log("follow: analysing the video (runs once, nothing leaves the phone) ...");
+        PoseAnalyzer a = new PoseAnalyzer();
+        analyser = a;
+        a.run(this, android.net.Uri.parse(uri), new PoseAnalyzer.Progress() {
+            int lastLogged = -10;
+            @Override public void onProgress(int pct, int frames, int judged) {
+                poseAnalysisPct = pct;
+                if (pct - lastLogged >= 10) { lastLogged = pct; log(String.format("follow: %d%% (%d poses, %d judged)", pct, frames, judged)); }
+            }
+            @Override public void onDone(PoseTrack t, String err) {
+                if (a.cancelled) return;
+                if (t == null) { poseAnalysisPct = -1; poseStatus = "error: " + err; log("follow: FAILED - " + err); return; }
+                try { t.save(f); } catch (Exception e) { log("follow: could not cache: " + e.getMessage()); }
+                poseRef = t; poseAnalysisPct = 100; poseStatus = "ready";
+                log(String.format("follow: ready - %d poses over %d s, %d with a visible dancer", t.size(), t.durationMs / 1000, t.judged()));
+                UiListener l = ui; if (l != null) main.post(l::onDevices);
+            }
+        });
     }
 
     private void cageTick(double now) {
         boolean camOk = cage != null && cage.running;
-        CageLogic.Out o = cageLogic.step(now, cageConfig(), armed && camOk, camOk ? cageArea : 0, cageOutsideShare, cageMotion);
+        if (cage != null) cage.poseOn = settings.cageFollow;
+        double e = liveFollowError(now);
+        followErr = Double.isNaN(e) ? Double.NaN : Double.isNaN(followErr) ? e : followErr + (e - followErr) * 0.35;   // ~0.3 s smoothing
+        CageLogic.Out o = cageLogic.step(now, cageConfig(), armed && camOk, camOk ? cageArea : 0, cageOutsideShare, cageMotion, followErr);
         if (o.announce != null) { log("cage: " + o.announce); say(o.announce); }
         cageOut = o;
     }

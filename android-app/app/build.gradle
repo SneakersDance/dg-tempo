@@ -53,6 +53,7 @@ dependencies {
     implementation 'androidx.camera:camera-view:1.4.2'
     implementation 'androidx.lifecycle:lifecycle-runtime:2.8.7'
     implementation 'com.google.mlkit:segmentation-selfie:16.0.0-beta6'
+    implementation 'com.google.mlkit:pose-detection:18.0.0-beta5'      // follow-the-video: on-device body pose
     testImplementation 'junit:junit:4.13.2'
 }
 

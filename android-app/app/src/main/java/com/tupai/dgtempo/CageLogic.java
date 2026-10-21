@@ -21,14 +21,20 @@ public final class CageLogic {
         public boolean dance = false;            // dance mode: standing still gets shocked
         public double danceGraceS = 3;           // seconds of stillness before the shock
         public double danceMoveMin = 0.15;       // silhouette motion share that counts as moving
+        public boolean follow = false;           // follow-the-video: pose must match the playing video
+        public double followGraceS = 2;          // seconds off-pose before the shock
+        public double followMaxErr = 35;         // mean limb angle error (degrees) still counted as matching
     }
 
     public static final class Out {
         public int state = IDLE;
         public boolean shock, vib, inside, detected;
         public boolean returnedDuringShock;      // back inside while the punishment still runs
-        public boolean danceShock;               // dance mode: still too long -> shocking until movement resumes
+        public boolean danceShock;               // dance / follow: shocking until the player moves / matches again
+        public boolean followShock;              // follow-the-video: off-pose too long
         public double stillS;                    // how long the player has been still
+        public double offS;                      // how long the pose has been off the video
+        public double followErr = Double.NaN;    // the error that was judged this step
         public double warnLeft, shockLeft;
         public String announce;                  // "outside" / "returned" / null
     }
@@ -40,8 +46,9 @@ public final class CageLogic {
     private boolean wasOutside = false;
     private boolean returnedInShock = false;
     private double stillSince = -1; private boolean danceOn = false;
+    private double offSince = -1; private boolean followOn = false;
 
-    public void reset() { state = IDLE; ringN = ringPos = 0; wasOutside = false; returnedInShock = false; stillSince = -1; danceOn = false; }
+    public void reset() { state = IDLE; ringN = ringPos = 0; wasOutside = false; returnedInShock = false; stillSince = -1; danceOn = false; offSince = -1; followOn = false; }
 
     /**
      * @param area    person mask area as share of the frame (0..1)
@@ -50,8 +57,12 @@ public final class CageLogic {
     public Out step(double now, Config c, boolean armed, double area, double outside) { return step(now, c, armed, area, outside, 1.0); }
 
     /** @param motion share of the body silhouette that changed since the last frame (0 = frozen, ~0.3+ = dancing) */
-    public Out step(double now, Config c, boolean armed, double area, double outside, double motion) {
+    public Out step(double now, Config c, boolean armed, double area, double outside, double motion) { return step(now, c, armed, area, outside, motion, Double.NaN); }
+
+    /** @param followErr limb-angle error against the video pose (degrees), NaN = nothing to judge (no video / no pose) */
+    public Out step(double now, Config c, boolean armed, double area, double outside, double motion, double followErr) {
         Out o = new Out();
+        o.followErr = followErr;
         o.detected = area >= c.minArea;
         boolean rawOutside = o.detected ? outside >= c.outsideShare : c.notDetectedIsOutside;
         ring[ringPos] = rawOutside; ringPos = (ringPos + 1) % ring.length; if (ringN < ring.length) ringN++;
@@ -61,7 +72,7 @@ public final class CageLogic {
 
         if (!armed || !c.locked || c.paused) {
             if (state != IDLE && !isOutside && wasOutside) o.announce = "returned";
-            state = IDLE; wasOutside = false; stillSince = -1; danceOn = false;
+            state = IDLE; wasOutside = false; stillSince = -1; danceOn = false; offSince = -1; followOn = false;
             o.state = IDLE; o.shock = false; o.vib = false;
             return o;
         }
@@ -76,7 +87,18 @@ public final class CageLogic {
                 }
             }
         } else { stillSince = -1; danceOn = false; }
-        o.danceShock = danceOn;
+        // follow rule: detected, inside, and the pose has been off the video's pose for followGraceS.
+        // No judgement (NaN: video paused, dancer not visible in the clip, player's limbs unsure) never shocks.
+        if (c.follow && o.detected && !isOutside) {
+            if (Double.isNaN(followErr) || followErr <= c.followMaxErr) { offSince = -1; followOn = false; }
+            else {
+                if (offSince < 0) offSince = now;
+                o.offS = now - offSince;
+                if (o.offS >= c.followGraceS && !followOn) { followOn = true; if (o.announce == null) o.announce = "move"; }
+            }
+        } else { offSince = -1; followOn = false; }
+        o.followShock = followOn;
+        o.danceShock = danceOn || followOn;
 
         switch (state) {
             case IDLE:

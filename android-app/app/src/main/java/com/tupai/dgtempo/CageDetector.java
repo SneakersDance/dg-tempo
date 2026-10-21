@@ -17,6 +17,10 @@ import com.google.mlkit.vision.segmentation.Segmentation;
 import com.google.mlkit.vision.segmentation.SegmentationMask;
 import com.google.mlkit.vision.segmentation.Segmenter;
 import com.google.mlkit.vision.segmentation.selfie.SelfieSegmenterOptions;
+import com.google.mlkit.vision.pose.Pose;
+import com.google.mlkit.vision.pose.PoseDetection;
+import com.google.mlkit.vision.pose.PoseDetector;
+import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions;
 
 import java.nio.FloatBuffer;
 import java.util.concurrent.ExecutorService;
@@ -37,6 +41,11 @@ public final class CageDetector {
     private Preview preview;
     private final ExecutorService exec = Executors.newSingleThreadExecutor();
     private Segmenter segmenter;
+    private PoseDetector poseDet;
+    public volatile boolean poseOn = false;              // follow-the-video: also run the pose model
+    public volatile float[] pose;                        // latest landmarks (33 x x,y,conf normalised), null = none
+    public volatile float poseAspect = 1f;               // upright image width / height
+    public volatile long poseAt = 0;                     // nanoTime of the latest pose
     public volatile boolean running = false, front = false;
     public volatile RectF box = new RectF(0.2f, 0.1f, 0.8f, 0.9f);
     public volatile Listener listener;
@@ -130,10 +139,25 @@ public final class CageDetector {
         Image img = proxy.getImage();
         if (img == null || now - lastAt < 90_000_000L) { proxy.close(); return; }   // ~10 fps is plenty
         lastAt = now;
-        InputImage in = InputImage.fromMediaImage(img, proxy.getImageInfo().getRotationDegrees());
+        int rot = proxy.getImageInfo().getRotationDegrees();
+        InputImage in = InputImage.fromMediaImage(img, rot);
+        boolean wantPose = poseOn;
+        if (wantPose && poseDet == null)
+            poseDet = PoseDetection.getClient(new PoseDetectorOptions.Builder().setDetectorMode(PoseDetectorOptions.STREAM_MODE).build());
+        int upW = rot % 180 != 0 ? in.getHeight() : in.getWidth(), upH = rot % 180 != 0 ? in.getWidth() : in.getHeight();
         segmenter.process(in)
                 .addOnSuccessListener(exec, this::onMask)
+                .continueWithTask(exec, t -> wantPose ? poseDet.process(in) : com.google.android.gms.tasks.Tasks.forResult((Pose) null))
+                .addOnSuccessListener(exec, p -> onPose(p, upW, upH))
                 .addOnCompleteListener(exec, t -> proxy.close());
+    }
+
+    private void onPose(Pose p, int w, int h) {
+        if (p == null || p.getAllPoseLandmarks().isEmpty()) { pose = null; return; }
+        float[] lm = PoseAnalyzer.landmarks(p, w, h);
+        poseAspect = w / (float) h;
+        pose = lm;
+        poseAt = System.nanoTime();
     }
 
     private void onMask(SegmentationMask mask) {

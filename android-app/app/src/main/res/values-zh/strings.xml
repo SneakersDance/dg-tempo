@@ -282,4 +282,22 @@
     <string name="btn_forget">忘记</string>
     <string name="ble_bond">与设备配对（记住这部手机）</string>
     <string name="x_ble_bond">开：连接后，应用通过安卓系统与郊狼 / 负鼠配对。配对过的设备关机再开机后仍能认出这部手机，下次启动应用会自动重连。关：安卓的蓝牙地址每隔几分钟就会变化，而 DG-Lab 设备只接受它上次见过的地址，所以每次新会话前都要重置设备蓝牙（郊狼：两个旋钮同时按下 6 秒；负鼠：连按电源键 5 次）。</string>
+    <string name="cage_follow_title">跟跳视频</string>
+    <string name="cage_follow">姿势与视频不符就电击</string>
+    <string name="x_cage_follow">从手机里选一段舞蹈视频。视频在摄像头画面旁播放；应用把你的身体姿势与同一时刻舞者的姿势比较（八个肢体角度，与身材、距离无关）。姿势偏离超过宽限时间，郊狼就电击，直到你再次跟上。视频只在手机上分析一次并缓存，不会上传。无法选择流媒体和 DRM 视频，只能选手机里的文件。</string>
+    <string name="cage_pick_video">选择视频</string>
+    <string name="cage_video_tap">点按视频可暂停 / 继续。启动后自动播放并循环。</string>
+    <string name="cage_follow_strict">姿势容差</string>
+    <string name="x_cage_follow_strict">仍算作匹配的平均肢体角度差（度）。时间上前后各有半秒的宽容。观察实时匹配 %，先从宽松开始。</string>
+    <string name="end_loose">宽松</string>
+    <string name="cage_follow_grace">姿势不符多久后电击</string>
+    <string name="cage_follow_mirror">镜像视频（舞者的右 = 你的左）</string>
+    <string name="x_cage_follow_mirror">像照镜子一样模仿屏幕时打开。跟随背对镜头拍摄的舞者时关闭。</string>
+    <string name="cage_follow_none">尚未选择视频</string>
+    <string name="cage_follow_analysing">正在分析视频… %d%%</string>
+    <string name="cage_follow_ready">就绪：%2$d 秒内 %1$d 个姿势</string>
+    <string name="cage_follow_failed">无法读取视频：%s</string>
+    <string name="cage_follow_match">匹配 %d%%</string>
+    <string name="cage_follow_nojudge">无法比较姿势（视频已暂停或身体不可见）</string>
+    <string name="cage_st_follow_shock">⚡ 跟上视频！</string>
 </resources>

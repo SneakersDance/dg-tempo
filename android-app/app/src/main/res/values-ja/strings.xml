@@ -282,4 +282,22 @@
     <string name="btn_forget">削除</string>
     <string name="ble_bond">デバイスとペアリング（このスマホを記憶）</string>
     <string name="x_ble_bond">オン：接続後、Android 経由で Coyote / Opossum とペアリングします。ペアリング済みの本体は電源を入れ直してもこのスマホを認識し、次回アプリ起動時に自動で再接続します。オフ：Android の Bluetooth アドレスは数分ごとに変わり、DG-Lab 本体は最後に見たアドレスしか受け付けないため、毎回セッション前に本体の Bluetooth リセット（Coyote：両ダイヤルを 6 秒押し下げ、Opossum：電源ボタン 5 回）が必要になります。</string>
+    <string name="cage_follow_title">動画に合わせて踊る</string>
+    <string name="cage_follow">ポーズが動画と合わないと刺激</string>
+    <string name="x_cage_follow">スマホ内のダンス動画を選びます。カメラ映像の横で再生され、アプリがあなたのポーズと同じ瞬間のダンサーのポーズを比較します（8 つの手足の角度なので体格や距離は関係ありません）。猶予時間より長くずれると、再び合うまで Coyote が刺激します。動画はスマホ内で一度だけ解析してキャッシュし、アップロードはしません。ストリーミングや DRM 動画は選べず、スマホ内のファイルのみです。</string>
+    <string name="cage_pick_video">動画を選ぶ</string>
+    <string name="cage_video_tap">動画をタップで一時停止／再開。ARM 中に再生され、ループします。</string>
+    <string name="cage_follow_strict">ポーズの許容差</string>
+    <string name="x_cage_follow_strict">一致とみなす手足の平均角度差（度）。タイミングは前後 0.5 秒まで許容。リアルタイムの一致 % を見ながら、まずはゆるめから。</string>
+    <string name="end_loose">ゆるい</string>
+    <string name="cage_follow_grace">ずれてから刺激までの時間</string>
+    <string name="cage_follow_mirror">動画を鏡像にする（ダンサーの右＝あなたの左）</string>
+    <string name="x_cage_follow_mirror">鏡のように画面を真似るときはオン。後ろから撮ったダンサーに合わせるときはオフ。</string>
+    <string name="cage_follow_none">動画が未選択</string>
+    <string name="cage_follow_analysing">動画を解析中… %d%%</string>
+    <string name="cage_follow_ready">準備完了：%2$d 秒で %1$d ポーズ</string>
+    <string name="cage_follow_failed">動画を読めません：%s</string>
+    <string name="cage_follow_match">一致 %d%%</string>
+    <string name="cage_follow_nojudge">比較できるポーズがありません（動画が停止中か体が見えない）</string>
+    <string name="cage_st_follow_shock">⚡ 動画に合わせて！</string>
 </resources>
